@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # In AllenNLP we use type annotations for just about everything.
 from typing import Iterator, List, Dict, Optional
 
@@ -133,9 +134,8 @@ class QaDatasetReader(DatasetReader):
         with open(file_path) as f:
             next(f)  # Skip header line
             for line in f:
-                text, label = line.strip().split('\t')
+                passage, question, answer, label = line.strip().split('|')
 
-                passage, question, answer = text.split('#')
                 passage_tokens = [Token(word) for word in passage.split()]
                 question_tokens = [Token(word) for word in question.split()]
                 answer_tokens = [Token(word) for word in answer.split()]
@@ -287,12 +287,9 @@ reader = QaDatasetReader()
 # locally (and to hand <code>reader.read</code> the path to the local cached
 # version.)
 dataset = reader.read(cached_path(
-    '../Work/Merging_Data/small.csv'))
+    '../Work/Merging_Data/data.csv'))
 train_dataset = dataset[:int(0.8 * len(dataset))]
 validation_dataset = dataset[int(0.8 * len(dataset)):]
-
-for i in train_dataset[:3] + validation_dataset[:2]:
-    print(i)
 
 # Once we've read in the datasets, we use them to create our
 # <code>Vocabulary</code> (that is, the mapping[s] from tokens / labels to
@@ -302,7 +299,7 @@ vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
 # Now we need to construct the model.
 # We'll choose a size for our embedding layer and for the hidden layer of our
 # LSTM.
-EMBEDDING_DIM = 50
+EMBEDDING_DIM = 300
 HIDDEN_DIM = 100
 
 # For embedding the tokens we'll just use the
@@ -316,7 +313,9 @@ HIDDEN_DIM = 100
 # vectors), but there's no need to do that on this tiny toy dataset.
 print('Vocabsize', vocab.get_vocab_size('tokens'))
 token_embedding = Embedding(num_embeddings=vocab.get_vocab_size('tokens'),
-                            embedding_dim=EMBEDDING_DIM)
+                            embedding_dim=EMBEDDING_DIM,
+                            trainable=False,
+                            pretrained_file='../External/glove.840B.300d.txt')
 word_embeddings = BasicTextFieldEmbedder({"tokens": token_embedding})
 # We next need to specify the sequence encoder. The need for
 # <code>PytorchSeq2SeqWrapper</code> here is slightly unfortunate (and if you
