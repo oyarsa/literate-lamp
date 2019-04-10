@@ -21,7 +21,8 @@ from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data.tokenizers import Token
 
 
-class QaDatasetReader(DatasetReader):
+@DatasetReader.register('mcscript-reader')
+class McScriptReader(DatasetReader):
     """
     DatasetReader for Question Answering data, one sentence per line, like
 

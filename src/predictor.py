@@ -19,7 +19,8 @@ from allennlp.data import Instance
 from allennlp.data.dataset_readers import DatasetReader
 
 
-class QaPredictor(Predictor):
+@Predictor.register('mcscript-predictor')
+class McScriptPredictor(Predictor):
     """
     Predictor for our Question Answering task. It takes a `Model` and a
     `DatasetReader`, from which it can read a dataset and compute predictions

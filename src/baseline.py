@@ -28,8 +28,8 @@ from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 
 from models import BaselineClassifier
-from predictor import QaPredictor
-from reader import QaDatasetReader
+from predictor import McScriptPredictor
+from reader import McScriptReader
 from util import example_input, is_cuda, train_model
 
 
@@ -82,7 +82,7 @@ def test_load(save_path: str,
         model.cuda(cuda_device)
 
     # Try predicting again and see if we get the same results (we should).
-    predictor = QaPredictor(model, dataset_reader=QaDatasetReader())
+    predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
     passage, question, answer, _ = example_input()
     prediction = predictor.predict(
         passage=passage,
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     model = train_model(build_model, data_path=DATA_PATH, save_path=SAVE_PATH)
 
     # Create a predictor to run our model and get predictions.
-    predictor = QaPredictor(model, dataset_reader=QaDatasetReader())
+    predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
     # Execute prediction. Gets output dict from the model.
     passage, question, answer, label = example_input()
     prediction = predictor.predict(

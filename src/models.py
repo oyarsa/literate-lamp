@@ -36,6 +36,7 @@ from allennlp.training.metrics import CategoricalAccuracy
 from allennlp.nn import util
 
 
+@Model.register('baseline-classifier')
 class BaselineClassifier(Model):
     """
     The `Model` class basically needs a `forward` method to be able to process
