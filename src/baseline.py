@@ -29,13 +29,13 @@ from util import (example_input, is_cuda, train_model,
 
 
 # Path to our dataset
-DATA_PATH = './data/small.csv'
+DATA_PATH = './data/medium.csv'
 # Path to our embeddings
-GLOVE_PATH = '../External/glove.840B.300d.txt'
+GLOVE_PATH = '../External/glove.6B.50d.txt'
 # Size of our embeddings
-EMBEDDING_DIM = 300
+EMBEDDING_DIM = 50
 # Size of our hidden layers (for each encoder)
-HIDDEN_DIM = 100
+HIDDEN_DIM = 50
 # Path to save the Model and Vocabulary
 SAVE_PATH = "/tmp/"
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
     # Train and save our model
     model = train_model(build_baseline, data_path=DATA_PATH,
-                        save_path=SAVE_PATH)
+                        save_path=SAVE_PATH, num_epochs=1000, patience=50)
 
     # Create a predictor to run our model and get predictions.
     predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
