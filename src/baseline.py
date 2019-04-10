@@ -4,33 +4,16 @@ from typing import Dict
 import torch
 import numpy as np
 
-# These create text embeddings from a `TextField` input. Since our text data
-# is represented using `TextField`s, this makes sense.
-# Again, `TextFieldEmbedder` is the abstract class, `BasicTextFieldEmbedder`
-# is the implementation (as we're just using simple embeddings, no fancy
-# ELMo or BERT so far).
-from allennlp.modules.text_field_embedders import (BasicTextFieldEmbedder,
-                                                   TextFieldEmbedder)
-# This is the actual neural layer for the embedding. This will be passed into
-# the embedder above.
-from allennlp.modules.token_embedders import Embedding
-# `Seq2VecEncoder` is an abstract encoder that takes a sequence and generates
-# a vector. This can be an LSTM (although they can also be Seq2Seq if you
-# output the hidden state), a Transformer or anything else really, just taking
-# NxM -> 1xQ.
-# The `PytorchSeq2VecWrapper` is a wrapper for the PyTorch Seq2Vec encoders
-# (such as the LSTM we'll use later on), as they don't exactly follow the
-# interface the library expects.
-from allennlp.modules.seq2vec_encoders import (Seq2VecEncoder,
-                                               PytorchSeq2VecWrapper)
-
+from allennlp.modules.text_field_embedders import TextFieldEmbedder
+from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 
 from models import BaselineClassifier
 from predictor import McScriptPredictor
 from reader import McScriptReader
-from util import example_input, is_cuda, train_model
+from util import (example_input, is_cuda, train_model,
+                  glove_embeddings, lstm_encoder)
 
 
 # Path to our dataset
@@ -45,19 +28,9 @@ HIDDEN_DIM = 100
 SAVE_PATH = "/tmp/"
 
 
-def build_model(vocab: Vocabulary) -> Model:
-    # Pre-trained embeddings using GloVe
-    token_embedding = Embedding(num_embeddings=vocab.get_vocab_size('tokens'),
-                                embedding_dim=EMBEDDING_DIM,
-                                trainable=False,
-                                pretrained_file=GLOVE_PATH)
-    # TODO: Not exactly sure how this one works
-    word_embeddings = BasicTextFieldEmbedder({"tokens": token_embedding})
-
-    # Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
-    # though.
-    lstm = PytorchSeq2VecWrapper(torch.nn.LSTM(
-        EMBEDDING_DIM, HIDDEN_DIM, batch_first=True))
+def build_baseline(vocab: Vocabulary) -> Model:
+    word_embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
+    lstm = lstm_encoder(EMBEDDING_DIM, HIDDEN_DIM)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = BaselineClassifier(word_embeddings, lstm, vocab)
@@ -98,7 +71,8 @@ if __name__ == '__main__':
     torch.manual_seed(1)
 
     # Train and save our model
-    model = train_model(build_model, data_path=DATA_PATH, save_path=SAVE_PATH)
+    model = train_model(build_baseline, data_path=DATA_PATH,
+                        save_path=SAVE_PATH)
 
     # Create a predictor to run our model and get predictions.
     predictor = McScriptPredictor(model, dataset_reader=McScriptReader())

@@ -19,6 +19,18 @@ from allennlp.data.iterators import BucketIterator
 # file, it does nothing.
 from allennlp.common.file_utils import cached_path
 
+# These create text embeddings from a `TextField` input. Since our text data
+# is represented using `TextField`s, this makes sense.
+# Again, `TextFieldEmbedder` is the abstract class, `BasicTextFieldEmbedder`
+# is the implementation (as we're just using simple embeddings, no fancy
+# ELMo or BERT so far).
+from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
+# This is the actual neural layer for the embedding. This will be passed into
+# the embedder above.
+from allennlp.modules.token_embedders import Embedding
+from allennlp.modules.seq2vec_encoders import (
+    PytorchSeq2VecWrapper, Seq2VecEncoder)
+
 from reader import McScriptReader
 
 
@@ -129,3 +141,24 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
         vocab.save_to_files(save_path + 'vocabulary')
 
     return model
+
+
+def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int
+                     ) -> BasicTextFieldEmbedder:
+    "Pre-trained embeddings using GloVe"
+    token_embedding = Embedding(num_embeddings=vocab.get_vocab_size('tokens'),
+                                embedding_dim=dimension,
+                                trainable=False,
+                                pretrained_file=file_path)
+    # TODO: Not exactly sure how this one works
+    word_embeddings = BasicTextFieldEmbedder({"tokens": token_embedding})
+    return word_embeddings
+
+
+def lstm_encoder(input_dim: int, output_dim: int) -> Seq2VecEncoder:
+    """
+    Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
+    though.
+    """
+    return PytorchSeq2VecWrapper(torch.nn.LSTM(
+        input_dim, output_dim, batch_first=True))
