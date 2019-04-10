@@ -19,7 +19,7 @@ from allennlp.data.iterators import BucketIterator
 # file, it does nothing.
 from allennlp.common.file_utils import cached_path
 
-from reader import QaDatasetReader
+from reader import McScriptReader
 
 
 def visualise_model(model: Model) -> None:
@@ -64,7 +64,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 optimiser: Optional[Optimizer] = None) -> Model:
     "Train and save our baseline model."
     # Creates a new reader
-    reader = QaDatasetReader()
+    reader = McScriptReader()
     # Reads from our data. We're used `cached_path`, but data is currently
     # local, so it doesn't really do anything.
     dataset = reader.read(cached_path(data_path))
