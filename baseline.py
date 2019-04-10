@@ -297,7 +297,7 @@ reader = QaDatasetReader()
 # if your data was local.  We use <code>cached_path</code> to cache the files
 # locally (and to hand <code>reader.read</code> the path to the local cached
 # version.)
-DATA_PATH = '../Work/Merging_Data/small.csv'
+DATA_PATH = '../Work/Merging_Data/data.csv'
 dataset = reader.read(cached_path(DATA_PATH))
 train_dataset = dataset[:int(0.8 * len(dataset))]
 validation_dataset = dataset[int(0.8 * len(dataset)):]
@@ -342,15 +342,14 @@ lstm = PytorchSeq2VecWrapper(torch.nn.LSTM(
 model = LstmClassifier(word_embeddings, lstm, vocab)
 
 # Next let's check if we have access to a GPU.
-# if torch.cuda.is_available():
-#     cuda_device = 0
-#     # Since we do, we move our model to GPU 0.
-#     model = model.cuda(cuda_device)
-# else:
-#     # In this case we don't, so we specify -1 to fall back to the CPU. (Where
-#     # the model already resides.)
-#     cuda_device = -1
-cuda_device = -1
+if torch.cuda.is_available():
+    cuda_device = 0
+    # Since we do, we move our model to GPU 0.
+    model = model.cuda(cuda_device)
+else:
+    # In this case we don't, so we specify -1 to fall back to the CPU. (Where
+    # the model already resides.)
+    cuda_device = -1
 
 # Now we're ready to train the model. The first thing we'll need is an
 # optimizer.  We can just use PyTorch's stochastic gradient descent.
