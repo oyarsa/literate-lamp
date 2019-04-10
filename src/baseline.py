@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+"""
+Script to run a baseline model for the SemEval-2018 Task 11 problem (also
+COIN 2019 Task 1).
+The dataset has a Passage, a Question and a Candidate answer. The target is to
+predict if the answer is correct or not.
+The baseline uses GloVe to build embeddings for each of the three texts, which
+are then encoded using (different) LSTMs. The encoded vectors are then
+concatenated and fed into a feed-forward layer that output class probabilities.
+
+This script builds the model, trains it, generates predictions and saves it.
+Then it checks if the saving went correctly.
+"""
 from typing import Dict
 
 import torch
@@ -29,11 +41,22 @@ SAVE_PATH = "/tmp/"
 
 
 def build_baseline(vocab: Vocabulary) -> Model:
-    word_embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
-    lstm = lstm_encoder(EMBEDDING_DIM, HIDDEN_DIM)
+    """
+    Builds the Baseline classifier using Glove embeddings and LSTM encoders.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `BaselineClassifier` model ready to be trained.
+    """
+    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
+    encoder = lstm_encoder(EMBEDDING_DIM, HIDDEN_DIM)
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = BaselineClassifier(word_embeddings, lstm, vocab)
+    model = BaselineClassifier(embeddings, encoder, vocab)
     return model
 
 
@@ -42,7 +65,17 @@ def test_load(save_path: str,
               embeddings: TextFieldEmbedder,
               encoder: Seq2VecEncoder,
               cuda_device: int) -> None:
-    "Test if we can load the model and if its prediction matches the original."
+    """
+    Test if we can load the model and if its prediction matches the original.
+
+    Parameters
+    ----------
+    save_path : Path to the folder where the model was saved.
+    original_prediction : The prediction from the model for `example_input`
+        before it was saved.  embeddings : The Embedding layer used for the
+        model.  encoder : The Encoder layer used for the model.
+    cuda_device: Device number. -1 if CPU, >= 0 if GPU.
+    """
     # Reload vocabulary
     vocab = Vocabulary.from_files(save_path + 'vocabulary')
     # Recreate the model.
