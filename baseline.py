@@ -123,7 +123,7 @@ class QaDatasetReader(DatasetReader):
         }
 
         if label is not None:
-            fields["label"] = LabelField(label=label)
+            fields["label"] = LabelField(label=int(label), skip_indexing=True)
 
         return Instance(fields)
 
@@ -192,9 +192,11 @@ class LstmClassifier(Model):
         hidden_dim = self.p_encoder.get_output_dim() * 3
         self.hidden2prob = torch.nn.Linear(
             in_features=hidden_dim,
-            out_features=vocab.get_vocab_size('label'))
+            out_features=vocab.get_vocab_size('label')
+        )
         # The last thing to notice is that we also instantiate a
         # <code>CategoricalAccuracy</code> metric, which we'll use to track
+
         # accuracy during each training and validation epoch.
         self.accuracy = CategoricalAccuracy()
         self.loss = torch.nn.CrossEntropyLoss()
@@ -239,16 +241,17 @@ class LstmClassifier(Model):
         encoder_out = torch.cat((p_enc_out, q_enc_out, a_enc_out), 1)
         # Finally, we pass each encoded output tensor to the feedforward layer
         # to produce logits corresponding to the various tags.
-        class_logit = self.hidden2prob(encoder_out)
-        output = {"class_logits": class_logit}
+        logits = self.hidden2prob(encoder_out)
+        class_ = torch.argmax(logits)
+        output = {"logits": logits, "class": class_}
 
         # As before, the labels were optional, as we might want to run this
         # model to make predictions on unlabeled data. If we do have labels,
         # then we use them to update our accuracy metric and compute the "loss"
         # that goes in our output.
         if label is not None:
-            self.accuracy(class_logit, label)
-            output["loss"] = self.loss(class_logit, label)
+            self.accuracy(logits, label)
+            output["loss"] = self.loss(logits, label)
 
         return output
 
@@ -264,17 +267,25 @@ class LstmClassifier(Model):
         return {"accuracy": self.accuracy.get_metric(reset)}
 
 
-class BinaryPredictor(Predictor):
+class QaPredictor(Predictor):
     def __init__(self, model: Model, dataset_reader: DatasetReader) -> None:
         super().__init__(model, dataset_reader)
 
-    def predict(self, sentence: str) -> JsonDict:
-        return self.predict_json({"sentence": sentence})
+    def predict(self, passage: str, question: str, answer: str) -> JsonDict:
+        return self.predict_json(
+            {"passage": passage, "question": question, "answer": answer})
 
     def _json_to_instance(self, json_dict: JsonDict) -> Instance:
-        sentence = json_dict['sentence']
-        tokens = [Token(t) for t in re.split(' |#', sentence)]
-        return self._dataset_reader.text_to_instance(tokens)
+        passage = json_dict['passage']
+        question = json_dict['question']
+        answer = json_dict['answer']
+
+        passage_tokens = [Token(t) for t in re.split(' |#', passage)]
+        question_tokens = [Token(t) for t in re.split(' |#', question)]
+        answer_tokens = [Token(t) for t in re.split(' |#', answer)]
+
+        return self._dataset_reader.text_to_instance(
+            passage_tokens, question_tokens, answer_tokens)
 
 
 # Now that we've implemented a <code>DatasetReader</code> and
@@ -286,8 +297,8 @@ reader = QaDatasetReader()
 # if your data was local.  We use <code>cached_path</code> to cache the files
 # locally (and to hand <code>reader.read</code> the path to the local cached
 # version.)
-dataset = reader.read(cached_path(
-    '../Work/Merging_Data/data.csv'))
+DATA_PATH = '../Work/Merging_Data/small.csv'
+dataset = reader.read(cached_path(DATA_PATH))
 train_dataset = dataset[:int(0.8 * len(dataset))]
 validation_dataset = dataset[int(0.8 * len(dataset)):]
 
@@ -369,8 +380,8 @@ trainer = Trainer(model=model,
                   iterator=iterator,
                   train_dataset=train_dataset,
                   validation_dataset=validation_dataset,
-                  patience=10,
-                  num_epochs=50,
+                  # patience=10,
+                  num_epochs=1,
                   cuda_device=cuda_device)
 
 # When we launch it it will print a progress bar for each epoch
@@ -387,16 +398,21 @@ trainer.train()
 # Predictor, but AllenNLP already has a <code>SentenceTaggerPredictor</code>
 # that works perfectly here, so we can use it.  It requires our model (for
 # making predictions) and a dataset reader (for creating instances).
-predictor = BinaryPredictor(model, dataset_reader=reader)
+predictor = QaPredictor(model, dataset_reader=reader)
 # It has a <code>predict</code> method that just needs a sentence and returns
 # (a JSON-serializable version of) the output dict from forward.  Here
 # <code>tag_logits</code> will be a (5, 3) array of logits, corresponding to
 # the 3 possible tags for each of the 5 words.
-# tag_logits = predictor.predict("The dog ate the apple")['tag_logits']
+test = "I called to my dog and got the leash off of the hook on the hall . My dog came quickly and I attached his leash to his collar . I put my phone and house keys into my pocket . I walked with my dog to the park across the street from out house and went to the paved walking path . We walked the length of the walking path twice . I listed to my dog to make sure he was n't getting overheated . I greated people we passed by . I made sure that my dog did not approach anyone who did not want to pet my dog by keeping a firm hold of his leash . Once we completed two laps , we walked back to our house .|why did they lock theh door?|Because there was a monster outside.|0"
+passage, question, answer, label = test.split('|')
+prediction = predictor.predict(
+    passage=passage,
+    question=question,
+    answer=answer
+)
+class_ = prediction['class']
 # To get the actual "predictions" we can just take the <code>argmax</code>.
-# tag_ids = np.argmax(tag_logits, axis=-1)
-# And then use our vocabulary to find the predicted tags.
-# print([model.vocab.get_token_from_index(i, 'labels') for i in tag_ids])
+print('Label:', label, '-- Predicted:', class_)
 
 # Finally, we'd like to be able to save our model and reload it later.
 # We'll need to save two things. The first is the model weights.
@@ -427,6 +443,11 @@ if cuda_device > -1:
     model2.cuda(cuda_device)
 
 # And now we should get the same predictions.
-predictor2 = BinaryPredictor(model2, dataset_reader=reader)
-# tag_logits2 = predictor2.predict("The dog ate the apple")['tag_logits']
-# np.testing.assert_array_almost_equal(tag_logits2, tag_logits)
+predictor2 = QaPredictor(model2, dataset_reader=reader)
+prediction2 = predictor2.predict(
+    passage=passage,
+    question=question,
+    answer=answer
+)
+np.testing.assert_array_almost_equal(
+    prediction['logits'], prediction2['logits'])
