@@ -28,7 +28,9 @@ from util import (example_input, is_cuda, train_model,
                   glove_embeddings, lstm_encoder)
 
 CONFIG = 'large'  # Can also be _medium_ or _large_
-
+# TODO: Proper configuration path for the External folder. The data one is
+# going to be part of the repo, so this is fine for now, but External isn't
+# always going to be.
 if CONFIG == 'large':
     # Path to our dataset
     DATA_PATH = './data/data.csv'
@@ -38,10 +40,8 @@ if CONFIG == 'large':
     EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 96
-    # Number of epochs to train model
-    NUM_EPOCHS = 10
     # Path to save pre-processed input
-    PREPROCESSED_PATH = './data/data.processed.pickle'
+    PREPROCESSED_PATH = '../External/data.processed.pickle'
 elif CONFIG == 'small':
     # Path to our dataset
     DATA_PATH = './data/small.csv'
@@ -51,10 +51,22 @@ elif CONFIG == 'small':
     EMBEDDING_DIM = 50
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 50
-    # Number of epochs to train model
-    NUM_EPOCHS = 50
-    PREPROCESSED_PATH = './data/small.processed.pickle'
+    # Path to save pre-processed input
+    PREPROCESSED_PATH = '../External/small.processed.pickle'
+elif CONFIG == 'medium':
+    # Path to our dataset
+    DATA_PATH = './data/medium.csv'
+    # Path to our embeddings
+    GLOVE_PATH = '../External/glove.6B.100d.txt'
+    # Size of our embeddings
+    EMBEDDING_DIM = 100
+    # Size of our hidden layers (for each encoder)
+    HIDDEN_DIM = 64
+    # Path to save pre-processed input
+    PREPROCESSED_PATH = '../External/medium.processed.pickle'
 
+# Number of epochs to train model
+NUM_EPOCHS = 10
 # Path to save the Model and Vocabulary
 SAVE_PATH = "/tmp/"
 # Random seed (for reproducibility)
