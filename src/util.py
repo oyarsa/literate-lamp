@@ -47,10 +47,15 @@ def visualise_model(model: Model) -> None:
     print('Trainable parameters:', trainable_parameters)
 
 
-def example_input() -> Tuple[str, str, str, str]:
-    # Test string
-    test = "I called to my dog and got the leash off of the hook on the hall . My dog came quickly and I attached his leash to his collar . I put my phone and house keys into my pocket . I walked with my dog to the park across the street from the house and went to the paved walking path . We walked the length of the walking path twice . I listend to my dog to make sure he was n't getting overheated . I greeted people we passed by . I made sure that my dog did not approach anyone who did not want to pet my dog by keeping a firm hold of his leash . Once we completed two laps , we walked back to our house .|why did they lock the door?|Because there was a monster outside.|0"  # NOQA
-    passage, question, answer, label = test.split('|')
+def example_input(index: int = 0) -> Tuple[str, str, str, str]:
+    examples = [
+        "I called to my dog and got the leash off of the hook on the hall . My dog came quickly and I attached his leash to his collar . I put my phone and house keys into my pocket . I walked with my dog to the park across the street from the house and went to the paved walking path . We walked the length of the walking path twice . I listened to my dog to make sure he was n't getting overheated . I greeted people we passed by . I made sure that my dog did not approach anyone who did not want to pet my dog by keeping a firm hold of his leash . Once we completed two laps , we walked back to our house .|why did they lock the door?|Because there was a monster outside.|0",  # NOQA
+        "I called to my dog and got the leash off of the hook on the hall . My dog came quickly and I attached his leash to his collar . I put my phone and house keys into my pocket . I walked with my dog to the park across the street from the house and went to the paved walking path . We walked the length of the walking path twice . I listened to my dog to make sure he was n't getting overheated . I greeted people we passed by . I made sure that my dog did not approach anyone who did not want to pet my dog by keeping a firm hold of his leash . Once we completed two laps , we walked back to our house .|why did they lock the door?|Because the dog and owner left for a walk.|1"  # NOQA
+    ]
+    if index >= len(examples):
+        raise IndexError('Example index ({})out of range (we have {} examples)'
+                         .format(index, len(examples)))
+    passage, question, answer, label = examples[index].split('|')
     return passage, question, answer, label
 
 

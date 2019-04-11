@@ -29,13 +29,13 @@ from util import (example_input, is_cuda, train_model,
 
 
 # Path to our dataset
-DATA_PATH = './data/medium.csv'
+DATA_PATH = './data/data.csv'
 # Path to our embeddings
-GLOVE_PATH = '../External/glove.6B.50d.txt'
+GLOVE_PATH = '../External/glove.840B.300d.txt'
 # Size of our embeddings
-EMBEDDING_DIM = 50
+EMBEDDING_DIM = 300
 # Size of our hidden layers (for each encoder)
-HIDDEN_DIM = 50
+HIDDEN_DIM = 96
 # Path to save the Model and Vocabulary
 SAVE_PATH = "/tmp/"
 
@@ -89,7 +89,7 @@ def test_load(save_path: str,
 
     # Try predicting again and see if we get the same results (we should).
     predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
-    passage, question, answer, _ = example_input()
+    passage, question, answer, _ = example_input(1)
     prediction = predictor.predict(
         passage=passage,
         question=question,
@@ -101,24 +101,29 @@ def test_load(save_path: str,
 
 if __name__ == '__main__':
     # Manual seeding for reproducibility.
-    torch.manual_seed(1)
+    torch.manual_seed(1234)
 
     # Train and save our model
     model = train_model(build_baseline, data_path=DATA_PATH,
-                        save_path=SAVE_PATH, num_epochs=1000, patience=50)
+                        save_path=SAVE_PATH, num_epochs=200, patience=10,
+                        batch_size=128)
 
     # Create a predictor to run our model and get predictions.
     predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
-    # Execute prediction. Gets output dict from the model.
-    passage, question, answer, label = example_input()
-    prediction = predictor.predict(
-        passage=passage,
-        question=question,
-        answer=answer
-    )
-    # Predicted class
-    class_ = prediction['class']
-    print('Label:', label, '-- Predicted:', class_)
+    for index in [0, 1]:
+        # Execute prediction. Gets output dict from the model.
+        passage, question, answer, label = example_input(index)
+        prediction = predictor.predict(
+            passage=passage,
+            question=question,
+            answer=answer
+        )
+        # Predicted class
+        class_ = prediction['class']
+        logits = torch.tensor(prediction['logits'])
+        confidence = torch.softmax(logits, dim=-1)
+        print(index, ') Label:', label, '-- Predicted:',
+              class_, ' -- Confidence:', confidence)
 
     cuda_device = 0 if is_cuda(model) else -1
     # Test if we can load the saved model
