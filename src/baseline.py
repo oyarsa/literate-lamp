@@ -12,6 +12,7 @@ This script builds the model, trains it, generates predictions and saves it.
 Then it checks if the saving went correctly.
 """
 from typing import Dict
+import sys
 
 import torch
 import numpy as np
@@ -24,10 +25,11 @@ from allennlp.data.vocabulary import Vocabulary
 from models import BaselineClassifier
 from predictor import McScriptPredictor
 from reader import McScriptReader
-from util import (example_input, is_cuda, train_model,
-                  glove_embeddings, lstm_encoder)
+from util import (example_input, is_cuda, train_model, glove_embeddings,
+                  lstm_encoder, gru_encoder)
 
-CONFIG = 'large'  # Can be: _medium_ , _large_ or _small_
+DEFAULT_CONFIG = 'medium'  # Can be: _medium_ , _large_ or _small_
+CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
 
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
@@ -67,13 +69,19 @@ elif CONFIG == 'medium':
     PREPROCESSED_PATH = '../External/medium.processed.pickle'
 
 # Number of epochs to train model
-NUM_EPOCHS = 1000
+NUM_EPOCHS = 10
 # Path to save the Model and Vocabulary
 SAVE_PATH = "/tmp/"
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
 # Size of minibatch
 BATCH_SIZE = 128
+
+# Model Configuration
+# Use LSTM or GRU
+RNN_TYPE = 'lstm'
+BIDIRECTIONAL = True
+RNN_LAYERS = 2
 
 
 def build_baseline(vocab: Vocabulary) -> Model:
@@ -89,7 +97,15 @@ def build_baseline(vocab: Vocabulary) -> Model:
     A `BaselineClassifier` model ready to be trained.
     """
     embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
-    encoder = lstm_encoder(EMBEDDING_DIM, HIDDEN_DIM)
+    if RNN_TYPE == 'lstm':
+        encoder_fn = lstm_encoder
+    elif RNN_TYPE == 'gru':
+        encoder_fn = gru_encoder
+    else:
+        raise ValueError('Invalid RNN type')
+
+    encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
+                         bidirectional=BIDIRECTIONAL)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = BaselineClassifier(embeddings, encoder, vocab)

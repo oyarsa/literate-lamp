@@ -185,10 +185,23 @@ def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int
     return word_embeddings
 
 
-def lstm_encoder(input_dim: int, output_dim: int) -> Seq2VecEncoder:
+def lstm_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
+                 bidirectional: bool = False) -> Seq2VecEncoder:
     """
     Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
     though.
     """
     return PytorchSeq2VecWrapper(torch.nn.LSTM(
-        input_dim, output_dim, batch_first=True))
+        input_dim, output_dim, batch_first=True, num_layers=num_layers,
+        bidirectional=bidirectional))
+
+
+def gru_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
+                bidirectional: bool = False) -> Seq2VecEncoder:
+    """
+    Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
+    though.
+    """
+    return PytorchSeq2VecWrapper(torch.nn.GRU(
+        input_dim, output_dim, batch_first=True, num_layers=num_layers,
+        bidirectional=bidirectional))
