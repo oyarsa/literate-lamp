@@ -42,7 +42,8 @@ class McScriptReader(DatasetReader):
         super().__init__(lazy=False)
         self.token_indexers = token_indexers or {
             "tokens": SingleIdTokenIndexer()}
-        word_splitter = SpacyWordSplitter(pos_tags=True, parse=True, ner=True)
+        word_splitter = SpacyWordSplitter(
+            pos_tags=False, parse=False, ner=False)
         self.tokeniser = WordTokenizer(word_splitter=word_splitter)
 
     # Converts the text from each field in the input to `Token`s, and then

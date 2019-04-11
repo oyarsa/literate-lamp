@@ -27,7 +27,7 @@ from reader import McScriptReader
 from util import (example_input, is_cuda, train_model,
                   glove_embeddings, lstm_encoder)
 
-CONFIG = 'small'  # Can also be _medium_ or _large_
+CONFIG = 'large'  # Can also be _medium_ or _large_
 
 if CONFIG == 'large':
     # Path to our dataset
