@@ -27,13 +27,12 @@ from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 # and vice-versa.
 from allennlp.data.vocabulary import Vocabulary
 
-# Accuracy metric
-from allennlp.training.metrics import CategoricalAccuracy
-
 # Some utilities provided by AllenNLP.
 #   - `get_text_field_mask` masks the inputs according to the padding.
 #   - `clone` creates N copies of a layer.
 from allennlp.nn import util
+
+from binary_accuracy import BinaryAccuracy
 
 
 @Model.register('baseline-classifier')
@@ -75,14 +74,14 @@ class BaselineClassifier(Model):
         hidden_dim = self.p_encoder.get_output_dim() * 3
         self.hidden2logit = torch.nn.Linear(
             in_features=hidden_dim,
-            out_features=vocab.get_vocab_size('label')
+            out_features=1
         )
 
         # Categorical (as this is a classification task) accuracy
-        self.accuracy = CategoricalAccuracy()
+        self.accuracy = BinaryAccuracy()
         # CrossEntropyLoss is a combinational of LogSoftmax and
         # Negative Log Likelihood. We won't directly use Softmax in training.
-        self.loss = torch.nn.CrossEntropyLoss()
+        self.loss = torch.nn.BCEWithLogitsLoss()
 
     # This is the computation bit of the model. The arguments of this function
     # are the fields from the `Instance` we created, as that's what's going to
@@ -118,16 +117,14 @@ class BaselineClassifier(Model):
         # to produce logits corresponding to each class.
         logits = self.hidden2logit(encoder_out)
         # We also compute the class with highest likelihood (our prediction)
-        probabilities = torch.softmax(logits, dim=-1)
-        oneidx = self.vocab.get_token_index('1', 'labels')
-        probability_right = probabilities[:, oneidx]
-        output = {"logits": logits, "prob": probability_right}
+        prob = torch.sigmoid(logits)
+        output = {"logits": logits, "prob": prob}
 
         # Labels are optional. If they're present, we calculate the accuracy
         # and the loss function.
         if label is not None:
-            self.accuracy(logits, label)
-            output["loss"] = self.loss(logits, label)
+            self.accuracy(prob, label)
+            output["loss"] = self.loss(logits, label.float().view(-1, 1))
 
         # The output is the dict we've been building, with the logits, loss
         # and the prediction.

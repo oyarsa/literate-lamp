@@ -27,15 +27,31 @@ from reader import McScriptReader
 from util import (example_input, is_cuda, train_model,
                   glove_embeddings, lstm_encoder)
 
+CONFIG = 'small'  # Can also be _medium_ or _large_
 
-# Path to our dataset
-DATA_PATH = './data/data.csv'
-# Path to our embeddings
-GLOVE_PATH = '../External/glove.840B.300d.txt'
-# Size of our embeddings
-EMBEDDING_DIM = 300
-# Size of our hidden layers (for each encoder)
-HIDDEN_DIM = 96
+if CONFIG == 'large':
+    # Path to our dataset
+    DATA_PATH = './data/data.csv'
+    # Path to our embeddings
+    GLOVE_PATH = '../External/glove.840B.300d.txt'
+    # Size of our embeddings
+    EMBEDDING_DIM = 300
+    # Size of our hidden layers (for each encoder)
+    HIDDEN_DIM = 96
+    # Number of epochs to train model
+    NUM_EPOCHS = 10
+elif CONFIG == 'small':
+    # Path to our dataset
+    DATA_PATH = './data/small.csv'
+    # Path to our embeddings
+    GLOVE_PATH = '../External/glove.6B.50d.txt'
+    # Size of our embeddings
+    EMBEDDING_DIM = 50
+    # Size of our hidden layers (for each encoder)
+    HIDDEN_DIM = 50
+    # Number of epochs to train model
+    NUM_EPOCHS = 50
+
 # Path to save the Model and Vocabulary
 SAVE_PATH = "/tmp/"
 
@@ -105,12 +121,14 @@ if __name__ == '__main__':
 
     # Train and save our model
     model = train_model(build_baseline, data_path=DATA_PATH,
-                        save_path=SAVE_PATH, num_epochs=200, patience=10,
-                        batch_size=128)
+                        save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
+                        patience=10, batch_size=3)
 
     # Create a predictor to run our model and get predictions.
-    predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
+    reader = McScriptReader()
+    predictor = McScriptPredictor(model, dataset_reader=reader)
     for index in [0, 1]:
+        print('#'*5, 'EXAMPLE', index, '#'*5)
         # Execute prediction. Gets output dict from the model.
         passage, question, answer, label = example_input(index)
         prediction = predictor.predict(
@@ -118,9 +136,12 @@ if __name__ == '__main__':
             question=question,
             answer=answer
         )
+        instance = reader.text_to_instance(passage, question, answer, label)
+        print(instance)
         # Predicted class
         prob = prediction['prob']
-        print(index, ') Label:', label, '-- Predicted:', prob)
+        print('\t Predicted:', prob)
+        print()
 
     cuda_device = 0 if is_cuda(model) else -1
     # Test if we can load the saved model

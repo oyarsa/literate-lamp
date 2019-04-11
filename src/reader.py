@@ -66,7 +66,7 @@ class McScriptReader(DatasetReader):
         }
 
         if label is not None:
-            fields["label"] = LabelField(label=label)
+            fields["label"] = LabelField(label=int(label), skip_indexing=True)
 
         return Instance(fields)
 
