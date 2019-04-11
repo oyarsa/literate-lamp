@@ -118,8 +118,10 @@ class BaselineClassifier(Model):
         # to produce logits corresponding to each class.
         logits = self.hidden2logit(encoder_out)
         # We also compute the class with highest likelihood (our prediction)
-        prediction = torch.argmax(logits)
-        output = {"logits": logits, "class": prediction}
+        probabilities = torch.softmax(logits, dim=-1)
+        oneidx = self.vocab.get_token_index('1', 'labels')
+        probability_right = probabilities[:, oneidx]
+        output = {"logits": logits, "prob": probability_right}
 
         # Labels are optional. If they're present, we calculate the accuracy
         # and the loss function.

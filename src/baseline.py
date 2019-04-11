@@ -119,11 +119,8 @@ if __name__ == '__main__':
             answer=answer
         )
         # Predicted class
-        class_ = prediction['class']
-        logits = torch.tensor(prediction['logits'])
-        confidence = torch.softmax(logits, dim=-1)
-        print(index, ') Label:', label, '-- Predicted:',
-              class_, ' -- Confidence:', confidence)
+        prob = prediction['prob']
+        print(index, ') Label:', label, '-- Predicted:', prob)
 
     cuda_device = 0 if is_cuda(model) else -1
     # Test if we can load the saved model

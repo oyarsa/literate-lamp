@@ -9,6 +9,7 @@ from allennlp.data.vocabulary import Vocabulary
 
 # Configurable trainer so we don't have to write our own training loop.
 from allennlp.training.trainer import Trainer
+from allennlp.training.util import evaluate
 
 # Training is done in batches, this creates sorted batches from
 # a `DatasetReader`.
@@ -63,12 +64,16 @@ def is_cuda(model: Model) -> bool:
     return bool(next(model.parameters()).is_cuda)
 
 
-def train_val_split(dataset: List[Instance], val_size: float
-                    ) -> Tuple[List[Instance], List[Instance]]:
-    train_size = int((1 - val_size) * len(dataset))
+def train_val_test_split(
+        dataset: List[Instance], train_size: float
+) -> Tuple[List[Instance], List[Instance], List[Instance]]:
+
+    train_size = int(train_size * len(dataset))
+    val_size = (len(dataset) - train_size) // 2
     train_dataset = dataset[:train_size]
-    validation_dataset = dataset[train_size:]
-    return train_dataset, validation_dataset
+    validation_dataset = dataset[train_size:train_size+val_size]
+    test_dataset = dataset[train_size + val_size:]
+    return train_dataset, validation_dataset, test_dataset
 
 
 def train_model(build_model_fn: Callable[[Vocabulary], Model],
@@ -86,8 +91,8 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # local, so it doesn't really do anything.
     dataset = reader.read(cached_path(data_path))
 
-    # Splits our dataset into training (80%) and validation (20%).
-    train_dataset, validation_dataset = train_val_split(dataset, 0.2)
+    # Splits our dataset into training (80%), validation (10%) and test (10%).
+    train_data, val_data, test_data = train_val_test_split(dataset, 0.8)
 
     # Create a vocabulary from our whole dataset.
     vocab = Vocabulary.from_instances(dataset)
@@ -127,14 +132,19 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     trainer = Trainer(model=model,
                       optimizer=optimiser,
                       iterator=iterator,
-                      train_dataset=train_dataset,
-                      validation_dataset=validation_dataset,
+                      train_dataset=train_data,
+                      validation_dataset=val_data,
                       patience=patience,
                       num_epochs=num_epochs,
                       cuda_device=cuda_device)
 
     # Execute training loop.
     trainer.train()
+
+    print('#'*5, 'EVALUATION', '#'*5)
+    metrics = evaluate(model, test_data, iterator, cuda_device, "")
+    for key, metric in metrics.items():
+        print(key, ':', metric)
 
     # To save the model, we need to save the vocabulary and the model weights.
     # Saving weights (model state)
