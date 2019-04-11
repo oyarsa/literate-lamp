@@ -92,6 +92,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # We load pre-processed data to save time (we don't need to tokenise or
     # do parsing/POS-tagging/NER).
     if pre_processed_path is not None and os.path.isfile(pre_processed_path):
+        print('>> Reading input from pre-processed file')
         with open(pre_processed_path, 'rb') as preprocessed_file:
             dataset = pickle.load(preprocessed_file)
     else:
@@ -99,6 +100,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
         reader = McScriptReader()
         # Reads from our data. We're used `cached_path`, but data is currently
         # local, so it doesn't really do anything.
+        print('>> Reading input from data file')
         dataset = reader.read(cached_path(data_path))
         if pre_processed_path is not None:
             with open(pre_processed_path, 'wb') as preprocessed_file:

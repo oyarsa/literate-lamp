@@ -27,7 +27,8 @@ from reader import McScriptReader
 from util import (example_input, is_cuda, train_model,
                   glove_embeddings, lstm_encoder)
 
-CONFIG = 'large'  # Can also be _medium_ or _large_
+CONFIG = 'large'  # Can be: _medium_ , _large_ or _small_
+
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
 # always going to be.
@@ -66,7 +67,7 @@ elif CONFIG == 'medium':
     PREPROCESSED_PATH = '../External/medium.processed.pickle'
 
 # Number of epochs to train model
-NUM_EPOCHS = 10
+NUM_EPOCHS = 1000
 # Path to save the Model and Vocabulary
 SAVE_PATH = "/tmp/"
 # Random seed (for reproducibility)
@@ -141,7 +142,7 @@ if __name__ == '__main__':
     # Train and save our model
     model = train_model(build_baseline, data_path=DATA_PATH,
                         save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
-                        patience=10, batch_size=BATCH_SIZE,
+                        patience=50, batch_size=BATCH_SIZE,
                         pre_processed_path=PREPROCESSED_PATH)
 
     # Create a predictor to run our model and get predictions.
