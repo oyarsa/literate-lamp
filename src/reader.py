@@ -18,7 +18,8 @@ from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 #   Currently we're doing just 'split', which is enough (as the data is laid
 #   out accordingly), but using a proper tokeniser could give us more
 #   information.
-from allennlp.data.tokenizers import Token
+from allennlp.data.tokenizers import WordTokenizer
+from allennlp.data.tokenizers.word_splitter import SpacyWordSplitter
 
 
 @DatasetReader.register('mcscript-reader')
@@ -41,6 +42,8 @@ class McScriptReader(DatasetReader):
         super().__init__(lazy=False)
         self.token_indexers = token_indexers or {
             "tokens": SingleIdTokenIndexer()}
+        word_splitter = SpacyWordSplitter(pos_tags=True, parse=True, ner=True)
+        self.tokeniser = WordTokenizer(word_splitter=word_splitter)
 
     # Converts the text from each field in the input to `Token`s, and then
     # initialises `TextField` with them. These also take the token indexer
@@ -55,9 +58,12 @@ class McScriptReader(DatasetReader):
                          answer: str,
                          label: Optional[str] = None
                          ) -> Instance:
-        passage_tokens = [Token(word) for word in passage.split()]
-        question_tokens = [Token(word) for word in question.split()]
-        answer_tokens = [Token(word) for word in answer.split()]
+        # passage_tokens = [Token(word) for word in passage.split()]
+        # question_tokens = [Token(word) for word in question.split()]
+        # answer_tokens = [Token(word) for word in answer.split()]
+        passage_tokens = self.tokeniser.tokenize(text=passage)
+        question_tokens = self.tokeniser.tokenize(text=question)
+        answer_tokens = self.tokeniser.tokenize(text=answer)
 
         fields = {
             "passage": TextField(passage_tokens, self.token_indexers),
