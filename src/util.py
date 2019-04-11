@@ -1,4 +1,6 @@
 from typing import Tuple, List, Callable, Optional
+import pickle
+import os
 
 import torch
 from torch.optim import SGD, Optimizer
@@ -83,13 +85,24 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 batch_size: int = 2,
                 patience: int = 10,
                 num_epochs: int = 1,
-                optimiser: Optional[Optimizer] = None) -> Model:
+                optimiser: Optional[Optimizer] = None,
+                pre_processed_path: Optional[str] = None) -> Model:
     "Train and save our baseline model."
-    # Creates a new reader
-    reader = McScriptReader()
-    # Reads from our data. We're used `cached_path`, but data is currently
-    # local, so it doesn't really do anything.
-    dataset = reader.read(cached_path(data_path))
+
+    # We load pre-processed data to save time (we don't need to tokenise or
+    # do parsing/POS-tagging/NER).
+    if pre_processed_path is not None and os.path.isfile(pre_processed_path):
+        with open(pre_processed_path, 'rb') as preprocessed_file:
+            dataset = pickle.load(preprocessed_file)
+    else:
+        # Creates a new reader
+        reader = McScriptReader()
+        # Reads from our data. We're used `cached_path`, but data is currently
+        # local, so it doesn't really do anything.
+        dataset = reader.read(cached_path(data_path))
+        if pre_processed_path is not None:
+            with open(pre_processed_path, 'wb') as preprocessed_file:
+                pickle.dump(dataset, preprocessed_file)
 
     # Splits our dataset into training (80%), validation (10%) and test (10%).
     train_data, val_data, test_data = train_val_test_split(dataset, 0.8)

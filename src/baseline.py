@@ -40,6 +40,8 @@ if CONFIG == 'large':
     HIDDEN_DIM = 96
     # Number of epochs to train model
     NUM_EPOCHS = 10
+    # Path to save pre-processed input
+    PREPROCESSED_PATH = './data/data.processed.pickle'
 elif CONFIG == 'small':
     # Path to our dataset
     DATA_PATH = './data/small.csv'
@@ -51,9 +53,14 @@ elif CONFIG == 'small':
     HIDDEN_DIM = 50
     # Number of epochs to train model
     NUM_EPOCHS = 50
+    PREPROCESSED_PATH = './data/small.processed.pickle'
 
 # Path to save the Model and Vocabulary
 SAVE_PATH = "/tmp/"
+# Random seed (for reproducibility)
+RANDOM_SEED = 1234
+# Size of minibatch
+BATCH_SIZE = 128
 
 
 def build_baseline(vocab: Vocabulary) -> Model:
@@ -117,12 +124,13 @@ def test_load(save_path: str,
 
 if __name__ == '__main__':
     # Manual seeding for reproducibility.
-    torch.manual_seed(1234)
+    torch.manual_seed(RANDOM_SEED)
 
     # Train and save our model
     model = train_model(build_baseline, data_path=DATA_PATH,
                         save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
-                        patience=10, batch_size=3)
+                        patience=10, batch_size=BATCH_SIZE,
+                        pre_processed_path=PREPROCESSED_PATH)
 
     # Create a predictor to run our model and get predictions.
     reader = McScriptReader()
