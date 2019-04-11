@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Type
 
 import torch
 
@@ -20,7 +20,9 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 # The `PytorchSeq2VecWrapper` is a wrapper for the PyTorch Seq2Vec encoders
 # (such as the LSTM we'll use later on), as they don't exactly follow the
 # interface the library expects.
+from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
+from allennlp.modules.attention import LinearAttention, BilinearAttention
 
 # Holds the vocabulary, learned from the whole data. Also knows the mapping
 # from the `TokenIndexer`, mapping the `Token` to an index in the vocabulary
@@ -108,11 +110,156 @@ class BaselineClassifier(Model):
         # Then we use those embeddings (along with the masks) as inputs for
         # our encoders
         p_enc_out = self.p_encoder(p_emb, p_mask)
-        q_enc_out = self.p_encoder(q_emb, q_mask)
-        a_enc_out = self.p_encoder(a_emb, a_mask)
+        q_enc_out = self.q_encoder(q_emb, q_mask)
+        a_enc_out = self.a_encoder(a_emb, a_mask)
 
         # We then concatenate the representations from each encoder
         encoder_out = torch.cat((p_enc_out, q_enc_out, a_enc_out), 1)
+        # Finally, we pass each encoded output tensor to the feedforward layer
+        # to produce logits corresponding to each class.
+        logits = self.hidden2logit(encoder_out)
+        # We also compute the class with highest likelihood (our prediction)
+        prob = torch.sigmoid(logits)
+        output = {"logits": logits, "prob": prob}
+
+        # Labels are optional. If they're present, we calculate the accuracy
+        # and the loss function.
+        if label is not None:
+            self.accuracy(prob, label)
+            output["loss"] = self.loss(logits, label.float().view(-1, 1))
+
+        # The output is the dict we've been building, with the logits, loss
+        # and the prediction.
+        return output
+
+    # This function computes the metrics we want to see during training.
+    # For now, we only have the accuracy metric, but we could have a number
+    # of different metrics here.
+    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
+        return {"accuracy": self.accuracy.get_metric(reset)}
+
+
+@Model.register('attentive-classifier')
+class AttentiveClassifier(Model):
+    """
+    Refer to `BaselineClassifier` for details on how this works.
+
+    This one is based on that, but adds attention layers after RNNs.
+    These are:
+        - self-attention (LinearAttention, ignoring the second tensor)
+        for question and answer
+        - a BilinearAttention for attenting a question to a passage
+
+    This means that our RNNs are Seq2Seq now, returning the entire hidden
+    state as matrices. For the passage-to-question e need a vector for the
+    question state, so we use the hidden state matrix weighted by the
+    attention result.
+
+    We use the attention vectors as weights for the RNN hidden states.
+
+    After attending the RNN states, we concat them and feed into a FFN.
+    """
+
+    def __init__(self,
+                 word_embeddings: TextFieldEmbedder,
+                 encoder: Seq2SeqEncoder,
+                 vocab: Vocabulary) -> None:
+        # We have to pass the vocabulary to the constructor.
+        super().__init__(vocab)
+        self.word_embeddings = word_embeddings
+
+        # Our model has different encoders for each of the fields (passage,
+        # answer and question). These could theoretically be different for each
+        # field, but for now we're using the same. Hence, we clone the provided
+        # encoder.
+        self.p_encoder, self.q_encoder, self.a_encoder = util.clone(encoder, 3)
+
+        # Attention layers: passage-question, question-self, answer-self
+        self.p_q_attn = BilinearAttention(
+            vector_dim=self.q_encoder.get_output_dim(),
+            matrix_dim=self.p_encoder.get_output_dim(),
+        )
+        self.q_self_attn = LinearAttention(
+            tensor_1_dim=self.q_encoder.get_output_dim(),
+            tensor_2_dim=self.q_encoder.get_output_dim(),
+            combination='1'
+        )
+        self.a_self_attn = LinearAttention(
+            tensor_1_dim=self.a_encoder.get_output_dim(),
+            tensor_2_dim=self.a_encoder.get_output_dim(),
+            combination='1'
+        )
+
+        # We're using a hidden layer to build the output from each encoder.
+        # As this can't really change, it's not passed as input.
+        # The size has to be the size of concatenating the encoder outputs,
+        # since that's how we're combining them in the computation. As they're
+        # the same, just multiply the first encoder output by 3.
+        # The output of the model (which is the output of this layer) has to
+        # have size equal to the number of classes.
+        hidden_dim = (self.q_encoder.get_output_dim()  # p_q_attn
+                      + self.q_encoder.get_output_dim()  # q_self_attn
+                      + self.a_encoder.get_output_dim())  # a_self_attn
+        self.hidden2logit = torch.nn.Linear(
+            in_features=hidden_dim,
+            out_features=1
+        )
+
+        # Categorical (as this is a classification task) accuracy
+        self.accuracy = BinaryAccuracy()
+        # CrossEntropyLoss is a combinational of LogSoftmax and
+        # Negative Log Likelihood. We won't directly use Softmax in training.
+        self.loss = torch.nn.BCEWithLogitsLoss()
+
+    # This is the computation bit of the model. The arguments of this function
+    # are the fields from the `Instance` we created, as that's what's going to
+    # be passed to this. We also have the optional `label`, which is only
+    # available at training time, used to calculate the loss.
+    def forward(self,
+                passage: Dict[str, torch.Tensor],
+                question: Dict[str, torch.Tensor],
+                answer: Dict[str, torch.Tensor],
+                label: Optional[torch.Tensor] = None
+                ) -> Dict[str, torch.Tensor]:
+
+        # Every sample in a batch has to have the same size (as it's a tensor),
+        # so smaller entries are padded. The mask is used to counteract this
+        # padding.
+        p_mask = util.get_text_field_mask(passage)
+        q_mask = util.get_text_field_mask(question)
+        a_mask = util.get_text_field_mask(answer)
+
+        # We create the embeddings from the input text
+        p_emb = self.word_embeddings(passage)
+        q_emb = self.word_embeddings(question)
+        a_emb = self.word_embeddings(answer)
+        # Then we use those embeddings (along with the masks) as inputs for
+        # our encoders
+        p_hiddens = self.p_encoder(p_emb, p_mask)
+        q_hiddens = self.q_encoder(q_emb, q_mask)
+        a_hiddens = self.a_encoder(a_emb, a_mask)
+
+        # print('Hiddens: p, q, a', p_hiddens.shape,
+        #       q_hiddens.shape, q_hiddens.shape)
+        # print('Masks: p, q, a', p_mask.shape, q_mask.shape, a_mask.shape)
+
+        q_attn = self.q_self_attn(q_hiddens, q_hiddens, q_mask)
+        a_attn = self.a_self_attn(a_hiddens, a_hiddens, a_mask)
+
+        q_weighted = util.weighted_sum(q_hiddens, q_attn)
+        a_weighted = util.weighted_sum(a_hiddens, a_attn)
+
+        p_q_attn = self.p_q_attn(q_weighted, p_hiddens, p_mask)
+        p_weighted = util.weighted_sum(p_hiddens, p_q_attn)
+
+        # print('After: pq, q, a', p_q_attn.shape, q_attn.shape, a_attn.shape)
+        # print('Weighted: p, q, a', p_weighted.shape, q_weighted.shape,
+        #       a_weighted.shape)
+
+        # We then concatenate the representations from each encoder
+        encoder_out = torch.cat((p_weighted, q_weighted, a_weighted), 1)
+        # print('Out:', encoder_out.shape)
+
         # Finally, we pass each encoded output tensor to the feedforward layer
         # to produce logits corresponding to each class.
         logits = self.hidden2logit(encoder_out)

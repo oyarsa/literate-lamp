@@ -11,7 +11,7 @@ concatenated and fed into a feed-forward layer that output class probabilities.
 This script builds the model, trains it, generates predictions and saves it.
 Then it checks if the saving went correctly.
 """
-from typing import Dict
+from typing import Dict, Type
 import sys
 
 import torch
@@ -22,11 +22,11 @@ from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 
-from models import BaselineClassifier
+from models import BaselineClassifier, AttentiveClassifier
 from predictor import McScriptPredictor
 from reader import McScriptReader
 from util import (example_input, is_cuda, train_model, glove_embeddings,
-                  lstm_encoder, gru_encoder)
+                  lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq)
 
 DEFAULT_CONFIG = 'medium'  # Can be: _medium_ , _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
@@ -75,7 +75,7 @@ SAVE_PATH = "/tmp/"
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
 # Size of minibatch
-BATCH_SIZE = 128
+BATCH_SIZE = 3
 
 # Model Configuration
 # Use LSTM or GRU
@@ -83,10 +83,13 @@ RNN_TYPE = 'lstm'
 BIDIRECTIONAL = True
 RNN_LAYERS = 2
 
+# Which model to use: 'baseline' or 'attentive' for now.
+MODEL = 'attentive'
+
 
 def build_baseline(vocab: Vocabulary) -> Model:
     """
-    Builds the Baseline classifier using Glove embeddings and LSTM encoders.
+    Builds the Baseline classifier using Glove embeddings and RNN encoders.
 
     Parameters
     ---------
@@ -112,7 +115,36 @@ def build_baseline(vocab: Vocabulary) -> Model:
     return model
 
 
-def test_load(save_path: str,
+def build_attentive(vocab: Vocabulary) -> Model:
+    """
+    Builds the Attentive classifier using Glove embeddings and RNN encoders.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `AttentiveClassifier` model ready to be trained.
+    """
+    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
+    if RNN_TYPE == 'lstm':
+        encoder_fn = lstm_seq2seq
+    elif RNN_TYPE == 'gru':
+        encoder_fn = gru_seq2seq
+    else:
+        raise ValueError('Invalid RNN type')
+
+    encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
+                         bidirectional=BIDIRECTIONAL)
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = AttentiveClassifier(embeddings, encoder, vocab)
+    return model
+
+
+def test_load(model_class: Type[Model],
+              save_path: str,
               original_prediction: Dict[str, torch.Tensor],
               embeddings: TextFieldEmbedder,
               encoder: Seq2VecEncoder,
@@ -131,7 +163,7 @@ def test_load(save_path: str,
     # Reload vocabulary
     vocab = Vocabulary.from_files(save_path + 'vocabulary')
     # Recreate the model.
-    model = BaselineClassifier(embeddings, encoder, vocab)
+    model = model_class(embeddings, encoder, vocab)
     # Load the state from the file
     with open(save_path + 'model.th', 'rb') as f:
         model.load_state_dict(torch.load(f))
@@ -155,8 +187,18 @@ if __name__ == '__main__':
     # Manual seeding for reproducibility.
     torch.manual_seed(RANDOM_SEED)
 
+    # Which model to use?
+    if MODEL == 'baseline':
+        build_fn = build_baseline
+        model_class: Type[Model] = BaselineClassifier
+    elif MODEL == 'attentive':
+        build_fn = build_attentive
+        model_class = AttentiveClassifier
+    else:
+        raise ValueError('Invalid model name')
+
     # Train and save our model
-    model = train_model(build_baseline, data_path=DATA_PATH,
+    model = train_model(build_fn, data_path=DATA_PATH,
                         save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
                         patience=50, batch_size=BATCH_SIZE,
                         pre_processed_path=PREPROCESSED_PATH)
@@ -182,5 +224,5 @@ if __name__ == '__main__':
 
     cuda_device = 0 if is_cuda(model) else -1
     # Test if we can load the saved model
-    test_load(SAVE_PATH, prediction, model.word_embeddings,
-              model.q_encoder, cuda_device)
+    test_load(model_class, SAVE_PATH, prediction,
+              model.word_embeddings, model.q_encoder, cuda_device)
