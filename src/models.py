@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Type
+from typing import Dict, Optional
 
 import torch
 
@@ -162,17 +162,19 @@ class AttentiveClassifier(Model):
 
     def __init__(self,
                  word_embeddings: TextFieldEmbedder,
-                 encoder: Seq2SeqEncoder,
+                 p_encoder: Seq2SeqEncoder,
+                 q_encoder: Seq2SeqEncoder,
+                 a_encoder: Seq2SeqEncoder,
                  vocab: Vocabulary) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
         self.word_embeddings = word_embeddings
 
         # Our model has different encoders for each of the fields (passage,
-        # answer and question). These could theoretically be different for each
-        # field, but for now we're using the same. Hence, we clone the provided
-        # encoder.
-        self.p_encoder, self.q_encoder, self.a_encoder = util.clone(encoder, 3)
+        # answer and question).
+        self.p_encoder = p_encoder
+        self.q_encoder = q_encoder
+        self.a_encoder = a_encoder
 
         # Attention layers: passage-question, question-self, answer-self
         self.p_q_attn = BilinearAttention(
@@ -189,7 +191,10 @@ class AttentiveClassifier(Model):
             tensor_2_dim=self.a_encoder.get_output_dim(),
             combination='1'
         )
-
+        self.p_a_bilinear = torch.nn.Linear(
+            in_features=self.p_encoder.get_output_dim(),
+            out_features=self.a_encoder.get_output_dim()
+        )
         # We're using a hidden layer to build the output from each encoder.
         # As this can't really change, it's not passed as input.
         # The size has to be the size of concatenating the encoder outputs,
@@ -197,13 +202,14 @@ class AttentiveClassifier(Model):
         # the same, just multiply the first encoder output by 3.
         # The output of the model (which is the output of this layer) has to
         # have size equal to the number of classes.
-        hidden_dim = (self.q_encoder.get_output_dim()  # p_q_attn
-                      + self.q_encoder.get_output_dim()  # q_self_attn
-                      + self.a_encoder.get_output_dim())  # a_self_attn
-        self.hidden2logit = torch.nn.Linear(
-            in_features=hidden_dim,
-            out_features=1
-        )
+        # hidden_dim = (self.q_encoder.get_output_dim()  # p_q_attn
+        #               + self.q_encoder.get_output_dim()  # q_self_attn
+        #               + self.a_encoder.get_output_dim())  # a_self_attn
+        # hidden_dim = self.p_a_bilinear.get_output_dim()
+        # self.hidden2logit = torch.nn.Linear(
+        #     in_features=hidden_dim,
+        #     out_features=1
+        # )
 
         # Categorical (as this is a classification task) accuracy
         self.accuracy = BinaryAccuracy()
@@ -252,18 +258,22 @@ class AttentiveClassifier(Model):
         p_q_attn = self.p_q_attn(q_weighted, p_hiddens, p_mask)
         p_weighted = util.weighted_sum(p_hiddens, p_q_attn)
 
+        encoder_out = self.p_a_bilinear(p_weighted) * a_weighted
+
         # print('After: pq, q, a', p_q_attn.shape, q_attn.shape, a_attn.shape)
         # print('Weighted: p, q, a', p_weighted.shape, q_weighted.shape,
         #       a_weighted.shape)
 
         # We then concatenate the representations from each encoder
-        encoder_out = torch.cat((p_weighted, q_weighted, a_weighted), 1)
+        # encoder_out = torch.cat((p_weighted, q_weighted, a_weighted), 1)
         # print('Out:', encoder_out.shape)
 
         # Finally, we pass each encoded output tensor to the feedforward layer
         # to produce logits corresponding to each class.
-        logits = self.hidden2logit(encoder_out)
-        # We also compute the class with highest likelihood (our prediction)
+        # logits = self.hidden2logit(encoder_out)
+        logits = encoder_out.sum(dim=1).view(-1, 1)
+        # print('Logits:', logits.shape)
+        # # We also compute the class with highest likelihood (our prediction)
         prob = torch.sigmoid(logits)
         output = {"logits": logits, "prob": prob}
 

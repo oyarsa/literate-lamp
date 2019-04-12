@@ -11,7 +11,7 @@ concatenated and fed into a feed-forward layer that output class probabilities.
 This script builds the model, trains it, generates predictions and saves it.
 Then it checks if the saving went correctly.
 """
-from typing import Dict, Type
+from typing import Dict
 import sys
 
 import torch
@@ -144,20 +144,26 @@ def build_attentive(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid RNN type')
 
-    encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
-                         bidirectional=BIDIRECTIONAL)
+    p_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
+                           bidirectional=BIDIRECTIONAL)
+    q_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
+                           bidirectional=BIDIRECTIONAL)
+    a_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
+                           bidirectional=BIDIRECTIONAL)
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = AttentiveClassifier(embeddings, encoder, vocab)
+    model = AttentiveClassifier(
+        embeddings, p_encoder, q_encoder, a_encoder, vocab)
     return model
 
 
-def test_load(model_class: Type[Model],
-              save_path: str,
-              original_prediction: Dict[str, torch.Tensor],
-              embeddings: TextFieldEmbedder,
-              encoder: Seq2VecEncoder,
-              cuda_device: int) -> None:
+def test_attentive_load(save_path: str,
+                        original_prediction: Dict[str, torch.Tensor],
+                        embeddings: TextFieldEmbedder,
+                        p_encoder: Seq2VecEncoder,
+                        q_encoder: Seq2VecEncoder,
+                        a_encoder: Seq2VecEncoder,
+                        cuda_device: int) -> None:
     """
     Test if we can load the model and if its prediction matches the original.
 
@@ -172,7 +178,47 @@ def test_load(model_class: Type[Model],
     # Reload vocabulary
     vocab = Vocabulary.from_files(save_path + 'vocabulary')
     # Recreate the model.
-    model = model_class(embeddings, encoder, vocab)
+    model = AttentiveClassifier(
+        embeddings, p_encoder, q_encoder, a_encoder, vocab)
+    # Load the state from the file
+    with open(save_path + 'model.th', 'rb') as f:
+        model.load_state_dict(torch.load(f))
+    # We've loaded the model. Let's move it to the GPU again if available.
+    if cuda_device > -1:
+        model.cuda(cuda_device)
+
+    # Try predicting again and see if we get the same results (we should).
+    predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
+    passage, question, answer, _ = example_input(1)
+    prediction = predictor.predict(
+        passage=passage,
+        question=question,
+        answer=answer
+    )
+    np.testing.assert_array_almost_equal(
+        original_prediction['logits'], prediction['logits'])
+
+
+def test_baseline_load(save_path: str,
+                       original_prediction: Dict[str, torch.Tensor],
+                       embeddings: TextFieldEmbedder,
+                       encoder: Seq2VecEncoder,
+                       cuda_device: int) -> None:
+    """
+    Test if we can load the model and if its prediction matches the original.
+
+    Parameters
+    ----------
+    save_path : Path to the folder where the model was saved.
+    original_prediction : The prediction from the model for `example_input`
+        before it was saved.  embeddings : The Embedding layer used for the
+        model.  encoder : The Encoder layer used for the model.
+    cuda_device: Device number. -1 if CPU, >= 0 if GPU.
+    """
+    # Reload vocabulary
+    vocab = Vocabulary.from_files(save_path + 'vocabulary')
+    # Recreate the model.
+    model = BaselineClassifier(embeddings, encoder, vocab)
     # Load the state from the file
     with open(save_path + 'model.th', 'rb') as f:
         model.load_state_dict(torch.load(f))
@@ -199,10 +245,8 @@ if __name__ == '__main__':
     # Which model to use?
     if MODEL == 'baseline':
         build_fn = build_baseline
-        model_class: Type[Model] = BaselineClassifier
     elif MODEL == 'attentive':
         build_fn = build_attentive
-        model_class = AttentiveClassifier
     else:
         raise ValueError('Invalid model name')
 
@@ -236,5 +280,12 @@ if __name__ == '__main__':
 
     cuda_device = 0 if is_cuda(model) else -1
     # Test if we can load the saved model
-    test_load(model_class, SAVE_PATH, prediction,
-              model.word_embeddings, model.q_encoder, cuda_device)
+    if MODEL == 'baseline':
+        test_baseline_load(SAVE_PATH, prediction,
+                           model.word_embeddings, model.q_encoder, cuda_device)
+    elif MODEL == 'attentive':
+        test_attentive_load(SAVE_PATH, prediction,
+                            model.word_embeddings, model.p_encoder,
+                            model.q_encoder, model.a_encoder, cuda_device)
+    else:
+        raise ValueError('Invalid model name')
