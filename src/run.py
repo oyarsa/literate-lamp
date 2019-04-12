@@ -23,7 +23,7 @@ from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 from torch.optim import Adamax
 
-from models import BaselineClassifier, AttentiveClassifier
+from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
 from predictor import McScriptPredictor
 from reader import McScriptReader
 from util import (example_input, is_cuda, train_model, glove_embeddings,
@@ -31,6 +31,10 @@ from util import (example_input, is_cuda, train_model, glove_embeddings,
 
 DEFAULT_CONFIG = 'medium'  # Can be: _medium_ , _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
+
+# Which model to use: 'baseline' or 'attentive' for now.
+DEFAULT_MODEL = 'attentive'
+MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
@@ -92,9 +96,6 @@ RNN_TYPE = 'lstm'
 BIDIRECTIONAL = True
 RNN_LAYERS = 2
 
-# Which model to use: 'baseline' or 'attentive' for now.
-MODEL = 'attentive'
-
 
 def build_baseline(vocab: Vocabulary) -> Model:
     """
@@ -121,6 +122,33 @@ def build_baseline(vocab: Vocabulary) -> Model:
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = BaselineClassifier(embeddings, encoder, vocab)
+    return model
+
+
+def build_attentive_reader(vocab: Vocabulary) -> Model:
+    """
+    Builds the Attentive Reader using Glove embeddings and GRU encoders.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `AttentiveClassifier` model ready to be trained.
+    """
+    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
+
+    p_encoder = gru_seq2seq(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
+                            bidirectional=BIDIRECTIONAL)
+    q_encoder = gru_encoder(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
+                            bidirectional=BIDIRECTIONAL)
+    a_encoder = gru_encoder(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
+                            bidirectional=BIDIRECTIONAL)
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = AttentiveReader(
+        embeddings, p_encoder, q_encoder, a_encoder, vocab)
     return model
 
 
@@ -155,6 +183,48 @@ def build_attentive(vocab: Vocabulary) -> Model:
     model = AttentiveClassifier(
         embeddings, p_encoder, q_encoder, a_encoder, vocab)
     return model
+
+
+def test_attentive_reader_load(save_path: str,
+                               original_prediction: Dict[str, torch.Tensor],
+                               embeddings: TextFieldEmbedder,
+                               p_encoder: Seq2VecEncoder,
+                               q_encoder: Seq2VecEncoder,
+                               a_encoder: Seq2VecEncoder,
+                               cuda_device: int) -> None:
+    """
+    Test if we can load the model and if its prediction matches the original.
+
+    Parameters
+    ----------
+    save_path : Path to the folder where the model was saved.
+    original_prediction : The prediction from the model for `example_input`
+        before it was saved.  embeddings : The Embedding layer used for the
+        model.  encoder : The Encoder layer used for the model.
+    cuda_device: Device number. -1 if CPU, >= 0 if GPU.
+    """
+    # Reload vocabulary
+    vocab = Vocabulary.from_files(save_path + 'vocabulary')
+    # Recreate the model.
+    model = AttentiveReader(
+        embeddings, p_encoder, q_encoder, a_encoder, vocab)
+    # Load the state from the file
+    with open(save_path + 'model.th', 'rb') as f:
+        model.load_state_dict(torch.load(f))
+    # We've loaded the model. Let's move it to the GPU again if available.
+    if cuda_device > -1:
+        model.cuda(cuda_device)
+
+    # Try predicting again and see if we get the same results (we should).
+    predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
+    passage, question, answer, _ = example_input(1)
+    prediction = predictor.predict(
+        passage=passage,
+        question=question,
+        answer=answer
+    )
+    np.testing.assert_array_almost_equal(
+        original_prediction['prob'], prediction['prob'])
 
 
 def test_attentive_load(save_path: str,
@@ -247,6 +317,8 @@ if __name__ == '__main__':
         build_fn = build_baseline
     elif MODEL == 'attentive':
         build_fn = build_attentive
+    elif MODEL == 'reader':
+        build_fn = build_attentive_reader
     else:
         raise ValueError('Invalid model name')
 
@@ -287,5 +359,10 @@ if __name__ == '__main__':
         test_attentive_load(SAVE_PATH, prediction,
                             model.word_embeddings, model.p_encoder,
                             model.q_encoder, model.a_encoder, cuda_device)
+    elif MODEL == 'reader':
+        test_attentive_reader_load(SAVE_PATH, prediction,
+                                   model.word_embeddings, model.p_encoder,
+                                   model.q_encoder, model.a_encoder,
+                                   cuda_device)
     else:
         raise ValueError('Invalid model name')
