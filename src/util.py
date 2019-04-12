@@ -87,7 +87,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 batch_size: int = 2,
                 patience: int = 10,
                 num_epochs: int = 1,
-                optimiser: Optional[Optimizer] = None,
+                optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
                 pre_processed_path: Optional[str] = None) -> Model:
     "Train and save our baseline model."
 
@@ -130,8 +130,10 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
 
     # We need an optimiser to train the model. This is simple SGD, to which he
     # pass our model's parameter list, and initialise the learning rate.
-    if optimiser is None:
+    if optimiser_fn is None:
         optimiser = SGD(model.parameters(), lr=0.1)
+    else:
+        optimiser = optimiser_fn(model)
 
     # Our trainer needs an iterator to go through our data. This creates
     # batches, sorting them by the number of tokens in each text field, so we

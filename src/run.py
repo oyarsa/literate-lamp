@@ -21,6 +21,7 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
+from torch.optim import Adamax
 
 from models import BaselineClassifier, AttentiveClassifier
 from predictor import McScriptPredictor
@@ -198,10 +199,13 @@ if __name__ == '__main__':
         raise ValueError('Invalid model name')
 
     # Train and save our model
+    def optimiser(model):
+        return Adamax(model.parameters())
     model = train_model(build_fn, data_path=DATA_PATH,
                         save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
                         patience=50, batch_size=BATCH_SIZE,
-                        pre_processed_path=PREPROCESSED_PATH)
+                        pre_processed_path=PREPROCESSED_PATH,
+                        optimiser_fn=optimiser)
 
     # Create a predictor to run our model and get predictions.
     reader = McScriptReader()
