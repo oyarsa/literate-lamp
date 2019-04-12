@@ -46,6 +46,10 @@ if CONFIG == 'large':
     HIDDEN_DIM = 96
     # Path to save pre-processed input
     PREPROCESSED_PATH = '../External/data.processed.pickle'
+    # Size of minibatch
+    BATCH_SIZE = 128
+    # Number of epochs to train model
+    NUM_EPOCHS = 1000
 elif CONFIG == 'small':
     # Path to our dataset
     DATA_PATH = './data/small.csv'
@@ -57,6 +61,10 @@ elif CONFIG == 'small':
     HIDDEN_DIM = 50
     # Path to save pre-processed input
     PREPROCESSED_PATH = '../External/small.processed.pickle'
+    # Size of minibatch
+    BATCH_SIZE = 3
+    # Number of epochs to train model
+    NUM_EPOCHS = 5
 elif CONFIG == 'medium':
     # Path to our dataset
     DATA_PATH = './data/medium.csv'
@@ -68,15 +76,15 @@ elif CONFIG == 'medium':
     HIDDEN_DIM = 64
     # Path to save pre-processed input
     PREPROCESSED_PATH = '../External/medium.processed.pickle'
+    # Size of minibatch
+    BATCH_SIZE = 32
+    # Number of epochs to train model
+    NUM_EPOCHS = 10
 
-# Number of epochs to train model
-NUM_EPOCHS = 10
 # Path to save the Model and Vocabulary
 SAVE_PATH = "/tmp/"
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
-# Size of minibatch
-BATCH_SIZE = 3
 
 # Model Configuration
 # Use LSTM or GRU
