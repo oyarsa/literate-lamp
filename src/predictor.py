@@ -1,3 +1,5 @@
+from typing import List, TextIO, Optional
+
 import torch
 # Base class for the Model we'll implement. Inherits from `torch.nn.Model`,
 # but compatible with what the rest of the AllenNLP library expects.
@@ -18,6 +20,8 @@ from allennlp.data import Instance
 # This implements the logic for reading a data file and extracting a list of
 # `Instance`s from it.
 from allennlp.data.dataset_readers import DatasetReader
+
+from binary_accuracy import BinaryAccuracy
 
 
 @Predictor.register('mcscript-predictor')
@@ -81,3 +85,52 @@ class AnswerPredictor:
             return 0
         else:
             return 1
+
+
+def score_questions(model: Model,
+                    testset: List[Instance], verbose: bool = False,
+                    output_file: Optional[TextIO] = None,
+                    ) -> float:
+    metric = BinaryAccuracy()
+
+    for i in range(0, len(testset), 2):
+        inst1 = testset[i]
+        inst2 = testset[i+1]
+
+        assert str(inst1['question']) == str(inst2['question']), \
+            'Questions should be equal.\n{}\n----\n{}'.format(
+                inst1['question'], inst2['question'])
+        assert str(inst1['passage']) == str(inst2['passage']), \
+            'Passages should be equal.\n{}\n----\n{}'.format(
+                inst1['passage'], inst2['passage'])
+
+        prediction1 = model.forward_on_instance(inst1)
+        prediction2 = model.forward_on_instance(inst2)
+
+        if inst1['label'] == 1:
+            correct = 0
+        else:
+            correct = 1
+
+        if prediction1['prob'] > prediction2['prob']:
+            predicted = 0
+        else:
+            predicted = 1
+
+        metric(torch.tensor([[float(predicted)]]), torch.tensor([correct]))
+
+        if output_file is not None:
+            if 'passage_id' in inst1:
+                passage_id = inst1['passage_id']
+            else:
+                passage_id = -1
+
+            if 'question_id' in inst1:
+                question_id = inst1['question_id']
+            else:
+                question_id = -1
+
+            print('{},{},{}'.format(passage_id, question_id, predicted),
+                  file=output_file)
+
+    return metric.get_metric()
