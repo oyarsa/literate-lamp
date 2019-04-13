@@ -160,10 +160,12 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Execute training loop.
     trainer.train()
 
+    print()
     print('#'*5, 'EVALUATION', '#'*5)
     metrics = evaluate(model, test_data, iterator, cuda_device, "")
     for key, metric in metrics.items():
         print(key, ':', metric)
+    print()
 
     # To save the model, we need to save the vocabulary and the model weights.
     # Saving weights (model state)

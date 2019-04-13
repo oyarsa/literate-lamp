@@ -24,7 +24,7 @@ from allennlp.data.vocabulary import Vocabulary
 from torch.optim import Adamax
 
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
-from predictor import McScriptPredictor
+from predictor import McScriptPredictor, AnswerPredictor
 from reader import McScriptReader
 from util import (example_input, is_cuda, train_model, glove_embeddings,
                   lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq)
@@ -333,34 +333,41 @@ if __name__ == '__main__':
 
     # Create a predictor to run our model and get predictions.
     reader = McScriptReader()
-    predictor = McScriptPredictor(model, dataset_reader=reader)
-    for index in [0, 1]:
-        print('#'*5, 'EXAMPLE', index, '#'*5)
-        # Execute prediction. Gets output dict from the model.
-        passage, question, answer, label = example_input(index)
-        prediction = predictor.predict(
-            passage=passage,
-            question=question,
-            answer=answer
-        )
-        instance = reader.text_to_instance(passage, question, answer, label)
-        print(instance)
-        # Predicted class
-        prob = prediction['prob']
-        print('\t Predicted:', prob)
-        print()
+    predictor = AnswerPredictor(model, reader, verbose=True)
+
+    print()
+    print('#'*5, 'EXAMPLE',  '#'*5)
+    passage, question, answer1, label1 = example_input(0)
+    _, _, answer2, label2 = example_input(1)
+    prediction = predictor.predict(passage, question, answer1, answer2)
+
+    print('Passage:\n', '\t', passage, sep='')
+    print('Question:\n', '\t', question, sep='')
+    print('Answers:')
+    print('\t1:', answer1)
+    print('\t2:', answer2)
+    print('Prediction:', prediction+1)
+    print('Correct:', 1 if label1 == 1 else 2)
+
+    # Test if we can load the saved model
+    label_predictor = McScriptPredictor(model, reader)
+    passage, question, answer, _ = example_input(1)
+    label_prediction = label_predictor.predict(
+        passage=passage,
+        question=question,
+        answer=answer
+    )
 
     cuda_device = 0 if is_cuda(model) else -1
-    # Test if we can load the saved model
     if MODEL == 'baseline':
-        test_baseline_load(SAVE_PATH, prediction,
+        test_baseline_load(SAVE_PATH, label_prediction,
                            model.word_embeddings, model.q_encoder, cuda_device)
     elif MODEL == 'attentive':
-        test_attentive_load(SAVE_PATH, prediction,
+        test_attentive_load(SAVE_PATH, label_prediction,
                             model.word_embeddings, model.p_encoder,
                             model.q_encoder, model.a_encoder, cuda_device)
     elif MODEL == 'reader':
-        test_attentive_reader_load(SAVE_PATH, prediction,
+        test_attentive_reader_load(SAVE_PATH, label_prediction,
                                    model.word_embeddings, model.p_encoder,
                                    model.q_encoder, model.a_encoder,
                                    cuda_device)
