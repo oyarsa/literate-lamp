@@ -97,7 +97,8 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 patience: int = 10,
                 num_epochs: int = 1,
                 optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
-                pre_processed_path: Optional[str] = None) -> Model:
+                pre_processed_path: Optional[str] = None,
+                grad_norm_clip: float = 10.0) -> Model:
     "Train and save our baseline model."
 
     # We load pre-processed data to save time (we don't need to tokenise or
@@ -164,7 +165,8 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                       validation_dataset=val_data,
                       patience=patience,
                       num_epochs=num_epochs,
-                      cuda_device=cuda_device)
+                      cuda_device=cuda_device,
+                      grad_norm=grad_norm_clip)
 
     # Execute training loop.
     trainer.train()
