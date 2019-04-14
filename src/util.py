@@ -37,7 +37,6 @@ from allennlp.modules.seq2seq_encoders import (
     Seq2SeqEncoder, PytorchSeq2SeqWrapper)
 
 from reader import McScriptReader
-from predictor import score_questions
 
 
 def visualise_model(model: Model) -> None:
@@ -74,18 +73,12 @@ def train_val_test_split(
 ) -> Tuple[List[Instance], List[Instance], List[Instance]]:
 
     train_size = int(train_size * len(dataset))
-    if train_size % 2 == 1:
-        train_size -= 1
-    assert train_size % 2 == 0, 'Splits should be even'
 
     val_size = (len(dataset) - train_size) // 2
-    if val_size % 2 == 1:
-        val_size -= 1
-    assert val_size % 2 == 0, 'Splits should be even'
 
     train_dataset = dataset[:train_size]
     validation_dataset = dataset[train_size:train_size+val_size]
-    test_dataset = dataset[train_size + val_size:train_size + 2*val_size]
+    test_dataset = dataset[train_size + val_size:]
     return train_dataset, validation_dataset, test_dataset
 
 
@@ -151,7 +144,8 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     iterator = BucketIterator(batch_size=batch_size, sorting_keys=[
         ("passage", "num_tokens"),
         ("question", "num_tokens"),
-        ("answer", "num_tokens")])
+        ("answer0", "num_tokens"),
+        ("answer1", "num_tokens")])
     # Our data should be indexed using the vocabulary we learned.
     iterator.index_with(vocab)
 
@@ -177,8 +171,6 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     for key, metric in metrics.items():
         print(key, ':', metric)
     print()
-
-    print('Question score:', score_questions(model, test_data, verbose=True))
 
     # To save the model, we need to save the vocabulary and the model weights.
     # Saving weights (model state)

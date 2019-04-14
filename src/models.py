@@ -23,6 +23,7 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.modules.attention import LinearAttention, BilinearAttention
+from allennlp.training.metrics import CategoricalAccuracy
 
 # Holds the vocabulary, learned from the whole data. Also knows the mapping
 # from the `TokenIndexer`, mapping the `Token` to an index in the vocabulary
@@ -33,8 +34,6 @@ from allennlp.data.vocabulary import Vocabulary
 #   - `get_text_field_mask` masks the inputs according to the padding.
 #   - `clone` creates N copies of a layer.
 from allennlp.nn import util
-
-from binary_accuracy import BinaryAccuracy
 
 
 @Model.register('baseline-classifier')
@@ -73,26 +72,29 @@ class BaselineClassifier(Model):
         # the same, just multiply the first encoder output by 3.
         # The output of the model (which is the output of this layer) has to
         # have size equal to the number of classes.
-        hidden_dim = self.p_encoder.get_output_dim() * 3
+        hidden_dim = self.p_encoder.get_output_dim() * 4
         self.hidden2logit = torch.nn.Linear(
             in_features=hidden_dim,
-            out_features=1
+            out_features=vocab.get_vocab_size('label')
         )
 
         # Categorical (as this is a classification task) accuracy
-        self.accuracy = BinaryAccuracy()
+        self.accuracy = CategoricalAccuracy()
         # CrossEntropyLoss is a combinational of LogSoftmax and
         # Negative Log Likelihood. We won't directly use Softmax in training.
-        self.loss = torch.nn.BCEWithLogitsLoss()
+        self.loss = torch.nn.CrossEntropyLoss()
 
     # This is the computation bit of the model. The arguments of this function
     # are the fields from the `Instance` we created, as that's what's going to
     # be passed to this. We also have the optional `label`, which is only
     # available at training time, used to calculate the loss.
     def forward(self,
+                passage_id: Dict[str, torch.Tensor],
+                question_id: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
-                answer: Dict[str, torch.Tensor],
+                answer0: Dict[str, torch.Tensor],
+                answer1: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -101,32 +103,36 @@ class BaselineClassifier(Model):
         # padding.
         p_mask = util.get_text_field_mask(passage)
         q_mask = util.get_text_field_mask(question)
-        a_mask = util.get_text_field_mask(answer)
+        a0_mask = util.get_text_field_mask(answer0)
+        a1_mask = util.get_text_field_mask(answer1)
 
         # We create the embeddings from the input text
         p_emb = self.word_embeddings(passage)
         q_emb = self.word_embeddings(question)
-        a_emb = self.word_embeddings(answer)
+        a0_emb = self.word_embeddings(answer0)
+        a1_emb = self.word_embeddings(answer1)
         # Then we use those embeddings (along with the masks) as inputs for
         # our encoders
         p_enc_out = self.p_encoder(p_emb, p_mask)
         q_enc_out = self.q_encoder(q_emb, q_mask)
-        a_enc_out = self.a_encoder(a_emb, a_mask)
+        a0_enc_out = self.a_encoder(a0_emb, a0_mask)
+        a1_enc_out = self.a_encoder(a1_emb, a1_mask)
 
         # We then concatenate the representations from each encoder
-        encoder_out = torch.cat((p_enc_out, q_enc_out, a_enc_out), 1)
+        encoder_out = torch.cat(
+            (p_enc_out, q_enc_out, a0_enc_out, a1_enc_out), 1)
         # Finally, we pass each encoded output tensor to the feedforward layer
         # to produce logits corresponding to each class.
         logits = self.hidden2logit(encoder_out)
         # We also compute the class with highest likelihood (our prediction)
-        prob = torch.sigmoid(logits)
+        prob = torch.softmax(logits, dim=-1)
         output = {"logits": logits, "prob": prob}
 
         # Labels are optional. If they're present, we calculate the accuracy
         # and the loss function.
         if label is not None:
             self.accuracy(prob, label)
-            output["loss"] = self.loss(logits, label.float().view(-1, 1))
+            output["loss"] = self.loss(logits, label)
 
         # The output is the dict we've been building, with the logits, loss
         # and the prediction.
@@ -212,19 +218,22 @@ class AttentiveClassifier(Model):
         # )
 
         # Categorical (as this is a classification task) accuracy
-        self.accuracy = BinaryAccuracy()
+        self.accuracy = CategoricalAccuracy()
         # CrossEntropyLoss is a combinational of LogSoftmax and
         # Negative Log Likelihood. We won't directly use Softmax in training.
-        self.loss = torch.nn.BCEWithLogitsLoss()
+        self.loss = torch.nn.CrossEntropyLoss()
 
     # This is the computation bit of the model. The arguments of this function
     # are the fields from the `Instance` we created, as that's what's going to
     # be passed to this. We also have the optional `label`, which is only
     # available at training time, used to calculate the loss.
     def forward(self,
+                passage_id: Dict[str, torch.Tensor],
+                question_id: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
-                answer: Dict[str, torch.Tensor],
+                answer0: Dict[str, torch.Tensor],
+                answer1: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -233,32 +242,38 @@ class AttentiveClassifier(Model):
         # padding.
         p_mask = util.get_text_field_mask(passage)
         q_mask = util.get_text_field_mask(question)
-        a_mask = util.get_text_field_mask(answer)
+        a0_mask = util.get_text_field_mask(answer0)
+        a1_mask = util.get_text_field_mask(answer1)
 
         # We create the embeddings from the input text
         p_emb = self.word_embeddings(passage)
         q_emb = self.word_embeddings(question)
-        a_emb = self.word_embeddings(answer)
+        a0_emb = self.word_embeddings(answer0)
+        a1_emb = self.word_embeddings(answer1)
         # Then we use those embeddings (along with the masks) as inputs for
         # our encoders
         p_hiddens = self.p_encoder(p_emb, p_mask)
         q_hiddens = self.q_encoder(q_emb, q_mask)
-        a_hiddens = self.a_encoder(a_emb, a_mask)
+        a0_hiddens = self.a_encoder(a0_emb, a0_mask)
+        a1_hiddens = self.a_encoder(a1_emb, a1_mask)
 
         # print('Hiddens: p, q, a', p_hiddens.shape,
         #       q_hiddens.shape, q_hiddens.shape)
         # print('Masks: p, q, a', p_mask.shape, q_mask.shape, a_mask.shape)
 
         q_attn = self.q_self_attn(q_hiddens, q_hiddens, q_mask)
-        a_attn = self.a_self_attn(a_hiddens, a_hiddens, a_mask)
+        a0_attn = self.a_self_attn(a0_hiddens, a0_hiddens, a0_mask)
+        a1_attn = self.a_self_attn(a1_hiddens, a1_hiddens, a1_mask)
 
         q_weighted = util.weighted_sum(q_hiddens, q_attn)
-        a_weighted = util.weighted_sum(a_hiddens, a_attn)
+        a0_weighted = util.weighted_sum(a0_hiddens, a0_attn)
+        a1_weighted = util.weighted_sum(a1_hiddens, a1_attn)
 
         p_q_attn = self.p_q_attn(q_weighted, p_hiddens, p_mask)
         p_weighted = util.weighted_sum(p_hiddens, p_q_attn)
 
-        encoder_out = self.p_a_bilinear(p_weighted) * a_weighted
+        out_0 = (self.p_a_bilinear(p_weighted) * a0_weighted).sum(dim=1)
+        out_1 = (self.p_a_bilinear(p_weighted) * a1_weighted).sum(dim=1)
 
         # print('After: pq, q, a', p_q_attn.shape, q_attn.shape, a_attn.shape)
         # print('Weighted: p, q, a', p_weighted.shape, q_weighted.shape,
@@ -271,17 +286,17 @@ class AttentiveClassifier(Model):
         # Finally, we pass each encoded output tensor to the feedforward layer
         # to produce logits corresponding to each class.
         # logits = self.hidden2logit(encoder_out)
-        logits = encoder_out.sum(dim=1).view(-1, 1)
+        logits = torch.stack((out_0, out_1), dim=1)
         # print('Logits:', logits.shape)
         # # We also compute the class with highest likelihood (our prediction)
-        prob = torch.sigmoid(logits)
+        prob = torch.softmax(logits, dim=-1)
         output = {"logits": logits, "prob": prob}
 
         # Labels are optional. If they're present, we calculate the accuracy
         # and the loss function.
         if label is not None:
             self.accuracy(prob, label)
-            output["loss"] = self.loss(logits, label.float().view(-1, 1))
+            output["loss"] = self.loss(logits, label)
 
         # The output is the dict we've been building, with the logits, loss
         # and the prediction.
@@ -342,19 +357,22 @@ class AttentiveReader(Model):
         )
 
         # Categorical (as this is a classification task) accuracy
-        self.accuracy = BinaryAccuracy()
+        self.accuracy = CategoricalAccuracy()
         # CrossEntropyLoss is a combinational of LogSoftmax and
         # Negative Log Likelihood. We won't directly use Softmax in training.
-        self.loss = torch.nn.BCELoss()
+        self.loss = torch.nn.CrossEntropyLoss()
 
     # This is the computation bit of the model. The arguments of this function
     # are the fields from the `Instance` we created, as that's what's going to
     # be passed to this. We also have the optional `label`, which is only
     # available at training time, used to calculate the loss.
     def forward(self,
+                passage_id: Dict[str, torch.Tensor],
+                question_id: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
-                answer: Dict[str, torch.Tensor],
+                answer0: Dict[str, torch.Tensor],
+                answer1: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -363,17 +381,20 @@ class AttentiveReader(Model):
         # padding.
         p_mask = util.get_text_field_mask(passage)
         q_mask = util.get_text_field_mask(question)
-        a_mask = util.get_text_field_mask(answer)
+        a0_mask = util.get_text_field_mask(answer0)
+        a1_mask = util.get_text_field_mask(answer1)
 
         # We create the embeddings from the input text
         p_emb = self.word_embeddings(passage)
         q_emb = self.word_embeddings(question)
-        a_emb = self.word_embeddings(answer)
+        a0_emb = self.word_embeddings(answer0)
+        a1_emb = self.word_embeddings(answer1)
         # Then we use those embeddings (along with the masks) as inputs for
         # our encoders
         p_hiddens = self.p_encoder(p_emb, p_mask)
         q_hidden = self.q_encoder(q_emb, q_mask)
-        a_hidden = self.a_encoder(a_emb, a_mask)
+        a0_hidden = self.a_encoder(a0_emb, a0_mask)
+        a1_hidden = self.a_encoder(a1_emb, a1_mask)
 
         # print('Hiddens: p, q, a', p_hiddens.shape,
         #       q_hiddens.shape, q_hiddens.shape)
@@ -382,7 +403,8 @@ class AttentiveReader(Model):
         p_q_attn = self.p_q_attn(q_hidden, p_hiddens, p_mask)
         p_weighted = util.weighted_sum(p_hiddens, p_q_attn)
 
-        encoder_out = self.p_a_bilinear(p_weighted) * a_hidden
+        out0 = (self.p_a_bilinear(p_weighted) * a0_hidden).sum(dim=1)
+        out1 = (self.p_a_bilinear(p_weighted) * a1_hidden).sum(dim=1)
 
         # print('After: pq, q, a', p_q_attn.shape, q_attn.shape, a_attn.shape)
         # print('Weighted: p, q, a', p_weighted.shape, q_weighted.shape,
@@ -395,17 +417,16 @@ class AttentiveReader(Model):
         # Finally, we pass each encoded output tensor to the feedforward layer
         # to produce logits corresponding to each class.
         # logits = self.hidden2logit(encoder_out)
-        logits = encoder_out.sum(dim=1).view(-1, 1)
-        # print('Logits:', logits.shape)
-        # # We also compute the class with highest likelihood (our prediction)
-        prob = torch.sigmoid(logits)
+        logits = torch.stack((out0, out1), dim=1)
+        # We also compute the class with highest likelihood (our prediction)
+        prob = torch.softmax(logits, dim=-1)
         output = {"prob": prob}
 
         # Labels are optional. If they're present, we calculate the accuracy
         # and the loss function.
         if label is not None:
             self.accuracy(prob, label)
-            output["loss"] = self.loss(prob, label.float().view(-1, 1))
+            output["loss"] = self.loss(prob, label)
 
         # The output is the dict we've been building, with the logits, loss
         # and the prediction.

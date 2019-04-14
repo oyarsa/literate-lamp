@@ -1,0 +1,2578 @@
+{
+    "data": {
+        "instance": [
+            {
+                "@id": "0",
+                "@scenario": "heating food on kitchen gas",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "This past weekend, my family made so much food that there was still plenty of it going into the week. Knowing this, we chose not to make any new food, because we could still eat the leftover food from the weekend. All we would need to do was warm it up on the stove top. The stove is a gas stove, which produces a flame that, in my opinion, cooks food much better than an electric stove. On Monday after getting home from work, rather than making a new meal, my mom took some of the food that we had saved from the weekend and put it into a pan, and put that pan on the stove. She turned the gas on until the burner ignited, and left the heat on until she felt that the food was warm enough. When she ate it, she swore it was as good as it was when it was freshly made."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Where were they heating the food?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "On an electric stove.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "On the stove/home",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "How many people were making the food?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Just one.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "About 5.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Was it leftover from home or takeout?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Takeout",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "From home",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "What is dangerous about this?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "It creates a flame to cook with and if you aren't careful, it could start a fire in your home.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "nothing",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "Is it hard using a gas stove?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Yes it is.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "No.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "How did they like the food?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "hated it",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "They loved it.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Why do you need to have a flame to cook?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "to burn it up",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "to have the heat",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "Were they heating leftovers?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Yes they were reheating leftovers.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "No,it was fresh.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "8",
+                            "@text": "Who was cooking in the kitchen?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Friend",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Mother.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "9",
+                            "@text": "Who is making the food?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "The narrator's mother.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "My father",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "10",
+                            "@text": "What type of food were they cooking?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Leftovers",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Frozen dinner",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "11",
+                            "@text": "How did the food taste?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Terrible",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Delicious.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "1",
+                "@scenario": "borrowing a book from the library",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "The other day , I finished reading the fourth book of the Game of Thrones Series . With the new season about to start on HBO , I wanted to get ahead of the show and continue reading the books in the series -- but I did not want to pay for the next book . Remembering that I had a library card somewhere in my desk at home , I went home and found it . I went to the library and after browsing the fiction section , I finally found the fifth book in the series and brought it to the check out desk of the library . I handed over my information and library card and checked out the book , getting two weeks to read it for free . I 'm now a quarter of the way through the book and enjoy every page of it while loving the fact that my taxes paid for me to read this and I had to pay no extra money . "
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Have they read anything else by that book's author?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Yes, the first 4 Game of Throne books",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Did they have outstanding fines on their library card?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "yes, five dollars",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "no because they didn't pay any money when checking out",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Why did they borrow a book?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "They wanted to try out a new series they'd never read",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "They wanted to read it before the new season started",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "What is the genre of the book?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Fantasy/Fiction",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "non-fiction",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "What happens if they don't return the book in time?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "nothing",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Receive a fine",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Did they need anything to borrow the book?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "A library card",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "money",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "When do they need to return the book?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "In two weeks",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "2 months",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "Did they have to pay anything to borrow the book?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "no, it was free",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "yes, thirty dollars",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "8",
+                            "@text": "When did they go to the library?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "After finding their library card",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Before they had read any books in the series",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "9",
+                            "@text": "When must they return the book?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "In 2 weeks",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "1 month",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "2",
+                "@scenario": "changing batteries in an alarm clock",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "One evening, I noticed my alarm clock had stopped working, because I had just checked the clock in the living room, and my alarm clock showed a different time. I knew I had to change the batteries. This is important as I need it to wake me up in time for work. I grabbed the clock, turned it upside down and located the slot for the batteries. I lifted the plastic cover and checked what batteries it required: two AA-sized batteries. These are quite common, and I got them from the kitchen drawer. I removed the old batteries by lifting them up, then I placed the new batteries in the same position, making sure the plus-side of the batteries (the little tip) were in the right direction, as it is usually engraved on the plastic. I closed the lid carefully, and the clock started ticking again. I adjusted the time with the help of my watch, and went to bed, knowing I would be woken up by my alarm at the right time the next morning."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Why did they throw away the old batteries?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "They were no longer useful",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "The batteries were the wrong size.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "what time of day did they change it?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Evening",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "In the morning",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Why did they need to reset the clock?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "It is broken.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "The batteries had died and the clock was wrong",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "What size of batteries were they?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "AA-sized batteries",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "C",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "How did they know it was time to change the batteries?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "The alarm clocked had stopped.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Clock alarm went off",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Why did they need to change the batteries?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "The clock stopped working indicating that the batteries may have died.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Because it seemed like time to change it",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Who helped to change the batteries?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "No one helped",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Called customer service on the phone",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "What did they do to the clock after they put in the new batteries?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Turned the clock off",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Close the lid and adjust the time.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "8",
+                            "@text": "For how long did the clock need batteries?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Two weeks",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "less than a day",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "9",
+                            "@text": "Who changed the batteries in the clock?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "The speaker",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "The person who borrowed the clock from someone else.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "10",
+                            "@text": "How did they dispose of the old batteries?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Used them in another device",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "They threw them away",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "11",
+                            "@text": "why did the clock need new batteries?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "It was a fire alarm.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Because the batteries were dead",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "12",
+                            "@text": "Was changing the batteries difficult?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "No",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "3",
+                "@scenario": "going to the sauna",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "I was nervous about a date coming up with a friend later in the week. I wondered what could help me relax and feel better. I thought that a nice trip to the sauna would be good. The thought of the warm steam making me feel cozy seemed good. I drove myself to the closest sauna and payed to go inside. I went into a room first to change clothes. I didn't want any of the clothes I was wearing to get wet and steamy, so I brought a swimsuit to change into. The steam works best when it touches your skin, so you want to wear a swimsuit or a towel. I moved into the sauna room and sat on a bench in the warm steam. It was very relaxing to be in there, like a hot bath. After a while, I left and changed back into my regular clothes. I felt much better and was not as nervous after visiting the sauna."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "How hot was the sauna?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Cold",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "hot enough for a warm steam",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "When did they enter the sauna?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "after changing into swimming suit",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "After showering.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Did they enjoy the sauna?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "yes, they felt much better afterwards",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Not really.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "did they have payment up front?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no, they paid afterwards",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes, they paid to enter",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "Who went to the sauna?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Her friend.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "the author",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "How hot is it in there?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "hot enough for a warm steam",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "really cold",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Why did they go to the sauna?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "To try to relax",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "To have fun.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "Where do you go to check in?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "At the front desk.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "In the sauna.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "8",
+                            "@text": "What did they do before they got in the sauna?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "changed into a bathing suit",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "took a bath",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "4",
+                "@scenario": "visiting a museum",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "I was excited to go to the museum and learn more about history. I waited in line with the other people wanting to go in, and when it was my turn I paid for my ticket and then went inside. There was so much to see! There was a room about different kinds of rocks and where they came from. Another part of the museum had skeletons from all different kinds of old animals--dinosaurs, a sabretooth tiger, and even a mammoth! The plaques next to them told me all about when and where the animals lived. While I was at the museum, I moved from one room to the next and took my time to read as much as I could so I could really enjoy the trip. I spent all day learning about natural history, and there were still things I didn't get to see so I planned to return to the museum as soon as I could. It was a wonderful day!"
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "How many people were with them?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "three people",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "none",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "All in all, would they go back to the museum ?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no, it was terribly boring",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes, because there were more things to see",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Did they like the museum?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "yes, they learned so much",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "no, it was so boring",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Who went to the museum?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "the entire family",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "narrator",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "5",
+                "@scenario": "making breakfast",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "Time to make breakfast! I'll get the coffee started because it will be the perfect temperature by the time all the food is done. I grind the beans and put filtered water into the electric kettle and get it started. I need to put a filter in the Chemex and pour in my ground coffee beans. Meanwhile, I'll gather my ingredients from the fridge. I want eggs, butter, English Muffins, and Canadian bacon. A breakfast sandwich sounds good. I'll get the English muffins toasted in the toaster. My water just finished boiling, so it's time to pour that in the Chemex over the ground beans. I need to get the frying pan and put a little butter in there and turn on the pan. I grab and egg and scramble with a fork. My pan is heating and the butter is melting I put my egg in and swirl it to cover the bottom of the pan. While I wait for my eggs to set up, I'm going to microwave my Canadian bacon. Back to the eggs, they are almost set so I'll fold them into a half circle and flip. Grab my toasted English muffins on a plate. Layer my Canadian bacon and fold my freshly cooked eggs on top. I'll pour myself a cup of coffee and now I can sit down for breakfast. Looks good."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Did they use plates?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "no",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Where did they cook?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "In their kitchen",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "bathroom",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Where did the people eat breakfast?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "kitchen",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Restaurant",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "What did they drink with breakfast?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "orange juice",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "coffee",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "6",
+                "@scenario": "planting a tree",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "Before you plant a tree , you must contact the utility company . They will come to your property and mark out utility lines . Without doing this , you may dig down and hit a line , which can be lethal ! Once you know where to dig , select what type of tree you want . Take things into consideration such as how much sun it gets , what zone you are in , and how quickly you want it to grow . Dig a hole large enough for the tree and roots . Place the tree in the hole and then fill the hole back up with dirt . Many small trees will need support until they are bigger . This will ensure they grow tall and straight . It is crucial to keep the tree watered ! It will need a lot of water at first . Mulch is helpful to keep the soil moist . It 's also important to wait until the threat of a frost has passed or is not in the near future . Giving care to your new tree will ensure that it will grow big and strong ! "
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Will they fertilize the tree?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Why are trees important?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "create O2",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "because they are green",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Was the tree watered after planted?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no water",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Were they saplings or older trees?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "old trees",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "saplings",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "What did planting the tree involve?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Calling the utility company, digging a hole, and making sure it grows healthy",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "hiring someone to plant it",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "How did they dig the hole to plant the tree?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "with a shovel",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "with a bulldozer",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Would it have been easier to plant the tree if they had help?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "no",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "7",
+                "@scenario": "making a bonfire",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "I was at camp and getting ready to lead a workshop teaching cooking on a campfire. Luckily it had not rained for a few days so all the wood in the area was dry. I had some large logs that were sitting by the fire ring so I went searching for some smaller sticks and kindling. I built a log cabin structure out of the larger logs. Inside the log cabin structure I put some very small tinder as well as some balled up pieces of newspaper. I lit the newspaper and continued adding very small pieces of wood to it. When the small pieces started catching I started adding larger twigs. As smaller pieces started catching on fire I kept added larger and larger twigs and sticks until the big logs started burning. I continued to add sticks so I could get a nice sized fire burning that would create lots of hot coals so we could cook on them."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "What did they use to make the bonfire?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "wood logs",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Logs,bricks,leaves.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "How long did it take to build the fire?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "all day",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "less than an hour",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "did they have enough firewood",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "No",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Who started the fire?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "the author",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Their cousin",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "What did they use for fuel?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Wood.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "gasoline",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Did they cook over the fire?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes once there were a lot of hot coals",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Why were they having a bonfire?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "to warm up",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "they were teaching about cooking with a campfire",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "why did they put the fire out",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "They canceled the class",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "To make sure the fire didn't spread.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "8",
+                            "@text": "When did the fire go out?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "After they were done.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "when it rained",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "9",
+                            "@text": "who lit the fire",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "The friend.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "the teacher",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "8",
+                "@scenario": "making toasted bread",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "First I go to the store and buy bread.  For the freshest bread, I get a whole loaf and bring it home to slice it there.  I use a bread knife which makes cutting it easier, and cut off just what I need for the toast, leaving the rest whole.  I wrap and store the remaining loaf for next time.  Then I get the toaster out of the cabinet and place it on the counter, then plug it in. I choose the darkness of the bread - not too dark, somewhere in the middle for flavor and safety - then indicate the slice thickness using the knob on the toaster. I place the first two slices of bread in the slots and press down on the big button, which causes the bread to drop in and the toaster to get very hot. The timer counts down and I pay attention to it carefully, making sure the toast pops up and the toaster turns off.  I unplug it immediately but let it cool down before putting it away as it is very hot.  I butter the bread using a knife and then put away the knives and butter."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Did they cut up the toast before eating it?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "No",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Where did they make the toast?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "In their kitchen.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "the bedroom",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Who is toasting the bread?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Their wife is toasting it.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "the narrator",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "What setting did they use to toast the bread?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "They set the knob to dark.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "medium",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "How many pieces of bread can you put in the toaster?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "one",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "two",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Where was the toaster stored before making the toast?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "In the cabinet.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "On the counter",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "What kind of bread do they like to put in the toaster?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Sliced fresh bread.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Wonder bread",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "Did the toast come out too dark?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "No, the person choose the darkness of the toast before putting it in the toaster.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Yes, the toast was burned and had to be thrown away.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "9",
+                "@scenario": "going on a train",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "I like to ride on trains because you can see lots of countryside without having to worry about driving . One time , when I lived in Alaska , I rode on a train from Fairbanks to Denali park . Just like with all train rides , I had to buy a ticket first and then I had to stand in line to wait for the train to stop at the station . Then I climbed onto the train and picked a seat . The different places you can sit in a train are called cars . You do n't have assigned seats like on a plane and the seats are wide for more than one person to sit . So , I picked one in a car in the back and sat right beside the window . After the train started moving , a train attendant walked through to check our tickets and then I stood up to walk around . You can walk from car to car on a train and can even go out of the back of the very last car and stand outside , so I did that . It was very fun to be standing outside while the train was moving and I hung onto the railing to be sure I was safe . Then I went back inside and went to the dining car where I bought a sandwich and water . After I got back to my seat , I ate and watched the scenery through the window . I saw lots of interesting things including a moose and we arrived at Denali right after that . "
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Were they traveling by themselves?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Was there food offered on the train?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Yes, there was a dining car.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "No, only at the stations.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "10",
+                "@scenario": "checking in at an airport",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "I showed up at the airport a few hours before my plane was scheduled to take off. I had all of my bags packed and my identification ready. I found my airline and made sure that I was in the right terminal. I checked my bags and kept my carry on bag with me. I printed off my boarding pass and went through security. I put all of my metal objects in a basket to leave with the security agent. I took off my jacket and went through a metal detector. Then, I got all the items back from the TSA agent. I checked my boarding pass to see what gate I needed to be at to get on my place. I went to my gate, so I would be waiting in the right place. Since I had extra time, I got a coffee from one of the vending areas and read a magazine until it was time to get on my plane."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "How long did it take to get through security?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Less than a day",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "an hour",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Did they have a carry on bag?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No, because drugs were being smuggled",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "What are they wearing for the flight?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "jacket",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "shorts",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Did everything go smoothly at check in?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No, speaker was detained for not wearing pants",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "11",
+                "@scenario": "mailing a letter",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "I miss my best friend Shelly and so I decided to send her a letter telling her all about my trip to my sister\u2019s house in Alaska, and to also tell her that I hoped she was well. I finished writing my letter and as I went to find a stamp and an envelope I needed to send it, I had found that I did not have any. I went to a store that sells cards and envelopes, and chose a box of pretty purple-colored envelopes to mail my letter in.  After that I went to the post office to purchase some stamps that are like small stickers, and chose a heart design that I liked. I only needed one to send the letter but I bought more so that I could send another letter soon if I wanted to. When I got home I filled out the envelope with Shelly\u2019s name and address in the middle, and wrote my sister\u2019s address in the top left corner of the envelope. I stuck the stamp with the heart design on it in the upper right corner. Now it was ready to be put in the mail and she will receive it in about one week. I drove to the post office and put my letter in the outgoing mail slot. Shelly will be so surprised!"
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "When do they expect the letter to arrive to its destination?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "One week",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "One day",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "How did the envelope get stamped?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "The postman put a stamp on.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "by the sender",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Who was the letter sent to?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "the president",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Their friend Shelley",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "How did they get a stamp for the letter?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "At the post office.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Store.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "What is in the letter?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Information about their trip to Alaska",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Details about their Canada trip.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Why are they mailing the letter?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "to tell best friend about a trip",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "to get paid",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Why did they write the letter?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "They missed their friend.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "They asked the friend to come there.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "12",
+                "@scenario": "going on a train",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "I needed to visit my Grandma upstate , so I decided to take a train . I purchased my tickets online and printed out a receipt . I packed a bag . The next day , I headed over to the train station and checked in at the ticket counter . I was early , so I picked a spot on a bench and sat down . After a short while , everybody lined up to get on the train . A train worker checked all of our tickets . I entered the train and picked out a seat for myself . Then I loaded my bag overhead . Once everyone was on the train , our conductor announced that we were leaving the station . Another train worker came around and took everyone 's tickets from them . I spent the ride looking at scenery out the window and reading mostly . Eventually , the train conductor announced my stop . I retrieved my bag from the overhead compartment , and headed downstairs and off of the train . "
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Why did they take the train?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "To visit Grandma who lived upstate.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "For work",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Where did they travel to?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Grandma's house upstate.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Home",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Did they sleep on the train?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "No",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "How long did they wait at the station?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "a long time",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "a short while",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "How long did they wait for the train?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Thirty minutes.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "a short time",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "How much luggage did they bring on the train?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "One bag was brought.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "a bunch of luggage",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "13",
+                "@scenario": "ordering a pizza",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "One afternoon when I was visiting with friends, we suddenly got very hungry!  So, we decided to order a pizza.  I looked in the telephone book and found several pizza restaurants that would deliver.  We all talked it over and settled on a pizza from Domino's.  Then we discussed what we would like on our pizza and what size we should get.  I called the number and gave our order to the person who answered.  We ordered a large pepperoni and onion pizza with extra cheese.  He told me that our pizza would cost $15.00.  I said that would be fine and asked if the pizza could be delivered.  He said, \"yes\" and asked for my address.  I then gave him my name, address, and phone number.  He told me that our pizza would be delivered in 30 minutes.  When the delivery boy arrived, we paid for our pizza and included a $2.00 tip.  Then we enjoyed eating our pizza!"
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "When will it be here?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "It took an hour.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "It took 30 minutes.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Who ordered the pizza?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "The narrator",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "The dog.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Did they order any other entrees?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "No",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Where did they order it?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Pizza Hut",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "from Domino's",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "Would they order the same thing again?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes, it was good",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Did they use a coupon?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "No",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "How long did they have to wait for the meal?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "30 minutes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "15 minutes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "Which restaurant did they order the pizza from?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Domino's",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Pizza Hut",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "8",
+                            "@text": "What door did the pizza get delivered to?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "it didn't say.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "The front door",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "9",
+                            "@text": "How much of a tip was given?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "$5.00",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "$2.00",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "14",
+                "@scenario": "going grocery shopping",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "The previous night and this morning before work I noticed I was missing a lot of necessary ingredients for my future meals . I planned out a trip to the grocery store immediately after work . After I finished working I drove over to the store . It was very crowded but not too hard to find a parking spot . Once inside the store , I grabbed the nearest shopping cart and smiled as one of the grocery workers welcomed me in . Once inside and out of everyone 's way , I thought about what I needed . Since I did n't have a list written down , it took me a few minutes . Once I came up with the list in my head , I started to map out a route in my head that would take the least amount of time for me to follow in the store . First , I picked up my deli . They offered me some free samples of the meat I asked for . Then I picked up my bread which was right nearby . At the back wall of the store I found the meat I was going to cook tonight . After that , I grabbed a few extra items that I thought might also be nice later this week while heading towards checkout . Luckily , there was n't a line and this was done quickly . I paid with my debit card and left with all my groceries in a cart , packed them into my car , and headed home . "
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Did they get meat?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "No.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "How did they pay for their groceries?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "They used a debit card.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "They used cash.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "What did they do when they had their groceries?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Packed them into their car and drove home",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Ate their groceries in the car",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "When did they arrive?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "on the way to work",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "After work.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "Did they have to ask for help?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "No",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            }
+        ],
+        "#text": "\n  "
+    }
+}

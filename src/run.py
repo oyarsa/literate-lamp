@@ -24,7 +24,7 @@ from allennlp.data.vocabulary import Vocabulary
 from torch.optim import Adamax
 
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
-from predictor import McScriptPredictor, AnswerPredictor
+from predictor import McScriptPredictor
 from reader import McScriptReader
 from util import (example_input, is_cuda, train_model, glove_embeddings,
                   lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq)
@@ -41,7 +41,7 @@ MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 # always going to be.
 if CONFIG == 'large':
     # Path to our dataset
-    DATA_PATH = './data/data.csv'
+    DATA_PATH = './data/mcdev-train.json'
     # Path to our embeddings
     GLOVE_PATH = '../External/glove.840B.300d.txt'
     # Size of our embeddings
@@ -56,7 +56,7 @@ if CONFIG == 'large':
     NUM_EPOCHS = 1000
 elif CONFIG == 'small':
     # Path to our dataset
-    DATA_PATH = './data/small.csv'
+    DATA_PATH = './data/small.json'
     # Path to our embeddings
     GLOVE_PATH = '../External/glove.6B.50d.txt'
     # Size of our embeddings
@@ -71,7 +71,7 @@ elif CONFIG == 'small':
     NUM_EPOCHS = 5
 elif CONFIG == 'medium':
     # Path to our dataset
-    DATA_PATH = './data/medium.csv'
+    DATA_PATH = './data/mcdev-data.json'
     # Path to our embeddings
     GLOVE_PATH = '../External/glove.6B.100d.txt'
     # Size of our embeddings
@@ -217,11 +217,15 @@ def test_attentive_reader_load(save_path: str,
 
     # Try predicting again and see if we get the same results (we should).
     predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
-    passage, question, answer, _ = example_input(1)
+    passage, question, answer0, _ = example_input(0)
+    _, _, answer1, _ = example_input(1)
     prediction = predictor.predict(
+        passage_id="",
+        question_id="",
         passage=passage,
         question=question,
-        answer=answer
+        answer0=answer0,
+        answer1=answer1
     )
     np.testing.assert_array_almost_equal(
         original_prediction['prob'], prediction['prob'])
@@ -259,11 +263,15 @@ def test_attentive_load(save_path: str,
 
     # Try predicting again and see if we get the same results (we should).
     predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
-    passage, question, answer, _ = example_input(1)
+    passage, question, answer0, _ = example_input(0)
+    _, _, answer1, _ = example_input(1)
     prediction = predictor.predict(
+        passage_id="",
+        question_id="",
         passage=passage,
         question=question,
-        answer=answer
+        answer0=answer0,
+        answer1=answer1
     )
     np.testing.assert_array_almost_equal(
         original_prediction['logits'], prediction['logits'])
@@ -298,20 +306,22 @@ def test_baseline_load(save_path: str,
 
     # Try predicting again and see if we get the same results (we should).
     predictor = McScriptPredictor(model, dataset_reader=McScriptReader())
-    passage, question, answer, _ = example_input(1)
+    passage, question, answer0, _ = example_input(0)
+
+    _, _, answer1, _ = example_input(1)
     prediction = predictor.predict(
+        passage_id="",
+        question_id="",
         passage=passage,
         question=question,
-        answer=answer
+        answer0=answer0,
+        answer1=answer1
     )
     np.testing.assert_array_almost_equal(
         original_prediction['logits'], prediction['logits'])
 
 
-if __name__ == '__main__':
-    # Manual seeding for reproducibility.
-    torch.manual_seed(RANDOM_SEED)
-
+def run_model():
     # Which model to use?
     if MODEL == 'baseline':
         build_fn = build_baseline
@@ -333,13 +343,14 @@ if __name__ == '__main__':
 
     # Create a predictor to run our model and get predictions.
     reader = McScriptReader()
-    predictor = AnswerPredictor(model, reader, verbose=True)
+    predictor = McScriptPredictor(model, reader)
 
     print()
     print('#'*5, 'EXAMPLE',  '#'*5)
     passage, question, answer1, label1 = example_input(0)
     _, _, answer2, label2 = example_input(1)
-    prediction = predictor.predict(passage, question, answer1, answer2)
+    result = predictor.predict("", "", passage, question, answer1, answer2)
+    prediction = np.argmax(result['prob'])
 
     print('Passage:\n', '\t', passage, sep='')
     print('Question:\n', '\t', question, sep='')
@@ -350,26 +361,25 @@ if __name__ == '__main__':
     print('Correct:', 1 if label1 == 1 else 2)
 
     # Test if we can load the saved model
-    label_predictor = McScriptPredictor(model, reader)
-    passage, question, answer, _ = example_input(1)
-    label_prediction = label_predictor.predict(
-        passage=passage,
-        question=question,
-        answer=answer
-    )
-
     cuda_device = 0 if is_cuda(model) else -1
     if MODEL == 'baseline':
-        test_baseline_load(SAVE_PATH, label_prediction,
+        test_baseline_load(SAVE_PATH, result,
                            model.word_embeddings, model.q_encoder, cuda_device)
     elif MODEL == 'attentive':
-        test_attentive_load(SAVE_PATH, label_prediction,
+        test_attentive_load(SAVE_PATH, result,
                             model.word_embeddings, model.p_encoder,
                             model.q_encoder, model.a_encoder, cuda_device)
     elif MODEL == 'reader':
-        test_attentive_reader_load(SAVE_PATH, label_prediction,
+        test_attentive_reader_load(SAVE_PATH, result,
                                    model.word_embeddings, model.p_encoder,
                                    model.q_encoder, model.a_encoder,
                                    cuda_device)
     else:
         raise ValueError('Invalid model name')
+
+
+if __name__ == '__main__':
+    # Manual seeding for reproducibility.
+    torch.manual_seed(RANDOM_SEED)
+
+    run_model()

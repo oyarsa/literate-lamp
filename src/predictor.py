@@ -1,4 +1,4 @@
-from typing import List, TextIO, Optional
+from typing import List, TextIO
 
 import torch
 # Base class for the Model we'll implement. Inherits from `torch.nn.Model`,
@@ -21,7 +21,7 @@ from allennlp.data import Instance
 # `Instance`s from it.
 from allennlp.data.dataset_readers import DatasetReader
 
-from binary_accuracy import BinaryAccuracy
+from allennlp.training.metrics import CategoricalAccuracy
 
 
 @Predictor.register('mcscript-predictor')
@@ -38,99 +38,48 @@ class McScriptPredictor(Predictor):
     # Takes the sample data and creates a prediction JSON from it.
     # This will then be used to create an `Instance` that will be passed to
     # the model.
-    def predict(self, passage: str, question: str, answer: str) -> JsonDict:
-        return self.predict_json(
-            {"passage": passage, "question": question, "answer": answer})
+    def predict(self, passage_id: str, question_id: str, passage: str,
+                question: str, answer0: str, answer1: str) -> JsonDict:
+        return self.predict_json({
+            "passage_id": passage_id,
+            "question_id": question_id,
+            "passage": passage,
+            "question": question,
+            "answer0": answer0,
+            "answer1": answer1
+        })
 
     # Extracts data from a JSON and creates an `Instance`.
     def _json_to_instance(self, json_dict: JsonDict) -> Instance:
+        passage_id = json_dict['passage_id']
+        question_id = json_dict['question_id']
         passage = json_dict['passage']
         question = json_dict['question']
-        answer = json_dict['answer']
+        answer0 = json_dict['answer0']
+        answer1 = json_dict['answer1']
 
-        return self._dataset_reader.text_to_instance(passage, question, answer)
-
-
-class AnswerPredictor:
-    """
-    Given a passage, a question and two candidate answers, return which one
-    of the answers is the (predicted) correct answer.
-    """
-
-    def __init__(self, model: Model, dataset_reader: DatasetReader,
-                 verbose: bool = False) -> None:
-        self.model = model
-        self.reader = dataset_reader
-        self.predictor = McScriptPredictor(model, dataset_reader)
-        self.verbose = verbose
-
-    def predict(self, passage: str, question: str, answer1: str, answer2: str
-                ) -> int:
-        """
-        Given the passage, question and two candidate answers, return the index
-        (0-indexed) for the right answer (0 for answer1, 1 for answer2).
-        """
-        prediction1 = self.predictor.predict(passage, question, answer1)
-        prediction2 = self.predictor.predict(passage, question, answer2)
-
-        prob1 = prediction1['prob']
-        prob2 = prediction2['prob']
-
-        if self.verbose:
-            vec = torch.tensor((prob1, prob2)).transpose(0, 1)
-            confidence = torch.softmax(vec, dim=1)
-            print('Confidence:', confidence)
-
-        if prob1 > prob2:
-            return 0
-        else:
-            return 1
+        return self._dataset_reader.text_to_instance(
+            passage_id, question_id, passage, question, answer0, answer1)
 
 
 def score_questions(model: Model,
+                    output_file: TextIO,
                     testset: List[Instance], verbose: bool = False,
-                    output_file: Optional[TextIO] = None,
                     ) -> float:
-    metric = BinaryAccuracy()
+    metric = CategoricalAccuracy()
 
-    for i in range(0, len(testset), 2):
-        inst1 = testset[i]
-        inst2 = testset[i+1]
+    for instance in testset:
+        prediction = model.forward_on_instance(instance)
 
-        assert str(inst1['question']) == str(inst2['question']), \
-            'Questions should be equal.\n{}\n----\n{}'.format(
-                inst1['question'], inst2['question'])
-        assert str(inst1['passage']) == str(inst2['passage']), \
-            'Passages should be equal.\n{}\n----\n{}'.format(
-                inst1['passage'], inst2['passage'])
+        correct = instance['label']
+        predicted = torch.argmax(prediction['prob'])
 
-        prediction1 = model.forward_on_instance(inst1)
-        prediction2 = model.forward_on_instance(inst2)
+        metric(prediction['prob'], correct)
 
-        if inst1['label'] == 1:
-            correct = 0
-        else:
-            correct = 1
+        passage_id = instance['passage_id']
+        question_id = instance['question_id']
 
-        if prediction1['prob'] > prediction2['prob']:
-            predicted = 0
-        else:
-            predicted = 1
-
-        metric(torch.tensor([[float(predicted)]]), torch.tensor([correct]))
-
-        if output_file is not None:
-            if 'passage_id' in inst1:
-                passage_id = inst1['passage_id']
-            else:
-                passage_id = -1
-
-            if 'question_id' in inst1:
-                question_id = inst1['question_id']
-            else:
-                question_id = -1
-
-            print('{},{},{}'.format(passage_id, question_id, predicted),
-                  file=output_file)
+        print('{},{},{}'.format(passage_id, question_id, predicted),
+              file=output_file)
 
     return metric.get_metric()
