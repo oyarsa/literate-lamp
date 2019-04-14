@@ -41,7 +41,7 @@ MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 # always going to be.
 if CONFIG == 'large':
     # Path to our dataset
-    DATA_PATH = './data/mcdev-train.json'
+    DATA_PATH = './data/mctrain-data.json'
     # Path to our embeddings
     GLOVE_PATH = '../External/glove.840B.300d.txt'
     # Size of our embeddings
