@@ -104,11 +104,15 @@ class McScriptReader(DatasetReader):
             passage_id = instance['@id']
             passage = instance['text']['#text']
 
+            if 'question' not in instance['questions']:
+                instance['questions'] = []
+            elif type(instance['questions']['question']) is list:
+                instance['questions'] = instance['questions']['question']
+            else:
+                instance['questions'] = [instance['questions']['question']]
             questions = instance['questions']
-            if not questions:
-                continue
 
-            for question in questions['question']:
+            for question in questions:
                 question_id = question['@id']
                 question_text = question['@text']
 
