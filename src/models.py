@@ -201,6 +201,10 @@ class AttentiveClassifier(Model):
             in_features=self.p_encoder.get_output_dim(),
             out_features=self.a_encoder.get_output_dim()
         )
+        self.q_a_bilinear = torch.nn.Linear(
+            in_features=self.q_encoder.get_output_dim(),
+            out_features=self.a_encoder.get_output_dim()
+        )
         # We're using a hidden layer to build the output from each encoder.
         # As this can't really change, it's not passed as input.
         # The size has to be the size of concatenating the encoder outputs,
@@ -273,7 +277,10 @@ class AttentiveClassifier(Model):
         p_weighted = util.weighted_sum(p_hiddens, p_q_attn)
 
         out_0 = (self.p_a_bilinear(p_weighted) * a0_weighted).sum(dim=1)
+        out_0 += (self.q_a_bilinear(q_weighted) * a0_weighted).sum(dim=1)
+
         out_1 = (self.p_a_bilinear(p_weighted) * a1_weighted).sum(dim=1)
+        out_1 += (self.q_a_bilinear(q_weighted) * a1_weighted).sum(dim=1)
 
         # print('After: pq, q, a', p_q_attn.shape, q_attn.shape, a_attn.shape)
         # print('Weighted: p, q, a', p_weighted.shape, q_weighted.shape,
