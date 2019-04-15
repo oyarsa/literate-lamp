@@ -1,4 +1,4 @@
-from typing import List, TextIO
+from typing import List, TextIO, cast
 
 import torch
 # Base class for the Model we'll implement. Inherits from `torch.nn.Model`,
@@ -82,4 +82,4 @@ def score_questions(model: Model,
         print('{},{},{}'.format(passage_id, question_id, predicted),
               file=output_file)
 
-    return metric.get_metric()
+    return cast(float, metric.get_metric())

@@ -336,7 +336,7 @@ def test_baseline_load(save_path: str,
         original_prediction['logits'], prediction['logits'])
 
 
-def run_model():
+def run_model() -> None:
     # Which model to use?
     if MODEL == 'baseline':
         build_fn = build_baseline
@@ -348,7 +348,7 @@ def run_model():
         raise ValueError('Invalid model name')
 
     # Train and save our model
-    def optimiser(model):
+    def optimiser(model: Model) -> torch.optim.Optimizer:
         return Adam(model.parameters(), lr=0.001)
     model = train_model(build_fn, data_path=DATA_PATH,
                         save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
