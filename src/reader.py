@@ -40,11 +40,12 @@ class McScriptReader(DatasetReader):
      """
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
-    def __init__(self, token_indexers: Optional[Dict[str, TokenIndexer]] = None
-                 ) -> None:
+    def __init__(self,
+                 token_indexers: Optional[Dict[str, TokenIndexer]] = None,
+                 lowercase_tokens: bool = False) -> None:
         super().__init__(lazy=False)
         self.token_indexers = token_indexers or {
-            "tokens": SingleIdTokenIndexer()}
+            "tokens": SingleIdTokenIndexer(lowercase_tokens=lowercase_tokens)}
         word_splitter = SpacyWordSplitter(
             pos_tags=False, parse=False, ner=False)
         self.tokeniser = WordTokenizer(word_splitter=word_splitter)

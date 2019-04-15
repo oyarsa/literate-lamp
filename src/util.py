@@ -102,7 +102,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
             dataset = pickle.load(preprocessed_file)
     else:
         # Creates a new reader
-        reader = McScriptReader()
+        reader = McScriptReader(lowercase_tokens=True)
         # Reads from our data. We're used `cached_path`, but data is currently
         # local, so it doesn't really do anything.
         print('>> Reading input from data file')
@@ -184,12 +184,12 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     return model
 
 
-def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int
-                     ) -> BasicTextFieldEmbedder:
+def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int,
+                     training: bool = False) -> BasicTextFieldEmbedder:
     "Pre-trained embeddings using GloVe"
     token_embedding = Embedding(num_embeddings=vocab.get_vocab_size('tokens'),
                                 embedding_dim=dimension,
-                                trainable=False,
+                                trainable=training,
                                 pretrained_file=file_path)
     # TODO: Not exactly sure how this one works
     word_embeddings = BasicTextFieldEmbedder({"tokens": token_embedding})

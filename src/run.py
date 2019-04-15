@@ -21,7 +21,7 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
-from torch.optim import Adamax
+from torch.optim import Adam
 
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
 from predictor import McScriptPredictor
@@ -81,7 +81,7 @@ elif CONFIG == 'medium':
     # Path to save pre-processed input
     PREPROCESSED_PATH = '../External/medium.processed.pickle'
     # Size of minibatch
-    BATCH_SIZE = 32
+    BATCH_SIZE = 25
     # Number of epochs to train model
     NUM_EPOCHS = 10
 
@@ -344,7 +344,7 @@ def run_model():
 
     # Train and save our model
     def optimiser(model):
-        return Adamax(model.parameters())
+        return Adam(model.parameters(), lr=0.001)
     model = train_model(build_fn, data_path=DATA_PATH,
                         save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
                         patience=50, batch_size=BATCH_SIZE,
