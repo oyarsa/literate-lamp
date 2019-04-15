@@ -160,7 +160,9 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                       patience=patience,
                       num_epochs=num_epochs,
                       cuda_device=cuda_device,
-                      grad_norm=grad_norm_clip)
+                      grad_norm=grad_norm_clip,
+                      serialization_dir=save_path + 'training',
+                      summary_interval=10)
 
     # Execute training loop.
     trainer.train()
