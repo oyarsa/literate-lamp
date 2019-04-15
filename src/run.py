@@ -13,6 +13,7 @@ Then it checks if the saving went correctly.
 """
 from typing import Dict
 import sys
+import os
 
 import torch
 import numpy as np
@@ -21,13 +22,14 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
-from torch.optim import Adam
+from torch.optim import Adam, Adamax, Adagrad, SGD
 
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
 from predictor import McScriptPredictor
 from reader import McScriptReader
 from util import (example_input, is_cuda, train_model, glove_embeddings,
-                  lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq)
+                  lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
+                  get_experiment_name)
 
 DEFAULT_CONFIG = 'medium'  # Can be: _medium_ , _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
@@ -35,6 +37,17 @@ CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
 # Which model to use: 'baseline' or 'attentive' for now.
 DEFAULT_MODEL = 'attentive'
 MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
+
+# Which optimiser to use: 'adam', 'adamax', 'adagrad', 'sgd'
+DEFAULT_OPTIM = 'adam'
+OPTIMISER = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_OPTIM
+
+# Whether to fine-tune embeddings or not
+DEFAULT_FINETUNE = True
+FINETUNE = bool(sys.argv[4]) if len(sys.argv) >= 5 else DEFAULT_FINETUNE
+
+NUMBER_EPOCHS = int(sys.argv[5]) if len(sys.argv) >= 6 else None
+
 
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
@@ -53,7 +66,7 @@ if CONFIG == 'large':
     # Size of minibatch
     BATCH_SIZE = 32
     # Number of epochs to train model
-    NUM_EPOCHS = 1000
+    NUM_EPOCHS = NUMBER_EPOCHS or 1000
 elif CONFIG == 'small':
     # Path to our dataset
     DATA_PATH = './data/small.json'
@@ -68,7 +81,7 @@ elif CONFIG == 'small':
     # Size of minibatch
     BATCH_SIZE = 3
     # Number of epochs to train model
-    NUM_EPOCHS = 5
+    NUM_EPOCHS = NUMBER_EPOCHS or 5
 elif CONFIG == 'medium':
     # Path to our dataset
     DATA_PATH = './data/mcdev-data.json'
@@ -83,10 +96,11 @@ elif CONFIG == 'medium':
     # Size of minibatch
     BATCH_SIZE = 25
     # Number of epochs to train model
-    NUM_EPOCHS = 10
+    NUM_EPOCHS = NUMBER_EPOCHS or 10
 
 # Path to save the Model and Vocabulary
-SAVE_PATH = "/tmp/"
+SAVE_FOLDER = './experiments/'
+SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) + '/'
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
 
@@ -168,7 +182,7 @@ def build_attentive(vocab: Vocabulary) -> Model:
     A `AttentiveClassifier` model ready to be trained.
     """
     embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
-                                  training=True)
+                                  training=FINETUNE)
     if RNN_TYPE == 'lstm':
         encoder_fn = lstm_seq2seq
     elif RNN_TYPE == 'gru':
@@ -349,7 +363,20 @@ def run_model() -> None:
 
     # Train and save our model
     def optimiser(model: Model) -> torch.optim.Optimizer:
-        return Adam(model.parameters(), lr=0.001)
+        if OPTIMISER == 'adam':
+            return Adam(model.parameters(), lr=0.001)
+        elif OPTIMISER == 'adamax':
+            return Adamax(model.parameters())
+        elif OPTIMISER == 'adagrad':
+            return Adagrad(model.parameters())
+        elif OPTIMISER == 'sgd':
+            return SGD(model.parameters(), lr=0.2, momentum=0.9, nesterov=True)
+        else:
+            raise ValueError('Invalid optimiser')
+
+    # Create SAVE_FOLDER if it doesn't exist
+    if not os.path.exists(SAVE_FOLDER):
+        os.makedirs(SAVE_FOLDER)
     model = train_model(build_fn, data_path=DATA_PATH,
                         save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
                         patience=50, batch_size=BATCH_SIZE,

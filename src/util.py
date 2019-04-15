@@ -1,5 +1,6 @@
 from typing import Tuple, List, Callable, Optional
 import pickle
+import datetime
 import os
 
 import torch
@@ -152,6 +153,8 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Initialise the trainer with the paramters we created.
     # Patience is how many epochs without improvement we'll tolerate.
     # We also let the trainer know about CUDA availability.
+    if save_path is not None:
+        serialization_dir = save_path + 'training'
     trainer = Trainer(model=model,
                       optimizer=optimiser,
                       iterator=iterator,
@@ -161,7 +164,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                       num_epochs=num_epochs,
                       cuda_device=cuda_device,
                       grad_norm=grad_norm_clip,
-                      serialization_dir=save_path + 'training',
+                      serialization_dir=serialization_dir,
                       summary_interval=10)
 
     # Execute training loop.
@@ -244,3 +247,9 @@ def gru_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
     return PytorchSeq2VecWrapper(torch.nn.GRU(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
         bidirectional=bidirectional, dropout=dropout))
+
+
+def get_experiment_name(model: str, config: str) -> str:
+    date = datetime.datetime.now().strftime("%Y:%m:%d_%H:%M:%S")
+    name = f'{model}-{config}-{date}'
+    return name
