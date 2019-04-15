@@ -61,7 +61,7 @@ if CONFIG == 'large':
         GLOVE_PATH = '../External/glove.840B.300d.txt'
         # Size of our embeddings
         EMBEDDING_DIM = 300
-    elif EMBEDDING_SIZE is not None and EMBEDDING_DIM == 100:
+    elif EMBEDDING_SIZE is not None and EMBEDDING_SIZE == 100:
         # Path to our embeddings
         GLOVE_PATH = '../External/glove.6B.100d.txt'
         # Size of our embeddings
