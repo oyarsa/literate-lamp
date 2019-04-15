@@ -47,7 +47,8 @@ DEFAULT_FINETUNE = True
 FINETUNE = bool(sys.argv[4]) if len(sys.argv) >= 5 else DEFAULT_FINETUNE
 
 NUMBER_EPOCHS = int(sys.argv[5]) if len(sys.argv) >= 6 else None
-
+RNN_HIDDEN_SIZE = int(sys.argv[6]) if len(sys.argv) >= 7 else None
+EMBEDDING_SIZE = int(sys.argv[7]) if len(sys.argv) >= 8 else None
 
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
@@ -55,12 +56,20 @@ NUMBER_EPOCHS = int(sys.argv[5]) if len(sys.argv) >= 6 else None
 if CONFIG == 'large':
     # Path to our dataset
     DATA_PATH = './data/mctrain-data.json'
-    # Path to our embeddings
-    GLOVE_PATH = '../External/glove.840B.300d.txt'
-    # Size of our embeddings
-    EMBEDDING_DIM = 300
+    if EMBEDDING_SIZE is None or EMBEDDING_SIZE == 300:
+        # Path to our embeddings
+        GLOVE_PATH = '../External/glove.840B.300d.txt'
+        # Size of our embeddings
+        EMBEDDING_DIM = 300
+    elif EMBEDDING_SIZE is not None and EMBEDDING_DIM == 100:
+        # Path to our embeddings
+        GLOVE_PATH = '../External/glove.6B.100d.txt'
+        # Size of our embeddings
+        EMBEDDING_DIM = 100
+    else:
+        raise ValueError('Invalid embedding size')
     # Size of our hidden layers (for each encoder)
-    HIDDEN_DIM = 96
+    HIDDEN_DIM = RNN_HIDDEN_SIZE or 96
     # Path to save pre-processed input
     PREPROCESSED_PATH = '../External/data.processed.pickle'
     # Size of minibatch
@@ -100,7 +109,8 @@ elif CONFIG == 'medium':
 
 # Path to save the Model and Vocabulary
 SAVE_FOLDER = './experiments/'
-SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) + '/'
+SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) \
+    + f'{OPTIMISER}-{FINETUNE}' + '/'
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
 
