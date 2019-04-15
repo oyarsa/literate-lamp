@@ -350,6 +350,8 @@ class AttentiveReader(Model):
         self.q_encoder = q_encoder
         self.a_encoder = a_encoder
 
+        self.emb_dropout = torch.nn.Dropout(p=0.5)
+
         # Attention layers: passage-question, passage-answer
         self.p_q_attn = BilinearAttention(
             vector_dim=self.q_encoder.get_output_dim(),
@@ -389,10 +391,10 @@ class AttentiveReader(Model):
         a1_mask = util.get_text_field_mask(answer1)
 
         # We create the embeddings from the input text
-        p_emb = self.word_embeddings(passage)
-        q_emb = self.word_embeddings(question)
-        a0_emb = self.word_embeddings(answer0)
-        a1_emb = self.word_embeddings(answer1)
+        p_emb = self.emb_dropout(self.word_embeddings(passage))
+        q_emb = self.emb_dropout(self.word_embeddings(question))
+        a0_emb = self.emb_dropout(self.word_embeddings(answer0))
+        a1_emb = self.emb_dropout(self.word_embeddings(answer1))
         # Then we use those embeddings (along with the masks) as inputs for
         # our encoders
         p_hiddens = self.p_encoder(p_emb, p_mask)

@@ -139,14 +139,15 @@ def build_attentive_reader(vocab: Vocabulary) -> Model:
     -------
     A `AttentiveClassifier` model ready to be trained.
     """
-    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
+    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
+                                  training=True)
 
     p_encoder = gru_seq2seq(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
-                            bidirectional=BIDIRECTIONAL, dropout=0.5)
+                            bidirectional=BIDIRECTIONAL)
     q_encoder = gru_encoder(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
-                            bidirectional=BIDIRECTIONAL, dropout=0.5)
+                            bidirectional=BIDIRECTIONAL)
     a_encoder = gru_encoder(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
-                            bidirectional=BIDIRECTIONAL, dropout=0.5)
+                            bidirectional=BIDIRECTIONAL)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AttentiveReader(
