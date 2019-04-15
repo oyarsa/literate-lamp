@@ -110,7 +110,7 @@ elif CONFIG == 'medium':
 # Path to save the Model and Vocabulary
 SAVE_FOLDER = './experiments/'
 SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) \
-    + f'{OPTIMISER}-{FINETUNE}' + '/'
+    + f'-{OPTIMISER}-{FINETUNE}-{RNN_HIDDEN_SIZE}-{EMBEDDING_SIZE}' + '/'
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
 
