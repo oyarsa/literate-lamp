@@ -51,7 +51,7 @@ if CONFIG == 'large':
     # Path to save pre-processed input
     PREPROCESSED_PATH = '../External/data.processed.pickle'
     # Size of minibatch
-    BATCH_SIZE = 128
+    BATCH_SIZE = 32
     # Number of epochs to train model
     NUM_EPOCHS = 1000
 elif CONFIG == 'small':
@@ -95,6 +95,8 @@ RANDOM_SEED = 1234
 RNN_TYPE = 'lstm'
 BIDIRECTIONAL = True
 RNN_LAYERS = 2
+RNN_DROPOUT = 0.4
+EMBEDDDING_DROPOUT = 0.4
 
 
 def build_baseline(vocab: Vocabulary) -> Model:
@@ -140,11 +142,11 @@ def build_attentive_reader(vocab: Vocabulary) -> Model:
     embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
 
     p_encoder = gru_seq2seq(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
-                            bidirectional=BIDIRECTIONAL)
+                            bidirectional=BIDIRECTIONAL, dropout=0.5)
     q_encoder = gru_encoder(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
-                            bidirectional=BIDIRECTIONAL)
+                            bidirectional=BIDIRECTIONAL, dropout=0.5)
     a_encoder = gru_encoder(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
-                            bidirectional=BIDIRECTIONAL)
+                            bidirectional=BIDIRECTIONAL, dropout=0.5)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AttentiveReader(
@@ -173,15 +175,23 @@ def build_attentive(vocab: Vocabulary) -> Model:
         raise ValueError('Invalid RNN type')
 
     p_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
-                           bidirectional=BIDIRECTIONAL)
+                           bidirectional=BIDIRECTIONAL, dropout=RNN_DROPOUT)
     q_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
-                           bidirectional=BIDIRECTIONAL)
+                           bidirectional=BIDIRECTIONAL, dropout=RNN_DROPOUT)
     a_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
-                           bidirectional=BIDIRECTIONAL)
+                           bidirectional=BIDIRECTIONAL, dropout=RNN_DROPOUT)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AttentiveClassifier(
-        embeddings, p_encoder, q_encoder, a_encoder, vocab)
+        word_embeddings=embeddings,
+        p_encoder=p_encoder,
+        q_encoder=q_encoder,
+        a_encoder=a_encoder,
+        vocab=vocab,
+        embedding_dropout=0.4,
+        encoder_dropout=0.4
+    )
+
     return model
 
 

@@ -197,44 +197,48 @@ def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int
 
 
 def lstm_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
-                 bidirectional: bool = False) -> Seq2SeqEncoder:
+                 bidirectional: bool = False, dropout: float = 0.0
+                 ) -> Seq2SeqEncoder:
     """
     Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
     though.
     """
     return PytorchSeq2SeqWrapper(torch.nn.LSTM(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
-        bidirectional=bidirectional))
+        bidirectional=bidirectional, dropout=dropout))
 
 
 def gru_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
-                bidirectional: bool = False) -> Seq2SeqEncoder:
+                bidirectional: bool = False, dropout: float = 0.0
+                ) -> Seq2SeqEncoder:
     """
     Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
     though.
     """
     return PytorchSeq2SeqWrapper(torch.nn.GRU(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
-        bidirectional=bidirectional))
+        bidirectional=bidirectional, dropout=dropout))
 
 
 def lstm_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
-                 bidirectional: bool = False) -> Seq2VecEncoder:
+                 bidirectional: bool = False, dropout: float = 0.0
+                 ) -> Seq2VecEncoder:
     """
     Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
     though.
     """
     return PytorchSeq2VecWrapper(torch.nn.LSTM(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
-        bidirectional=bidirectional))
+        bidirectional=bidirectional, dropout=dropout))
 
 
 def gru_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
-                bidirectional: bool = False) -> Seq2VecEncoder:
+                bidirectional: bool = False, dropout: float = 0.0
+                ) -> Seq2VecEncoder:
     """
     Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
     though.
     """
     return PytorchSeq2VecWrapper(torch.nn.GRU(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
-        bidirectional=bidirectional))
+        bidirectional=bidirectional, dropout=dropout))

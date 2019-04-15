@@ -171,10 +171,21 @@ class AttentiveClassifier(Model):
                  p_encoder: Seq2SeqEncoder,
                  q_encoder: Seq2SeqEncoder,
                  a_encoder: Seq2SeqEncoder,
-                 vocab: Vocabulary) -> None:
+                 vocab: Vocabulary,
+                 embedding_dropout: float = 0.0,
+                 encoder_dropout: float = 0.0) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
         self.word_embeddings = word_embeddings
+        if embedding_dropout > 0:
+            self.embedding_dropout = torch.nn.Dropout(p=embedding_dropout)
+        else:
+            self.embedding_dropout = lambda x: x
+
+        if encoder_dropout > 0:
+            self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
+        else:
+            self.encoder_dropout = lambda x: x
 
         # Our model has different encoders for each of the fields (passage,
         # answer and question).
@@ -205,21 +216,6 @@ class AttentiveClassifier(Model):
             in_features=self.q_encoder.get_output_dim(),
             out_features=self.a_encoder.get_output_dim()
         )
-        # We're using a hidden layer to build the output from each encoder.
-        # As this can't really change, it's not passed as input.
-        # The size has to be the size of concatenating the encoder outputs,
-        # since that's how we're combining them in the computation. As they're
-        # the same, just multiply the first encoder output by 3.
-        # The output of the model (which is the output of this layer) has to
-        # have size equal to the number of classes.
-        # hidden_dim = (self.q_encoder.get_output_dim()  # p_q_attn
-        #               + self.q_encoder.get_output_dim()  # q_self_attn
-        #               + self.a_encoder.get_output_dim())  # a_self_attn
-        # hidden_dim = self.p_a_bilinear.get_output_dim()
-        # self.hidden2logit = torch.nn.Linear(
-        #     in_features=hidden_dim,
-        #     out_features=1
-        # )
 
         # Categorical (as this is a classification task) accuracy
         self.accuracy = CategoricalAccuracy()
@@ -250,16 +246,17 @@ class AttentiveClassifier(Model):
         a1_mask = util.get_text_field_mask(answer1)
 
         # We create the embeddings from the input text
-        p_emb = self.word_embeddings(passage)
-        q_emb = self.word_embeddings(question)
-        a0_emb = self.word_embeddings(answer0)
-        a1_emb = self.word_embeddings(answer1)
+        p_emb = self.embedding_dropout(self.word_embeddings(passage))
+        q_emb = self.embedding_dropout(self.word_embeddings(question))
+        a0_emb = self.embedding_dropout(self.word_embeddings(answer0))
+        a1_emb = self.embedding_dropout(self.word_embeddings(answer1))
+
         # Then we use those embeddings (along with the masks) as inputs for
         # our encoders
-        p_hiddens = self.p_encoder(p_emb, p_mask)
-        q_hiddens = self.q_encoder(q_emb, q_mask)
-        a0_hiddens = self.a_encoder(a0_emb, a0_mask)
-        a1_hiddens = self.a_encoder(a1_emb, a1_mask)
+        p_hiddens = self.encoder_dropout(self.p_encoder(p_emb, p_mask))
+        q_hiddens = self.encoder_dropout(self.q_encoder(q_emb, q_mask))
+        a0_hiddens = self.encoder_dropout(self.a_encoder(a0_emb, a0_mask))
+        a1_hiddens = self.encoder_dropout(self.a_encoder(a1_emb, a1_mask))
 
         # print('Hiddens: p, q, a', p_hiddens.shape,
         #       q_hiddens.shape, q_hiddens.shape)
