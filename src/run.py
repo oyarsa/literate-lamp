@@ -95,8 +95,8 @@ RANDOM_SEED = 1234
 RNN_TYPE = 'lstm'
 BIDIRECTIONAL = True
 RNN_LAYERS = 2
-RNN_DROPOUT = 0.4
-EMBEDDDING_DROPOUT = 0.4
+RNN_DROPOUT = 0
+EMBEDDDING_DROPOUT = 0.5
 
 
 def build_baseline(vocab: Vocabulary) -> Model:
@@ -167,7 +167,8 @@ def build_attentive(vocab: Vocabulary) -> Model:
     -------
     A `AttentiveClassifier` model ready to be trained.
     """
-    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
+    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
+                                  training=True)
     if RNN_TYPE == 'lstm':
         encoder_fn = lstm_seq2seq
     elif RNN_TYPE == 'gru':
