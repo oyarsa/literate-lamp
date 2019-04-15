@@ -35,6 +35,8 @@ from allennlp.data.vocabulary import Vocabulary
 #   - `clone` creates N copies of a layer.
 from allennlp.nn import util
 
+from layers import SequenceAttention
+
 
 @Model.register('baseline-classifier')
 class BaselineClassifier(Model):
@@ -187,6 +189,11 @@ class AttentiveClassifier(Model):
         else:
             self.encoder_dropout = lambda x: x
 
+        embedding_dim = word_embeddings.get_output_dim()
+        self.p_q_match = SequenceAttention(input_dim=embedding_dim)
+        self.a_p_match = SequenceAttention(input_dim=embedding_dim)
+        self.a_q_match = SequenceAttention(input_dim=embedding_dim)
+
         # Our model has different encoders for each of the fields (passage,
         # answer and question).
         self.p_encoder = p_encoder
@@ -251,48 +258,59 @@ class AttentiveClassifier(Model):
         a0_emb = self.embedding_dropout(self.word_embeddings(answer0))
         a1_emb = self.embedding_dropout(self.word_embeddings(answer1))
 
-        # Then we use those embeddings (along with the masks) as inputs for
+        # We compute the Sequence Attention
+        # First the scores
+        p_q_scores = self.p_q_match(p_emb, q_emb, q_mask)
+        a0_q_scores = self.a_q_match(a0_emb, q_emb, q_mask)
+        a1_q_scores = self.a_q_match(a1_emb, q_emb, q_mask)
+        a0_p_scores = self.a_p_match(a0_emb, p_emb, p_mask)
+        a1_p_scores = self.a_p_match(a1_emb, p_emb, p_mask)
+
+        # Then the weighted inputs
+        p_q_match = util.weighted_sum(q_emb, p_q_scores)
+        a0_q_match = util.weighted_sum(q_emb, a0_q_scores)
+        a1_q_match = util.weighted_sum(q_emb, a1_q_scores)
+        a0_p_match = util.weighted_sum(p_emb, a0_p_scores)
+        a1_p_match = util.weighted_sum(p_emb, a1_p_scores)
+
+        # We combine the inputs to our encoder
+        p_input = torch.cat((p_emb, p_q_match), dim=2)
+        a0_input = torch.cat((a0_emb, a0_p_match, a0_q_match), dim=2)
+        a1_input = torch.cat((a1_emb, a1_p_match, a1_q_match), dim=2)
+        q_input = torch.cat((q_emb,), dim=2)
+
+        # Then we use those (along with the masks) as inputs for
         # our encoders
-        p_hiddens = self.encoder_dropout(self.p_encoder(p_emb, p_mask))
-        q_hiddens = self.encoder_dropout(self.q_encoder(q_emb, q_mask))
-        a0_hiddens = self.encoder_dropout(self.a_encoder(a0_emb, a0_mask))
-        a1_hiddens = self.encoder_dropout(self.a_encoder(a1_emb, a1_mask))
+        p_hiddens = self.encoder_dropout(self.p_encoder(p_input, p_mask))
+        q_hiddens = self.encoder_dropout(self.q_encoder(q_input, q_mask))
+        a0_hiddens = self.encoder_dropout(self.a_encoder(a0_input, a0_mask))
+        a1_hiddens = self.encoder_dropout(self.a_encoder(a1_input, a1_mask))
 
-        # print('Hiddens: p, q, a', p_hiddens.shape,
-        #       q_hiddens.shape, q_hiddens.shape)
-        # print('Masks: p, q, a', p_mask.shape, q_mask.shape, a_mask.shape)
-
+        # We compute the self-attention scores
         q_attn = self.q_self_attn(q_hiddens, q_hiddens, q_mask)
         a0_attn = self.a_self_attn(a0_hiddens, a0_hiddens, a0_mask)
         a1_attn = self.a_self_attn(a1_hiddens, a1_hiddens, a1_mask)
 
+        # Then we weight the hidden-states with those scores
         q_weighted = util.weighted_sum(q_hiddens, q_attn)
         a0_weighted = util.weighted_sum(a0_hiddens, a0_attn)
         a1_weighted = util.weighted_sum(a1_hiddens, a1_attn)
 
+        # We weight the text states with a passage-question bilinear attention
         p_q_attn = self.p_q_attn(q_weighted, p_hiddens, p_mask)
         p_weighted = util.weighted_sum(p_hiddens, p_q_attn)
 
+        # Calculate the outputs for each answer, from passage-answer and
+        # question-answer attention again
         out_0 = (self.p_a_bilinear(p_weighted) * a0_weighted).sum(dim=1)
         out_0 += (self.q_a_bilinear(q_weighted) * a0_weighted).sum(dim=1)
 
         out_1 = (self.p_a_bilinear(p_weighted) * a1_weighted).sum(dim=1)
         out_1 += (self.q_a_bilinear(q_weighted) * a1_weighted).sum(dim=1)
 
-        # print('After: pq, q, a', p_q_attn.shape, q_attn.shape, a_attn.shape)
-        # print('Weighted: p, q, a', p_weighted.shape, q_weighted.shape,
-        #       a_weighted.shape)
-
-        # We then concatenate the representations from each encoder
-        # encoder_out = torch.cat((p_weighted, q_weighted, a_weighted), 1)
-        # print('Out:', encoder_out.shape)
-
-        # Finally, we pass each encoded output tensor to the feedforward layer
-        # to produce logits corresponding to each class.
-        # logits = self.hidden2logit(encoder_out)
+        # Output vector is 2-dim vector with both logits
         logits = torch.stack((out_0, out_1), dim=1)
-        # print('Logits:', logits.shape)
-        # # We also compute the class with highest likelihood (our prediction)
+        # # We softmax to turn those logits into probabilities
         prob = torch.softmax(logits, dim=-1)
         output = {"logits": logits, "prob": prob}
 
@@ -402,27 +420,13 @@ class AttentiveReader(Model):
         a0_hidden = self.a_encoder(a0_emb, a0_mask)
         a1_hidden = self.a_encoder(a1_emb, a1_mask)
 
-        # print('Hiddens: p, q, a', p_hiddens.shape,
-        #       q_hiddens.shape, q_hiddens.shape)
-        # print('Masks: p, q, a', p_mask.shape, q_mask.shape, a_mask.shape)
-
+        # We weight the text hidden states according to text-question attention
         p_q_attn = self.p_q_attn(q_hidden, p_hiddens, p_mask)
         p_weighted = util.weighted_sum(p_hiddens, p_q_attn)
 
+        # We combine the output with a bilinear attention from text to answer
         out0 = (self.p_a_bilinear(p_weighted) * a0_hidden).sum(dim=1)
         out1 = (self.p_a_bilinear(p_weighted) * a1_hidden).sum(dim=1)
-
-        # print('After: pq, q, a', p_q_attn.shape, q_attn.shape, a_attn.shape)
-        # print('Weighted: p, q, a', p_weighted.shape, q_weighted.shape,
-        #       a_weighted.shape)
-
-        # We then concatenate the representations from each encoder
-        # encoder_out = torch.cat((p_weighted, q_weighted, a_weighted), 1)
-        # print('Out:', encoder_out.shape)
-
-        # Finally, we pass each encoded output tensor to the feedforward layer
-        # to produce logits corresponding to each class.
-        # logits = self.hidden2logit(encoder_out)
         logits = torch.stack((out0, out1), dim=1)
         # We also compute the class with highest likelihood (our prediction)
         prob = torch.softmax(logits, dim=-1)

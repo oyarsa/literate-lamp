@@ -176,12 +176,15 @@ def build_attentive(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid RNN type')
 
-    p_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
-                           bidirectional=BIDIRECTIONAL, dropout=RNN_DROPOUT)
-    q_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
-                           bidirectional=BIDIRECTIONAL, dropout=RNN_DROPOUT)
-    a_encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
-                           bidirectional=BIDIRECTIONAL, dropout=RNN_DROPOUT)
+    p_encoder = encoder_fn(input_dim=2*EMBEDDING_DIM, output_dim=HIDDEN_DIM,
+                           num_layers=RNN_LAYERS, bidirectional=BIDIRECTIONAL,
+                           dropout=RNN_DROPOUT)
+    q_encoder = encoder_fn(input_dim=EMBEDDING_DIM, output_dim=HIDDEN_DIM,
+                           num_layers=1, bidirectional=BIDIRECTIONAL,
+                           dropout=RNN_DROPOUT)
+    a_encoder = encoder_fn(input_dim=3*EMBEDDING_DIM, output_dim=HIDDEN_DIM,
+                           num_layers=1, bidirectional=BIDIRECTIONAL,
+                           dropout=RNN_DROPOUT)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AttentiveClassifier(
