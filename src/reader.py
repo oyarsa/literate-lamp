@@ -12,7 +12,8 @@ from allennlp.data.dataset_readers import DatasetReader
 # Tokens can be indexed in many ways. The `TokenIndexer` is the abstract class
 # for this, but here we'll use the `SingleIdTokenIndexer`, which maps each
 # token in the vocabulary to an integer.
-from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
+from allennlp.data.token_indexers import (TokenIndexer, SingleIdTokenIndexer,
+                                          PosTagIndexer, NerTagIndexer)
 # This converts a word into a `Token` object, with fields for POS tags and
 # such.
 # TODO: Explore tokenisers from this package.
@@ -42,12 +43,16 @@ class McScriptReader(DatasetReader):
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
                  token_indexers: Optional[Dict[str, TokenIndexer]] = None,
+                 pos_indexers: Optional[Dict[str, TokenIndexer]] = None,
+                 ner_indexers: Optional[Dict[str, TokenIndexer]] = None,
                  lowercase_tokens: bool = False) -> None:
         super().__init__(lazy=False)
         self.token_indexers = token_indexers or {
             "tokens": SingleIdTokenIndexer(lowercase_tokens=lowercase_tokens)}
+        self.pos_indexers = pos_indexers or {"pos": PosTagIndexer()}
+        self.ner_indexers = ner_indexers or {"ner": NerTagIndexer()}
         word_splitter = SpacyWordSplitter(
-            pos_tags=False, parse=False, ner=False)
+            pos_tags=True, parse=False, ner=True)
         self.tokeniser = WordTokenizer(word_splitter=word_splitter)
 
     # Converts the text from each field in the input to `Token`s, and then
@@ -78,7 +83,10 @@ class McScriptReader(DatasetReader):
             "passage_id": MetadataField(passage_id),
             "question_id": MetadataField(question_id),
             "passage": TextField(passage_tokens, self.token_indexers),
+            "passage_pos": TextField(passage_tokens, self.pos_indexers),
+            "passage_ner": TextField(passage_tokens, self.ner_indexers),
             "question": TextField(question_tokens, self.token_indexers),
+            "question_pos": TextField(question_tokens, self.pos_indexers),
             "answer0": TextField(answer0_tokens, self.token_indexers),
             "answer1": TextField(answer1_tokens, self.token_indexers),
         }

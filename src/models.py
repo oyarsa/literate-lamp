@@ -97,6 +97,9 @@ class BaselineClassifier(Model):
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
+                passage_pos: Dict[str, torch.Tensor],
+                passage_ner: Dict[str, torch.Tensor],
+                question_pos: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -241,6 +244,9 @@ class AttentiveClassifier(Model):
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
+                passage_pos: Dict[str, torch.Tensor],
+                passage_ner: Dict[str, torch.Tensor],
+                question_pos: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -397,6 +403,9 @@ class AttentiveReader(Model):
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
+                passage_pos: Dict[str, torch.Tensor],
+                passage_ner: Dict[str, torch.Tensor],
+                question_pos: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
