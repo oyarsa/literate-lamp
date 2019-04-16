@@ -29,7 +29,7 @@ from predictor import McScriptPredictor
 from reader import McScriptReader
 from util import (example_input, is_cuda, train_model, glove_embeddings,
                   lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
-                  get_experiment_name)
+                  get_experiment_name, learned_embeddings)
 
 DEFAULT_CONFIG = 'medium'  # Can be: _medium_ , _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
@@ -49,6 +49,8 @@ FINETUNE = sys.argv[4] == 'True' if len(sys.argv) >= 5 else DEFAULT_FINETUNE
 NUMBER_EPOCHS = int(sys.argv[5]) if len(sys.argv) >= 6 else None
 RNN_HIDDEN_SIZE = int(sys.argv[6]) if len(sys.argv) >= 7 else None
 EMBEDDING_SIZE = int(sys.argv[7]) if len(sys.argv) >= 8 else None
+NER_EMBEDDING_DIM = 8
+POS_EMBEDDING_DIM = 12
 
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
@@ -192,8 +194,11 @@ def build_attentive(vocab: Vocabulary) -> Model:
     -------
     A `AttentiveClassifier` model ready to be trained.
     """
-    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
-                                  training=FINETUNE)
+    word_embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
+                                       training=FINETUNE)
+    pos_embeddings = learned_embeddings(vocab, POS_EMBEDDING_DIM, 'pos_tokens')
+    ner_embeddings = learned_embeddings(vocab, NER_EMBEDDING_DIM, 'ner_tokens')
+
     if RNN_TYPE == 'lstm':
         encoder_fn = lstm_seq2seq
     elif RNN_TYPE == 'gru':
@@ -201,19 +206,28 @@ def build_attentive(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid RNN type')
 
-    p_encoder = encoder_fn(input_dim=2*EMBEDDING_DIM, output_dim=HIDDEN_DIM,
+    # p_emb + p_q_weighted + p_pos_emb + p_ner_emb
+    p_input_size = 2*EMBEDDING_DIM + POS_EMBEDDING_DIM + NER_EMBEDDING_DIM
+    # q_emb + q_pos_emb
+    q_input_size = EMBEDDING_DIM + POS_EMBEDDING_DIM
+    # a_emb + a_q_match + a_p_match
+    a_input_size = 3 * EMBEDDING_DIM
+
+    p_encoder = encoder_fn(input_dim=p_input_size, output_dim=HIDDEN_DIM,
                            num_layers=RNN_LAYERS, bidirectional=BIDIRECTIONAL,
                            dropout=RNN_DROPOUT)
-    q_encoder = encoder_fn(input_dim=EMBEDDING_DIM, output_dim=HIDDEN_DIM,
+    q_encoder = encoder_fn(input_dim=q_input_size, output_dim=HIDDEN_DIM,
                            num_layers=1, bidirectional=BIDIRECTIONAL,
                            dropout=RNN_DROPOUT)
-    a_encoder = encoder_fn(input_dim=3*EMBEDDING_DIM, output_dim=HIDDEN_DIM,
+    a_encoder = encoder_fn(input_dim=a_input_size, output_dim=HIDDEN_DIM,
                            num_layers=1, bidirectional=BIDIRECTIONAL,
                            dropout=RNN_DROPOUT)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AttentiveClassifier(
-        word_embeddings=embeddings,
+        word_embeddings=word_embeddings,
+        pos_embeddings=pos_embeddings,
+        ner_embeddings=ner_embeddings,
         p_encoder=p_encoder,
         q_encoder=q_encoder,
         a_encoder=a_encoder,
@@ -273,7 +287,9 @@ def test_attentive_reader_load(save_path: str,
 
 def test_attentive_load(save_path: str,
                         original_prediction: Dict[str, torch.Tensor],
-                        embeddings: TextFieldEmbedder,
+                        word_embeddings: TextFieldEmbedder,
+                        pos_embeddings: TextFieldEmbedder,
+                        ner_embeddings: TextFieldEmbedder,
                         p_encoder: Seq2VecEncoder,
                         q_encoder: Seq2VecEncoder,
                         a_encoder: Seq2VecEncoder,
@@ -293,7 +309,8 @@ def test_attentive_load(save_path: str,
     vocab = Vocabulary.from_files(save_path + 'vocabulary')
     # Recreate the model.
     model = AttentiveClassifier(
-        embeddings, p_encoder, q_encoder, a_encoder, vocab)
+        word_embeddings, pos_embeddings, ner_embeddings, p_encoder, q_encoder,
+        a_encoder, vocab)
     # Load the state from the file
     with open(save_path + 'model.th', 'rb') as f:
         model.load_state_dict(torch.load(f))
@@ -420,7 +437,8 @@ def run_model() -> None:
                            model.word_embeddings, model.q_encoder, cuda_device)
     elif MODEL == 'attentive':
         test_attentive_load(SAVE_PATH, result,
-                            model.word_embeddings, model.p_encoder,
+                            model.word_embeddings, model.pos_embeddings,
+                            model.ner_embeddings, model.p_encoder,
                             model.q_encoder, model.a_encoder, cuda_device)
     elif MODEL == 'reader':
         test_attentive_reader_load(SAVE_PATH, result,

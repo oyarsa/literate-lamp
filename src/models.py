@@ -173,6 +173,8 @@ class AttentiveClassifier(Model):
 
     def __init__(self,
                  word_embeddings: TextFieldEmbedder,
+                 pos_embeddings: TextFieldEmbedder,
+                 ner_embeddings: TextFieldEmbedder,
                  p_encoder: Seq2SeqEncoder,
                  q_encoder: Seq2SeqEncoder,
                  a_encoder: Seq2SeqEncoder,
@@ -181,7 +183,11 @@ class AttentiveClassifier(Model):
                  encoder_dropout: float = 0.0) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
+
         self.word_embeddings = word_embeddings
+        self.pos_embeddings = pos_embeddings
+        self.ner_embeddings = ner_embeddings
+
         if embedding_dropout > 0:
             self.embedding_dropout = torch.nn.Dropout(p=embedding_dropout)
         else:
@@ -257,12 +263,20 @@ class AttentiveClassifier(Model):
         q_mask = util.get_text_field_mask(question)
         a0_mask = util.get_text_field_mask(answer0)
         a1_mask = util.get_text_field_mask(answer1)
+        p_pos_mask = util.get_text_field_mask(passage_pos)
+        p_ner_mask = util.get_text_field_mask(passage_ner)
+        q_pos_mask = util.get_text_field_mask(question_pos)
 
         # We create the embeddings from the input text
         p_emb = self.embedding_dropout(self.word_embeddings(passage))
         q_emb = self.embedding_dropout(self.word_embeddings(question))
         a0_emb = self.embedding_dropout(self.word_embeddings(answer0))
         a1_emb = self.embedding_dropout(self.word_embeddings(answer1))
+        # And the POS tags
+        p_pos_emb = self.embedding_dropout(self.pos_embeddings(passage_pos))
+        q_pos_emb = self.embedding_dropout(self.pos_embeddings(question_pos))
+        # And the NER
+        p_ner_emb = self.embedding_dropout(self.ner_embeddings(passage_ner))
 
         # We compute the Sequence Attention
         # First the scores
@@ -280,10 +294,10 @@ class AttentiveClassifier(Model):
         a1_p_match = util.weighted_sum(p_emb, a1_p_scores)
 
         # We combine the inputs to our encoder
-        p_input = torch.cat((p_emb, p_q_match), dim=2)
+        p_input = torch.cat((p_emb, p_q_match, p_pos_emb, p_ner_emb), dim=2)
         a0_input = torch.cat((a0_emb, a0_p_match, a0_q_match), dim=2)
         a1_input = torch.cat((a1_emb, a1_p_match, a1_q_match), dim=2)
-        q_input = torch.cat((q_emb,), dim=2)
+        q_input = torch.cat((q_emb, q_pos_emb), dim=2)
 
         # Then we use those (along with the masks) as inputs for
         # our encoders

@@ -117,7 +117,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
 
     # Create a vocabulary from our whole dataset.
     vocab = Vocabulary.from_instances(dataset)
-    print('Vocabsize', vocab.get_vocab_size('tokens'))
+    print(vocab)
 
     model = build_model_fn(vocab)
     visualise_model(model)
@@ -189,14 +189,22 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     return model
 
 
+def learned_embeddings(vocab: Vocabulary, dimension: int,
+                       namespace: str = 'tokens') -> BasicTextFieldEmbedder:
+    embedding = Embedding(num_embeddings=vocab.get_vocab_size(namespace),
+                          embedding_dim=dimension)
+    embeddings = BasicTextFieldEmbedder({namespace: embedding})
+    return embeddings
+
+
 def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int,
-                     training: bool = False) -> BasicTextFieldEmbedder:
+                     training: bool = False, namespace: str = 'tokens'
+                     ) -> BasicTextFieldEmbedder:
     "Pre-trained embeddings using GloVe"
     token_embedding = Embedding(num_embeddings=vocab.get_vocab_size('tokens'),
                                 embedding_dim=dimension,
                                 trainable=training,
                                 pretrained_file=file_path)
-    # TODO: Not exactly sure how this one works
     word_embeddings = BasicTextFieldEmbedder({"tokens": token_embedding})
     return word_embeddings
 

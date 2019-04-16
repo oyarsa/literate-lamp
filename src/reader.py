@@ -49,8 +49,8 @@ class McScriptReader(DatasetReader):
         super().__init__(lazy=False)
         self.token_indexers = token_indexers or {
             "tokens": SingleIdTokenIndexer(lowercase_tokens=lowercase_tokens)}
-        self.pos_indexers = pos_indexers or {"pos": PosTagIndexer()}
-        self.ner_indexers = ner_indexers or {"ner": NerTagIndexer()}
+        self.pos_indexers = pos_indexers or {"pos_tokens": PosTagIndexer()}
+        self.ner_indexers = ner_indexers or {"ner_tokens": NerTagIndexer()}
         word_splitter = SpacyWordSplitter(
             pos_tags=True, parse=False, ner=True)
         self.tokeniser = WordTokenizer(word_splitter=word_splitter)
@@ -71,9 +71,6 @@ class McScriptReader(DatasetReader):
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
-        # passage_tokens = [Token(word) for word in passage.split()]
-        # question_tokens = [Token(word) for word in question.split()]
-        # answer_tokens = [Token(word) for word in answer.split()]
         passage_tokens = self.tokeniser.tokenize(text=passage)
         question_tokens = self.tokeniser.tokenize(text=question)
         answer0_tokens = self.tokeniser.tokenize(text=answer0)
