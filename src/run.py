@@ -44,7 +44,7 @@ OPTIMISER = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_OPTIM
 
 # Whether to fine-tune embeddings or not
 DEFAULT_FINETUNE = True
-FINETUNE = bool(sys.argv[4]) if len(sys.argv) >= 5 else DEFAULT_FINETUNE
+FINETUNE = sys.argv[4] == 'True' if len(sys.argv) >= 5 else DEFAULT_FINETUNE
 
 NUMBER_EPOCHS = int(sys.argv[5]) if len(sys.argv) >= 6 else None
 RNN_HIDDEN_SIZE = int(sys.argv[6]) if len(sys.argv) >= 7 else None
@@ -111,6 +111,7 @@ elif CONFIG == 'medium':
 SAVE_FOLDER = './experiments/'
 SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) \
     + f'-{OPTIMISER}-{FINETUNE}-{RNN_HIDDEN_SIZE}-{EMBEDDING_SIZE}' + '/'
+print('Save path', SAVE_PATH)
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
 
