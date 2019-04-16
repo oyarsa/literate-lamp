@@ -22,7 +22,7 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
-from torch.optim import Adam, Adamax, Adagrad, SGD
+from torch.optim import Adamax
 
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
 from predictor import McScriptPredictor
@@ -38,17 +38,6 @@ CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
 DEFAULT_MODEL = 'attentive'
 MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 
-# Which optimiser to use: 'adam', 'adamax', 'adagrad', 'sgd'
-DEFAULT_OPTIM = 'adam'
-OPTIMISER = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_OPTIM
-
-# Whether to fine-tune embeddings or not
-DEFAULT_FINETUNE = True
-FINETUNE = sys.argv[4] == 'True' if len(sys.argv) >= 5 else DEFAULT_FINETUNE
-
-NUMBER_EPOCHS = int(sys.argv[5]) if len(sys.argv) >= 6 else None
-RNN_HIDDEN_SIZE = int(sys.argv[6]) if len(sys.argv) >= 7 else None
-EMBEDDING_SIZE = int(sys.argv[7]) if len(sys.argv) >= 8 else None
 NER_EMBEDDING_DIM = 8
 POS_EMBEDDING_DIM = 12
 
@@ -58,26 +47,18 @@ POS_EMBEDDING_DIM = 12
 if CONFIG == 'large':
     # Path to our dataset
     DATA_PATH = './data/mctrain-data.json'
-    if EMBEDDING_SIZE is None or EMBEDDING_SIZE == 300:
-        # Path to our embeddings
-        GLOVE_PATH = '../External/glove.840B.300d.txt'
-        # Size of our embeddings
-        EMBEDDING_DIM = 300
-    elif EMBEDDING_SIZE is not None and EMBEDDING_SIZE == 100:
-        # Path to our embeddings
-        GLOVE_PATH = '../External/glove.6B.100d.txt'
-        # Size of our embeddings
-        EMBEDDING_DIM = 100
-    else:
-        raise ValueError('Invalid embedding size')
+    # Path to our embeddings
+    GLOVE_PATH = '../External/glove.840B.300d.txt'
+    # Size of our embeddings
+    EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
-    HIDDEN_DIM = RNN_HIDDEN_SIZE or 96
+    HIDDEN_DIM = 96
     # Path to save pre-processed input
     PREPROCESSED_PATH = '../External/data.processed.pickle'
     # Size of minibatch
     BATCH_SIZE = 32
     # Number of epochs to train model
-    NUM_EPOCHS = NUMBER_EPOCHS or 1000
+    NUM_EPOCHS = 50
 elif CONFIG == 'small':
     # Path to our dataset
     DATA_PATH = './data/small.json'
@@ -92,7 +73,7 @@ elif CONFIG == 'small':
     # Size of minibatch
     BATCH_SIZE = 3
     # Number of epochs to train model
-    NUM_EPOCHS = NUMBER_EPOCHS or 5
+    NUM_EPOCHS = 5
 elif CONFIG == 'medium':
     # Path to our dataset
     DATA_PATH = './data/mcdev-data.json'
@@ -107,12 +88,11 @@ elif CONFIG == 'medium':
     # Size of minibatch
     BATCH_SIZE = 25
     # Number of epochs to train model
-    NUM_EPOCHS = NUMBER_EPOCHS or 10
+    NUM_EPOCHS = 10
 
 # Path to save the Model and Vocabulary
 SAVE_FOLDER = './experiments/'
-SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) \
-    + f'-{OPTIMISER}-{FINETUNE}-{RNN_HIDDEN_SIZE}-{EMBEDDING_SIZE}' + '/'
+SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) + '/'
 print('Save path', SAVE_PATH)
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
@@ -195,7 +175,7 @@ def build_attentive(vocab: Vocabulary) -> Model:
     A `AttentiveClassifier` model ready to be trained.
     """
     word_embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
-                                       training=FINETUNE)
+                                       training=True)
     pos_embeddings = learned_embeddings(vocab, POS_EMBEDDING_DIM, 'pos_tokens')
     ner_embeddings = learned_embeddings(vocab, NER_EMBEDDING_DIM, 'ner_tokens')
 
@@ -391,16 +371,7 @@ def run_model() -> None:
 
     # Train and save our model
     def optimiser(model: Model) -> torch.optim.Optimizer:
-        if OPTIMISER == 'adam':
-            return Adam(model.parameters(), lr=0.001)
-        elif OPTIMISER == 'adamax':
-            return Adamax(model.parameters())
-        elif OPTIMISER == 'adagrad':
-            return Adagrad(model.parameters())
-        elif OPTIMISER == 'sgd':
-            return SGD(model.parameters(), lr=0.2, momentum=0.9, nesterov=True)
-        else:
-            raise ValueError('Invalid optimiser')
+        return Adamax(model.parameters(), lr=2e-3)
 
     # Create SAVE_FOLDER if it doesn't exist
     if not os.path.exists(SAVE_FOLDER):
