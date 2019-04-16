@@ -20,7 +20,7 @@ from allennlp.data.token_indexers import (TokenIndexer, SingleIdTokenIndexer,
 #   Currently we're doing just 'split', which is enough (as the data is laid
 #   out accordingly), but using a proper tokeniser could give us more
 #   information.
-from allennlp.data.tokenizers import WordTokenizer
+from allennlp.data.tokenizers import WordTokenizer, Tokenizer
 from allennlp.data.tokenizers.word_splitter import SpacyWordSplitter
 
 
@@ -42,6 +42,7 @@ class McScriptReader(DatasetReader):
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
+                 tokeniser: Optional[Tokenizer] = None,
                  token_indexers: Optional[Dict[str, TokenIndexer]] = None,
                  pos_indexers: Optional[Dict[str, TokenIndexer]] = None,
                  ner_indexers: Optional[Dict[str, TokenIndexer]] = None,
@@ -53,7 +54,8 @@ class McScriptReader(DatasetReader):
         self.ner_indexers = ner_indexers or {"ner_tokens": NerTagIndexer()}
         word_splitter = SpacyWordSplitter(
             pos_tags=True, parse=False, ner=True)
-        self.tokeniser = WordTokenizer(word_splitter=word_splitter)
+        self.tokeniser = tokeniser or WordTokenizer(
+            word_splitter=word_splitter)
 
     # Converts the text from each field in the input to `Token`s, and then
     # initialises `TextField` with them. These also take the token indexer

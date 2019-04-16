@@ -29,7 +29,7 @@ from predictor import McScriptPredictor
 from reader import McScriptReader
 from util import (example_input, is_cuda, train_model, glove_embeddings,
                   lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
-                  get_experiment_name, learned_embeddings)
+                  get_experiment_name, learned_embeddings, bert_embeddings)
 
 DEFAULT_CONFIG = 'medium'  # Can be: _medium_ , _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
@@ -40,6 +40,7 @@ MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 
 NER_EMBEDDING_DIM = 8
 POS_EMBEDDING_DIM = 12
+EMBEDDING_TYPE = 'bert'  # can also be 'glove'
 
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
@@ -90,6 +91,7 @@ elif CONFIG == 'medium':
     # Number of epochs to train model
     NUM_EPOCHS = 10
 
+BERT_PATH = '../External/bert-base-uncased.tar.gz'
 # Path to save the Model and Vocabulary
 SAVE_FOLDER = './experiments/'
 SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) + '/'
@@ -102,7 +104,7 @@ RANDOM_SEED = 1234
 RNN_TYPE = 'lstm'
 BIDIRECTIONAL = True
 RNN_LAYERS = 2
-RNN_DROPOUT = 0
+RNN_DROPOUT = 0.5
 EMBEDDDING_DROPOUT = 0.5
 
 
@@ -174,8 +176,13 @@ def build_attentive(vocab: Vocabulary) -> Model:
     -------
     A `AttentiveClassifier` model ready to be trained.
     """
-    word_embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
-                                       training=True)
+    if EMBEDDING_TYPE == 'glove':
+        word_embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
+                                           training=True)
+    elif EMBEDDING_TYPE == 'bert':
+        word_embeddings = bert_embeddings(pretrained_model=BERT_PATH)
+    else:
+        raise ValueError('Invalid word embedding type')
     pos_embeddings = learned_embeddings(vocab, POS_EMBEDDING_DIM, 'pos_tokens')
     ner_embeddings = learned_embeddings(vocab, NER_EMBEDDING_DIM, 'ner_tokens')
 
@@ -186,12 +193,14 @@ def build_attentive(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid RNN type')
 
+    embedding_dim = word_embeddings.get_output_dim()
+
     # p_emb + p_q_weighted + p_pos_emb + p_ner_emb
-    p_input_size = 2*EMBEDDING_DIM + POS_EMBEDDING_DIM + NER_EMBEDDING_DIM
+    p_input_size = 2*embedding_dim + POS_EMBEDDING_DIM + NER_EMBEDDING_DIM
     # q_emb + q_pos_emb
-    q_input_size = EMBEDDING_DIM + POS_EMBEDDING_DIM
+    q_input_size = embedding_dim + POS_EMBEDDING_DIM
     # a_emb + a_q_match + a_p_match
-    a_input_size = 3 * EMBEDDING_DIM
+    a_input_size = 3 * embedding_dim
 
     p_encoder = encoder_fn(input_dim=p_input_size, output_dim=HIDDEN_DIM,
                            num_layers=RNN_LAYERS, bidirectional=BIDIRECTIONAL,
@@ -212,8 +221,8 @@ def build_attentive(vocab: Vocabulary) -> Model:
         q_encoder=q_encoder,
         a_encoder=a_encoder,
         vocab=vocab,
-        embedding_dropout=0.4,
-        encoder_dropout=0.4
+        embedding_dropout=EMBEDDDING_DROPOUT,
+        encoder_dropout=RNN_DROPOUT
     )
 
     return model

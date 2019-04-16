@@ -263,9 +263,6 @@ class AttentiveClassifier(Model):
         q_mask = util.get_text_field_mask(question)
         a0_mask = util.get_text_field_mask(answer0)
         a1_mask = util.get_text_field_mask(answer1)
-        p_pos_mask = util.get_text_field_mask(passage_pos)
-        p_ner_mask = util.get_text_field_mask(passage_ner)
-        q_pos_mask = util.get_text_field_mask(question_pos)
 
         # We create the embeddings from the input text
         p_emb = self.embedding_dropout(self.word_embeddings(passage))

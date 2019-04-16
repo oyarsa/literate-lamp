@@ -31,11 +31,14 @@ from allennlp.common.file_utils import cached_path
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 # This is the actual neural layer for the embedding. This will be passed into
 # the embedder above.
-from allennlp.modules.token_embedders import Embedding
+from allennlp.modules.token_embedders import Embedding, PretrainedBertEmbedder
+from allennlp.data.token_indexers import PretrainedBertIndexer
 from allennlp.modules.seq2vec_encoders import (
     PytorchSeq2VecWrapper, Seq2VecEncoder)
 from allennlp.modules.seq2seq_encoders import (
     Seq2SeqEncoder, PytorchSeq2SeqWrapper)
+# from allennlp.modules.stacked_bidirectional_lstm import (
+#     StackedBidirectionalLstm)
 
 from reader import McScriptReader
 
@@ -103,7 +106,11 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
             dataset = pickle.load(preprocessed_file)
     else:
         # Creates a new reader
-        reader = McScriptReader(lowercase_tokens=True)
+        indexer = PretrainedBertIndexer(pretrained_model='bert-base-uncased')
+        tokeniser = indexer.wordpiece_tokenizer
+        reader = McScriptReader(tokeniser=tokeniser, token_indexers={
+            'tokens': indexer
+        })
         # Reads from our data. We're used `cached_path`, but data is currently
         # local, so it doesn't really do anything.
         print('>> Reading input from data file')
@@ -115,7 +122,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Splits our dataset into training (80%), validation (10%) and test (10%).
     train_data, val_data, test_data = train_val_test_split(dataset, 0.8)
 
-    # Create a vocabulary from our whole dataset.
+    # Create a vocabulary from our whole dataset. (for GloVe embeddings)
     vocab = Vocabulary.from_instances(dataset)
     print(vocab)
 
@@ -197,6 +204,22 @@ def learned_embeddings(vocab: Vocabulary, dimension: int,
     return embeddings
 
 
+def bert_embeddings(pretrained_model: str, training: bool = False,
+                    top_layer_only: bool = True
+                    ) -> BasicTextFieldEmbedder:
+    "Pre-trained embeddings using BERT"
+    bert = PretrainedBertEmbedder(
+        requires_grad=training,
+        pretrained_model=pretrained_model,
+        top_layer_only=top_layer_only
+    )
+    word_embeddings = BasicTextFieldEmbedder(token_embedders={'tokens': bert},
+                                             embedder_to_indexer_map={
+        'tokens': ['tokens', 'tokens-offsets']
+    }, allow_unmatched_keys=True)
+    return word_embeddings
+
+
 def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int,
                      training: bool = False, namespace: str = 'tokens'
                      ) -> BasicTextFieldEmbedder:
@@ -205,7 +228,7 @@ def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int,
                                 embedding_dim=dimension,
                                 trainable=training,
                                 pretrained_file=file_path)
-    word_embeddings = BasicTextFieldEmbedder({"tokens": token_embedding})
+    word_embeddings = BasicTextFieldEmbedder({namespace: token_embedding})
     return word_embeddings
 
 
@@ -219,6 +242,10 @@ def lstm_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
     return PytorchSeq2SeqWrapper(torch.nn.LSTM(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
         bidirectional=bidirectional, dropout=dropout))
+    # return PytorchSeq2SeqWrapper(StackedBidirectionalLstm(
+    #     input_dim, output_dim, num_layers=num_layers,
+    #     recurrent_dropout_probability=dropout,
+    #     layer_dropout_probability=dropout))
 
 
 def gru_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,

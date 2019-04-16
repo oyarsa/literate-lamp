@@ -5,6 +5,7 @@ from typing import Optional
 import torch
 from overrides import overrides
 from allennlp.modules.attention import Attention
+from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.nn.activations import Activation
 
 
@@ -47,3 +48,21 @@ class SequenceAttention(Attention):
         v_prime = self._activation(self._weights(v))
         alpha = u_prime.bmm(v_prime.transpose(1, 2))
         return alpha
+
+
+class BertSentencePooler(Seq2VecEncoder):
+    def __init__(self, embedding_dim: int) -> None:
+        super(BertSentencePooler, self).__init__()
+        self.embedding_dim = embedding_dim
+
+    @overrides
+    def get_input_dim(self) -> int:
+        return self.embedding_dim
+
+    @overrides
+    def get_output_dim(self) -> int:
+        return self.embedding_dim
+
+    def forward(self, embeddings: torch.Tensor,
+                mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        return embeddings[:, 0]
