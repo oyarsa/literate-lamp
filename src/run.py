@@ -268,6 +268,7 @@ def test_load(build_model_fn: Callable[[Vocabulary], Model],
         model.  encoder : The Encoder layer used for the model.
     cuda_device: Device number. -1 if CPU, >= 0 if GPU.
     """
+    print('\n>>>>Testing if the model saves and loads correctly')
     # Reload vocabulary
     with open(save_path / 'vocabulary.pickle', 'rb') as vocab_file:
         vocab = pickle.load(vocab_file)
@@ -298,6 +299,7 @@ def test_load(build_model_fn: Callable[[Vocabulary], Model],
     )
     np.testing.assert_array_almost_equal(
         original_prediction['logits'], prediction['logits'])
+    print('Success.')
 
 
 def run_model() -> None:

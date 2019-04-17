@@ -52,7 +52,7 @@ class McScriptReader(DatasetReader):
         self.rel_indexers = {
             "rel_tokens": SingleIdTokenIndexer(namespace='rel_tokens')}
 
-        word_splitter = SpacyWordSplitter(pos_tags=True, ner=True)
+        word_splitter = SpacyWordSplitter(pos_tags=True, ner=True, parse=True)
         self.word_tokeniser = WordTokenizer(word_splitter=word_splitter)
 
         word_indexer = word_indexer or PretrainedBertIndexer(
