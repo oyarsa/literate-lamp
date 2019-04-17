@@ -467,7 +467,7 @@ class AttentiveReader(Model):
         logits = torch.stack((out0, out1), dim=1)
         # We also compute the class with highest likelihood (our prediction)
         prob = torch.softmax(logits, dim=-1)
-        output = {"prob": prob}
+        output = {"logits": logits, "prob": prob}
 
         # Labels are optional. If they're present, we calculate the accuracy
         # and the loss function.
