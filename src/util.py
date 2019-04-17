@@ -29,6 +29,7 @@ from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 
 from allennlp.data.token_indexers import (PretrainedBertIndexer,
                                           SingleIdTokenIndexer)
+from allennlp.data.dataset_readers import DatasetReader
 
 from reader import McScriptReader
 
@@ -84,28 +85,35 @@ def train_val_test_split(
     return train_dataset, validation_dataset, test_dataset
 
 
-def train_model(build_model_fn: Callable[[Vocabulary], Model],
-                data_path: str,
-                conceptnet_path: Optional[str] = None,
-                save_path: Optional[str] = None,
-                use_cuda: bool = True,
-                batch_size: int = 2,
-                patience: int = 10,
-                num_epochs: int = 1,
-                optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
-                pre_processed_path: Optional[str] = None,
-                embedding_type: Optional[str] = 'bert',
-                grad_norm_clip: float = 10.0) -> Model:
-    "Train and save our baseline model."
+def load_data(data_path: Optional[str] = None,
+              embedding_type: str = 'bert',
+              conceptnet_path: Optional[str] = None,
+              pre_processed_path: Optional[str] = None
+              ) -> Tuple[DatasetReader, List[Instance]]:
+    """
+    Load data from file in data_path using McScriptReader.
+    A pre-processed pickle will be used if provided.
+    The reader is initialised according to the embedding_type (BERT requires
+    different indexing from GloVe).
+    If provided, ConceptNet tuples are loaded and used to build relations
+    in the reader.
 
+    Returns a tuple with the reader used (and properly configured for the data
+    read) and the dataset it self.
+    """
     # We load pre-processed data to save time (we don't need to tokenise or
     # do parsing/POS-tagging/NER).
     if pre_processed_path is not None and os.path.isfile(pre_processed_path):
         print('>> Reading input from pre-processed file')
         with open(pre_processed_path, 'rb') as preprocessed_file:
-            dataset = pickle.load(preprocessed_file)
+            reader, dataset = pickle.load(preprocessed_file)
     else:
-        # Creates a new reader
+        # It shouldn't be, since we don't have a pre-processed file we need
+        # to read from the original data.
+        if data_path is None:
+            raise ValueError('Please provide either a pre-processed file or '
+                             'a path to the dataset')
+        # Creates a new reader and reads from data_path
         if embedding_type == 'glove':
             word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
         elif embedding_type == 'bert':
@@ -121,7 +129,21 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
         dataset = reader.read(cached_path(data_path))
         if pre_processed_path is not None:
             with open(pre_processed_path, 'wb') as preprocessed_file:
-                pickle.dump(dataset, preprocessed_file)
+                pickle.dump((reader, dataset), preprocessed_file)
+
+    return reader, dataset
+
+
+def train_model(build_model_fn: Callable[[Vocabulary], Model],
+                dataset: List[Instance],
+                save_path: Optional[str] = None,
+                use_cuda: bool = True,
+                batch_size: int = 2,
+                patience: int = 10,
+                num_epochs: int = 1,
+                optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
+                grad_norm_clip: float = 10.0) -> Model:
+    "Train and save our baseline model."
 
     # Splits our dataset into training (80%), validation (10%) and test (10%).
     train_data, val_data, test_data = train_val_test_split(dataset, 0.8)
@@ -204,7 +226,8 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
         with open(save_path + 'model.th', 'wb') as model_file:
             torch.save(model.state_dict(), model_file)
         # Saving vocabulary data (namespaces and tokens)
-        vocab.save_to_files(save_path + 'vocabulary')
+        with open(save_path + 'vocabulary.pickle', 'wb') as vocab_file:
+            pickle.dump(vocab, vocab_file)
 
     return model
 
@@ -214,6 +237,6 @@ def get_experiment_name(model: str, config: str) -> str:
     Sets up the name for the experiment based on the model type, the
     configuration being used and the current date and time.
     """
-    date = datetime.datetime.now().strftime("%Y:%m:%d_%H:%M:%S")
-    name = f'{model}-{config}-{date}'
+    date = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    name = f'{model}.{config}.{date}'
     return name
