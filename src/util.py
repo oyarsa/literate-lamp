@@ -1,3 +1,4 @@
+"Utility functions for the other modules"
 from typing import Tuple, List, Callable, Optional
 import pickle
 import datetime
@@ -32,13 +33,10 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 # This is the actual neural layer for the embedding. This will be passed into
 # the embedder above.
 from allennlp.modules.token_embedders import Embedding, PretrainedBertEmbedder
-from allennlp.data.token_indexers import PretrainedBertIndexer
 from allennlp.modules.seq2vec_encoders import (
     PytorchSeq2VecWrapper, Seq2VecEncoder)
 from allennlp.modules.seq2seq_encoders import (
     Seq2SeqEncoder, PytorchSeq2SeqWrapper)
-# from allennlp.modules.stacked_bidirectional_lstm import (
-#     StackedBidirectionalLstm)
 
 from reader import McScriptReader
 
@@ -57,6 +55,7 @@ def visualise_model(model: Model) -> None:
 
 
 def example_input(index: int = 0) -> Tuple[str, str, str, str]:
+    "Returns an example data tuple. Currently we have tuples 0 and 1."
     examples = [
         "I called to my dog and got the leash off of the hook on the hall . My dog came quickly and I attached his leash to his collar . I put my phone and house keys into my pocket . I walked with my dog to the park across the street from the house and went to the paved walking path . We walked the length of the walking path twice . I listened to my dog to make sure he was n't getting overheated . I greeted people we passed by . I made sure that my dog did not approach anyone who did not want to pet my dog by keeping a firm hold of his leash . Once we completed two laps , we walked back to our house .|why did they lock the door?|Because there was a monster outside.|0",  # NOQA
         "I called to my dog and got the leash off of the hook on the hall . My dog came quickly and I attached his leash to his collar . I put my phone and house keys into my pocket . I walked with my dog to the park across the street from the house and went to the paved walking path . We walked the length of the walking path twice . I listened to my dog to make sure he was n't getting overheated . I greeted people we passed by . I made sure that my dog did not approach anyone who did not want to pet my dog by keeping a firm hold of his leash . Once we completed two laps , we walked back to our house .|why did they lock the door?|Because the dog and owner left for a walk.|1"  # NOQA
@@ -69,12 +68,19 @@ def example_input(index: int = 0) -> Tuple[str, str, str, str]:
 
 
 def is_cuda(model: Model) -> bool:
+    "Decide if `model` is hosted on the GPU (True) or CPU (False)"
     return bool(next(model.parameters()).is_cuda)
 
 
 def train_val_test_split(
         dataset: List[Instance], train_size: float
 ) -> Tuple[List[Instance], List[Instance], List[Instance]]:
+    """
+    Split `dataset` into 3 parts: train, validation and test.
+    The size of the training set is `train_size`% of the whole dataset.
+    The remaining is split in half for validation and test.
+    No shuffling is done here.
+    """
 
     train_size = int(train_size * len(dataset))
 
@@ -88,6 +94,7 @@ def train_val_test_split(
 
 def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 data_path: str,
+                conceptnet_path: Optional[str] = None,
                 save_path: Optional[str] = None,
                 use_cuda: bool = True,
                 batch_size: int = 2,
@@ -106,11 +113,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
             dataset = pickle.load(preprocessed_file)
     else:
         # Creates a new reader
-        indexer = PretrainedBertIndexer(pretrained_model='bert-base-uncased')
-        tokeniser = indexer.wordpiece_tokenizer
-        reader = McScriptReader(tokeniser=tokeniser, token_indexers={
-            'tokens': indexer
-        })
+        reader = McScriptReader(conceptnet_path=conceptnet_path)
         # Reads from our data. We're used `cached_path`, but data is currently
         # local, so it doesn't really do anything.
         print('>> Reading input from data file')
@@ -188,8 +191,8 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Saving weights (model state)
     # TODO: Use `Path` here instead of strings.
     if save_path is not None:
-        with open(save_path + 'model.th', 'wb') as f:
-            torch.save(model.state_dict(), f)
+        with open(save_path + 'model.th', 'wb') as model_file:
+            torch.save(model.state_dict(), model_file)
         # Saving vocabulary data (namespaces and tokens)
         vocab.save_to_files(save_path + 'vocabulary')
 
@@ -198,6 +201,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
 
 def learned_embeddings(vocab: Vocabulary, dimension: int,
                        namespace: str = 'tokens') -> BasicTextFieldEmbedder:
+    "Returns an Embedding layer to be learned, i.e., not pre-trained."
     embedding = Embedding(num_embeddings=vocab.get_vocab_size(namespace),
                           embedding_dim=dimension)
     embeddings = BasicTextFieldEmbedder({namespace: embedding})
@@ -213,10 +217,10 @@ def bert_embeddings(pretrained_model: str, training: bool = False,
         pretrained_model=pretrained_model,
         top_layer_only=top_layer_only
     )
-    word_embeddings = BasicTextFieldEmbedder(token_embedders={'tokens': bert},
-                                             embedder_to_indexer_map={
-        'tokens': ['tokens', 'tokens-offsets']
-    }, allow_unmatched_keys=True)
+    word_embeddings = BasicTextFieldEmbedder(
+        token_embedders={'tokens': bert},
+        embedder_to_indexer_map={'tokens': ['tokens', 'tokens-offsets']},
+        allow_unmatched_keys=True)
     return word_embeddings
 
 
@@ -242,10 +246,6 @@ def lstm_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
     return PytorchSeq2SeqWrapper(torch.nn.LSTM(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
         bidirectional=bidirectional, dropout=dropout))
-    # return PytorchSeq2SeqWrapper(StackedBidirectionalLstm(
-    #     input_dim, output_dim, num_layers=num_layers,
-    #     recurrent_dropout_probability=dropout,
-    #     layer_dropout_probability=dropout))
 
 
 def gru_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
@@ -285,6 +285,10 @@ def gru_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
 
 
 def get_experiment_name(model: str, config: str) -> str:
+    """
+    Sets up the name for the experiment based on the model type, the
+    configuration being used and the current date and time.
+    """
     date = datetime.datetime.now().strftime("%Y:%m:%d_%H:%M:%S")
     name = f'{model}-{config}-{date}'
     return name

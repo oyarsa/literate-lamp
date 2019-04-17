@@ -1,3 +1,4 @@
+"Deep Learning models for Commonsense Question Answering"
 from typing import Dict, Optional
 
 import torch
@@ -100,6 +101,9 @@ class BaselineClassifier(Model):
                 passage_pos: Dict[str, torch.Tensor],
                 passage_ner: Dict[str, torch.Tensor],
                 question_pos: Dict[str, torch.Tensor],
+                p_q_rel: Dict[str, torch.Tensor],
+                p_a0_rel: Dict[str, torch.Tensor],
+                p_a1_rel: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -175,6 +179,7 @@ class AttentiveClassifier(Model):
                  word_embeddings: TextFieldEmbedder,
                  pos_embeddings: TextFieldEmbedder,
                  ner_embeddings: TextFieldEmbedder,
+                 rel_embeddings: TextFieldEmbedder,
                  p_encoder: Seq2SeqEncoder,
                  q_encoder: Seq2SeqEncoder,
                  a_encoder: Seq2SeqEncoder,
@@ -187,6 +192,7 @@ class AttentiveClassifier(Model):
         self.word_embeddings = word_embeddings
         self.pos_embeddings = pos_embeddings
         self.ner_embeddings = ner_embeddings
+        self.rel_embeddings = rel_embeddings
 
         if embedding_dropout > 0:
             self.embedding_dropout = torch.nn.Dropout(p=embedding_dropout)
@@ -253,6 +259,9 @@ class AttentiveClassifier(Model):
                 passage_pos: Dict[str, torch.Tensor],
                 passage_ner: Dict[str, torch.Tensor],
                 question_pos: Dict[str, torch.Tensor],
+                p_q_rel: Dict[str, torch.Tensor],
+                p_a0_rel: Dict[str, torch.Tensor],
+                p_a1_rel: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -274,6 +283,10 @@ class AttentiveClassifier(Model):
         q_pos_emb = self.embedding_dropout(self.pos_embeddings(question_pos))
         # And the NER
         p_ner_emb = self.embedding_dropout(self.ner_embeddings(passage_ner))
+        # And the relations
+        p_q_rel_emb = self.embedding_dropout(self.rel_embeddings(p_q_rel))
+        p_a0_rel_emb = self.embedding_dropout(self.rel_embeddings(p_a0_rel))
+        p_a1_rel_emb = self.embedding_dropout(self.rel_embeddings(p_a1_rel))
 
         # We compute the Sequence Attention
         # First the scores
@@ -291,7 +304,8 @@ class AttentiveClassifier(Model):
         a1_p_match = util.weighted_sum(p_emb, a1_p_scores)
 
         # We combine the inputs to our encoder
-        p_input = torch.cat((p_emb, p_q_match, p_pos_emb, p_ner_emb), dim=2)
+        p_input = torch.cat((p_emb, p_q_match, p_pos_emb, p_ner_emb,
+                             p_q_rel_emb, p_a0_rel_emb, p_a1_rel_emb), dim=2)
         a0_input = torch.cat((a0_emb, a0_p_match, a0_q_match), dim=2)
         a1_input = torch.cat((a1_emb, a1_p_match, a1_q_match), dim=2)
         q_input = torch.cat((q_emb, q_pos_emb), dim=2)
@@ -417,6 +431,9 @@ class AttentiveReader(Model):
                 passage_pos: Dict[str, torch.Tensor],
                 passage_ner: Dict[str, torch.Tensor],
                 question_pos: Dict[str, torch.Tensor],
+                p_q_rel: Dict[str, torch.Tensor],
+                p_a0_rel: Dict[str, torch.Tensor],
+                p_a1_rel: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 

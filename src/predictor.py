@@ -1,3 +1,4 @@
+"Predictor for the McScript dataset"
 from typing import List, TextIO, cast
 
 import torch
@@ -35,11 +36,13 @@ class McScriptPredictor(Predictor):
     def __init__(self, model: Model, dataset_reader: DatasetReader) -> None:
         super().__init__(model, dataset_reader)
 
-    # Takes the sample data and creates a prediction JSON from it.
-    # This will then be used to create an `Instance` that will be passed to
-    # the model.
     def predict(self, passage_id: str, question_id: str, passage: str,
                 question: str, answer0: str, answer1: str) -> JsonDict:
+        """
+        Takes the sample data and creates a prediction JSON from it.
+        This will then be used to create an `Instance` that will be passed to
+        the model.
+        """
         return self.predict_json({
             "passage_id": passage_id,
             "question_id": question_id,
@@ -64,7 +67,7 @@ class McScriptPredictor(Predictor):
 
 def score_questions(model: Model,
                     output_file: TextIO,
-                    testset: List[Instance], verbose: bool = False,
+                    testset: List[Instance]
                     ) -> float:
     metric = CategoricalAccuracy()
 

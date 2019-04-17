@@ -1,4 +1,5 @@
-from typing import Iterator, Dict, Optional
+"Reads data from file and extracts features used in the models"
+from typing import Iterator, Optional, List
 import json
 # A sample is represented as an `Instance`, which data as `TextField`s, and
 # the target as a `LabelField`.
@@ -12,16 +13,15 @@ from allennlp.data.dataset_readers import DatasetReader
 # Tokens can be indexed in many ways. The `TokenIndexer` is the abstract class
 # for this, but here we'll use the `SingleIdTokenIndexer`, which maps each
 # token in the vocabulary to an integer.
-from allennlp.data.token_indexers import (TokenIndexer, SingleIdTokenIndexer,
-                                          PosTagIndexer, NerTagIndexer)
+from allennlp.data.token_indexers import (PosTagIndexer, NerTagIndexer,
+                                          SingleIdTokenIndexer)
 # This converts a word into a `Token` object, with fields for POS tags and
 # such.
-# TODO: Explore tokenisers from this package.
-#   Currently we're doing just 'split', which is enough (as the data is laid
-#   out accordingly), but using a proper tokeniser could give us more
-#   information.
-from allennlp.data.tokenizers import WordTokenizer, Tokenizer
+from allennlp.data.tokenizers import WordTokenizer, Token
 from allennlp.data.tokenizers.word_splitter import SpacyWordSplitter
+from allennlp.data.token_indexers import PretrainedBertIndexer
+
+from conceptnet import ConceptNet
 
 
 @DatasetReader.register('mcscript-reader')
@@ -42,20 +42,20 @@ class McScriptReader(DatasetReader):
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
-                 tokeniser: Optional[Tokenizer] = None,
-                 token_indexers: Optional[Dict[str, TokenIndexer]] = None,
-                 pos_indexers: Optional[Dict[str, TokenIndexer]] = None,
-                 ner_indexers: Optional[Dict[str, TokenIndexer]] = None,
-                 lowercase_tokens: bool = False) -> None:
+                 conceptnet_path: Optional[str] = None):
         super().__init__(lazy=False)
-        self.token_indexers = token_indexers or {
-            "tokens": SingleIdTokenIndexer(lowercase_tokens=lowercase_tokens)}
-        self.pos_indexers = pos_indexers or {"pos_tokens": PosTagIndexer()}
-        self.ner_indexers = ner_indexers or {"ner_tokens": NerTagIndexer()}
-        word_splitter = SpacyWordSplitter(
-            pos_tags=True, parse=False, ner=True)
-        self.tokeniser = tokeniser or WordTokenizer(
-            word_splitter=word_splitter)
+        self.pos_indexers = {"pos_tokens": PosTagIndexer()}
+        self.ner_indexers = {"ner_tokens": NerTagIndexer()}
+        self.rel_indexers = {
+            "rel_tokens": SingleIdTokenIndexer(namespace='rel_tokens')}
+
+        word_splitter = SpacyWordSplitter(pos_tags=True, ner=True)
+        self.word_tokeniser = WordTokenizer(word_splitter=word_splitter)
+
+        self.bert_indexers = {'tokens': PretrainedBertIndexer(
+            pretrained_model='bert-base-uncased')}
+
+        self.conceptnet = ConceptNet(conceptnet_path=conceptnet_path)
 
     # Converts the text from each field in the input to `Token`s, and then
     # initialises `TextField` with them. These also take the token indexer
@@ -73,21 +73,36 @@ class McScriptReader(DatasetReader):
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
-        passage_tokens = self.tokeniser.tokenize(text=passage)
-        question_tokens = self.tokeniser.tokenize(text=question)
-        answer0_tokens = self.tokeniser.tokenize(text=answer0)
-        answer1_tokens = self.tokeniser.tokenize(text=answer1)
+        passage_tokens = self.word_tokeniser.tokenize(text=passage)
+        question_tokens = self.word_tokeniser.tokenize(text=question)
+        answer0_tokens = self.word_tokeniser.tokenize(text=answer0)
+        answer1_tokens = self.word_tokeniser.tokenize(text=answer1)
+
+        passage_words = toks2strs(passage_tokens)
+        question_words = toks2strs(question_tokens)
+        answer0_words = toks2strs(answer0_tokens)
+        answer1_words = toks2strs(answer1_tokens)
+
+        p_q_relations = strs2toks(self.conceptnet.get_text_query_relations(
+            passage_words, question_words))
+        p_a0_relations = strs2toks(self.conceptnet.get_text_query_relations(
+            passage_words, answer0_words))
+        p_a1_relations = strs2toks(self.conceptnet.get_text_query_relations(
+            passage_words, answer1_words))
 
         fields = {
             "passage_id": MetadataField(passage_id),
             "question_id": MetadataField(question_id),
-            "passage": TextField(passage_tokens, self.token_indexers),
+            "passage": TextField(passage_tokens, self.bert_indexers),
             "passage_pos": TextField(passage_tokens, self.pos_indexers),
             "passage_ner": TextField(passage_tokens, self.ner_indexers),
-            "question": TextField(question_tokens, self.token_indexers),
+            "question": TextField(question_tokens, self.bert_indexers),
             "question_pos": TextField(question_tokens, self.pos_indexers),
-            "answer0": TextField(answer0_tokens, self.token_indexers),
-            "answer1": TextField(answer1_tokens, self.token_indexers),
+            "answer0": TextField(answer0_tokens, self.bert_indexers),
+            "answer1": TextField(answer1_tokens, self.bert_indexers),
+            "p_q_rel": TextField(p_q_relations, self.rel_indexers),
+            "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
+            "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
         }
 
         if label0 is not None:
@@ -104,8 +119,8 @@ class McScriptReader(DatasetReader):
 
     # Reads a file from `file_path` and returns a list of `Instances`.
     def _read(self, file_path: str) -> Iterator[Instance]:
-        with open(file_path) as f:
-            data = json.load(f)
+        with open(file_path) as datafile:
+            data = json.load(datafile)
 
         instances = data['data']['instance']
         for instance in instances:
@@ -114,7 +129,7 @@ class McScriptReader(DatasetReader):
 
             if 'question' not in instance['questions']:
                 instance['questions'] = []
-            elif type(instance['questions']['question']) is list:
+            elif isinstance(instance['questions']['question'], list):
                 instance['questions'] = instance['questions']['question']
             else:
                 instance['questions'] = [instance['questions']['question']]
@@ -142,3 +157,13 @@ class McScriptReader(DatasetReader):
                 yield self.text_to_instance(passage_id, question_id, passage,
                                             question_text, answers[0],
                                             answers[1], labels[0])
+
+
+def strs2toks(strings: List[str]) -> List[Token]:
+    "Converts each string in the list to a Token"
+    return [Token(s) for s in strings]
+
+
+def toks2strs(tokens: List[Token]) -> List[str]:
+    "Converts each Token in the list to a str (using the text attribute)"
+    return [t.text for t in tokens]

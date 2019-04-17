@@ -16,13 +16,13 @@ import sys
 import os
 
 import torch
+from torch.optim import Adamax
 import numpy as np
 
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
-from torch.optim import Adamax
 
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
 from predictor import McScriptPredictor
@@ -39,6 +39,7 @@ DEFAULT_MODEL = 'attentive'
 MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 
 NER_EMBEDDING_DIM = 8
+REL_EMBEDDING_DIM = 10
 POS_EMBEDDING_DIM = 12
 EMBEDDING_TYPE = 'bert'  # can also be 'glove'
 
@@ -92,6 +93,7 @@ elif CONFIG == 'medium':
     NUM_EPOCHS = 10
 
 BERT_PATH = '../External/bert-base-uncased.tar.gz'
+CONCEPTNET_PATH = '../External/conceptnet.csv'
 # Path to save the Model and Vocabulary
 SAVE_FOLDER = './experiments/'
 SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) + '/'
@@ -185,6 +187,7 @@ def build_attentive(vocab: Vocabulary) -> Model:
         raise ValueError('Invalid word embedding type')
     pos_embeddings = learned_embeddings(vocab, POS_EMBEDDING_DIM, 'pos_tokens')
     ner_embeddings = learned_embeddings(vocab, NER_EMBEDDING_DIM, 'ner_tokens')
+    rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
 
     if RNN_TYPE == 'lstm':
         encoder_fn = lstm_seq2seq
@@ -195,8 +198,9 @@ def build_attentive(vocab: Vocabulary) -> Model:
 
     embedding_dim = word_embeddings.get_output_dim()
 
-    # p_emb + p_q_weighted + p_pos_emb + p_ner_emb
-    p_input_size = 2*embedding_dim + POS_EMBEDDING_DIM + NER_EMBEDDING_DIM
+    # p_emb + p_q_weighted + p_pos_emb + p_ner_emb + p_q_rel + 2*p_a_rel
+    p_input_size = (2*embedding_dim + POS_EMBEDDING_DIM + NER_EMBEDDING_DIM
+                    + 3*REL_EMBEDDING_DIM)
     # q_emb + q_pos_emb
     q_input_size = embedding_dim + POS_EMBEDDING_DIM
     # a_emb + a_q_match + a_p_match
@@ -215,6 +219,7 @@ def build_attentive(vocab: Vocabulary) -> Model:
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AttentiveClassifier(
         word_embeddings=word_embeddings,
+        rel_embeddings=rel_embeddings,
         pos_embeddings=pos_embeddings,
         ner_embeddings=ner_embeddings,
         p_encoder=p_encoder,
@@ -252,8 +257,8 @@ def test_attentive_reader_load(save_path: str,
     model = AttentiveReader(
         embeddings, p_encoder, q_encoder, a_encoder, vocab)
     # Load the state from the file
-    with open(save_path + 'model.th', 'rb') as f:
-        model.load_state_dict(torch.load(f))
+    with open(save_path + 'model.th', 'rb') as model_file:
+        model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
         model.cuda(cuda_device)
@@ -279,6 +284,7 @@ def test_attentive_load(save_path: str,
                         word_embeddings: TextFieldEmbedder,
                         pos_embeddings: TextFieldEmbedder,
                         ner_embeddings: TextFieldEmbedder,
+                        rel_embeddings: TextFieldEmbedder,
                         p_encoder: Seq2VecEncoder,
                         q_encoder: Seq2VecEncoder,
                         a_encoder: Seq2VecEncoder,
@@ -298,11 +304,11 @@ def test_attentive_load(save_path: str,
     vocab = Vocabulary.from_files(save_path + 'vocabulary')
     # Recreate the model.
     model = AttentiveClassifier(
-        word_embeddings, pos_embeddings, ner_embeddings, p_encoder, q_encoder,
-        a_encoder, vocab)
+        word_embeddings, pos_embeddings, ner_embeddings, rel_embeddings,
+        p_encoder, q_encoder, a_encoder, vocab)
     # Load the state from the file
-    with open(save_path + 'model.th', 'rb') as f:
-        model.load_state_dict(torch.load(f))
+    with open(save_path + 'model.th', 'rb') as model_file:
+        model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
         model.cuda(cuda_device)
@@ -344,8 +350,8 @@ def test_baseline_load(save_path: str,
     # Recreate the model.
     model = BaselineClassifier(embeddings, encoder, vocab)
     # Load the state from the file
-    with open(save_path + 'model.th', 'rb') as f:
-        model.load_state_dict(torch.load(f))
+    with open(save_path + 'model.th', 'rb') as model_file:
+        model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
         model.cuda(cuda_device)
@@ -368,6 +374,7 @@ def test_baseline_load(save_path: str,
 
 
 def run_model() -> None:
+    "Execute model according to the configuration"
     # Which model to use?
     if MODEL == 'baseline':
         build_fn = build_baseline
@@ -385,9 +392,13 @@ def run_model() -> None:
     # Create SAVE_FOLDER if it doesn't exist
     if not os.path.exists(SAVE_FOLDER):
         os.makedirs(SAVE_FOLDER)
-    model = train_model(build_fn, data_path=DATA_PATH,
-                        save_path=SAVE_PATH, num_epochs=NUM_EPOCHS,
-                        patience=50, batch_size=BATCH_SIZE,
+    model = train_model(build_fn,
+                        data_path=DATA_PATH,
+                        save_path=SAVE_PATH,
+                        conceptnet_path=CONCEPTNET_PATH,
+                        num_epochs=NUM_EPOCHS,
+                        patience=50,
+                        batch_size=BATCH_SIZE,
                         pre_processed_path=PREPROCESSED_PATH,
                         optimiser_fn=optimiser)
 
@@ -396,9 +407,9 @@ def run_model() -> None:
     predictor = McScriptPredictor(model, reader)
 
     print()
-    print('#'*5, 'EXAMPLE',  '#'*5)
+    print('#'*5, 'EXAMPLE', '#'*5)
     passage, question, answer1, label1 = example_input(0)
-    _, _, answer2, label2 = example_input(1)
+    _, _, answer2, _ = example_input(1)
     result = predictor.predict("", "", passage, question, answer1, answer2)
     prediction = np.argmax(result['prob'])
 
@@ -418,8 +429,9 @@ def run_model() -> None:
     elif MODEL == 'attentive':
         test_attentive_load(SAVE_PATH, result,
                             model.word_embeddings, model.pos_embeddings,
-                            model.ner_embeddings, model.p_encoder,
-                            model.q_encoder, model.a_encoder, cuda_device)
+                            model.ner_embeddings, model.rel_embeddings,
+                            model.p_encoder, model.q_encoder, model.a_encoder,
+                            cuda_device)
     elif MODEL == 'reader':
         test_attentive_reader_load(SAVE_PATH, result,
                                    model.word_embeddings, model.p_encoder,

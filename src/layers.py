@@ -51,6 +51,11 @@ class SequenceAttention(Attention):
 
 
 class BertSentencePooler(Seq2VecEncoder):
+    """
+    Produces a vector out of a Bert embedding layer by getting the first
+    token(CLS)
+    """
+
     def __init__(self, embedding_dim: int) -> None:
         super(BertSentencePooler, self).__init__()
         self.embedding_dim = embedding_dim
@@ -64,5 +69,5 @@ class BertSentencePooler(Seq2VecEncoder):
         return self.embedding_dim
 
     def forward(self, embeddings: torch.Tensor,
-                mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+                _mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         return embeddings[:, 0]
