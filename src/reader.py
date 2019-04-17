@@ -1,6 +1,8 @@
 "Reads data from file and extracts features used in the models"
 from typing import Iterator, Optional, List
 import json
+from pathlib import Path
+
 # A sample is represented as an `Instance`, which data as `TextField`s, and
 # the target as a `LabelField`.
 from allennlp.data import Instance
@@ -43,7 +45,7 @@ class McScriptReader(DatasetReader):
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
                  word_indexer: Optional[TokenIndexer] = None,
-                 conceptnet_path: Optional[str] = None):
+                 conceptnet_path: Optional[Path] = None):
         super().__init__(lazy=False)
         self.pos_indexers = {"pos_tokens": PosTagIndexer()}
         self.ner_indexers = {"ner_tokens": NerTagIndexer()}

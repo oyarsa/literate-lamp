@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 from typing import Tuple, TextIO
+from pathlib import Path
 
 
 def clean_word(string: str) -> Tuple[str, str]:
@@ -32,8 +33,8 @@ if __name__ == '__main__':
         print('Arguments: path_to_conceptnet output_path')
         exit(0)
     if len(sys.argv) >= 3:
-        concetpnet_path = sys.argv[1]
-        output_path = sys.argv[2]
+        concetpnet_path = Path(sys.argv[1])
+        output_path = Path(sys.argv[2])
     else:
         print('Missing arguments: path_to_conceptnet output_path')
         exit(1)

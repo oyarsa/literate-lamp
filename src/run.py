@@ -13,7 +13,7 @@ Then it checks if the saving went correctly.
 """
 from typing import Dict
 import sys
-import os
+from pathlib import Path
 import pickle
 
 import torch
@@ -45,16 +45,17 @@ POS_EMBEDDING_DIM = 12
 DEFAULT_EMBEDDING_TYPE = 'glove'  # can also be 'glove'
 EMBEDDING_TYPE = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_EMBEDDING_TYPE
 
-EXTERNAL_FOLDER = '../External'
+DATA_FOLDER = Path('data')
+EXTERNAL_FOLDER = Path('..', 'External')
 
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
 # always going to be.
 if CONFIG == 'large':
     # Path to our dataset
-    DATA_PATH = './data/mctrain-data.json'
+    DATA_PATH = DATA_FOLDER / 'mctrain-data.json'
     # Path to our embeddings
-    GLOVE_PATH = os.path.join(EXTERNAL_FOLDER, 'glove.840B.300d.txt')
+    GLOVE_PATH = EXTERNAL_FOLDER / 'glove.840B.300d.txt'
     # Size of our embeddings
     EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
@@ -65,9 +66,9 @@ if CONFIG == 'large':
     NUM_EPOCHS = 50
 elif CONFIG == 'small':
     # Path to our dataset
-    DATA_PATH = './data/small.json'
+    DATA_PATH = DATA_FOLDER / 'small.json'
     # Path to our embeddings
-    GLOVE_PATH = os.path.join(EXTERNAL_FOLDER, 'glove.6B.50d.txt')
+    GLOVE_PATH = EXTERNAL_FOLDER / 'glove.6B.50d.txt'
     # Size of our embeddings
     EMBEDDING_DIM = 50
     # Size of our hidden layers (for each encoder)
@@ -78,9 +79,9 @@ elif CONFIG == 'small':
     NUM_EPOCHS = 5
 elif CONFIG == 'medium':
     # Path to our dataset
-    DATA_PATH = './data/mcdev-data.json'
+    DATA_PATH = DATA_FOLDER / 'mcdev-data.json'
     # Path to our embeddings
-    GLOVE_PATH = os.path.join(EXTERNAL_FOLDER, 'glove.6B.100d.txt')
+    GLOVE_PATH = EXTERNAL_FOLDER / 'glove.6B.100d.txt'
     # Size of our embeddings
     EMBEDDING_DIM = 100
     # Size of our hidden layers (for each encoder)
@@ -90,17 +91,17 @@ elif CONFIG == 'medium':
     # Number of epochs to train model
     NUM_EPOCHS = 10
 
-BERT_PATH = os.path.join(EXTERNAL_FOLDER, 'bert-base-uncased.tar.gz')
-CONCEPTNET_PATH = os.path.join(EXTERNAL_FOLDER, 'conceptnet.csv')
+BERT_PATH = EXTERNAL_FOLDER / 'bert-base-uncased.tar.gz'
+CONCEPTNET_PATH = EXTERNAL_FOLDER / 'conceptnet.csv'
 
 # Path to save the Model and Vocabulary
-SAVE_FOLDER = './experiments/'
-SAVE_PATH = os.path.join(SAVE_FOLDER, get_experiment_name(MODEL, CONFIG))
+SAVE_FOLDER = Path('experiments')
+SAVE_PATH = SAVE_FOLDER / get_experiment_name(MODEL, CONFIG)
 print('Save path', SAVE_PATH)
 
 # Path to save pre-processed input
 PREPROCESSED_NAME = f'{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
-PREPROCESSED_PATH = os.path.join(EXTERNAL_FOLDER, PREPROCESSED_NAME)
+PREPROCESSED_PATH = EXTERNAL_FOLDER / PREPROCESSED_NAME
 print('Pre-processed data path:', PREPROCESSED_PATH)
 
 # Random seed (for reproducibility)
@@ -238,7 +239,7 @@ def build_attentive(vocab: Vocabulary) -> Model:
     return model
 
 
-def test_attentive_reader_load(save_path: str,
+def test_attentive_reader_load(save_path: Path,
                                original_prediction: Dict[str, torch.Tensor],
                                embeddings: TextFieldEmbedder,
                                p_encoder: Seq2VecEncoder,
@@ -257,13 +258,13 @@ def test_attentive_reader_load(save_path: str,
     cuda_device: Device number. -1 if CPU, >= 0 if GPU.
     """
     # Reload vocabulary
-    with open(os.path.join(save_path, 'vocabulary.pickle'), 'rb') as vfile:
-        vocab = pickle.load(vfile)
+    with open(save_path / 'vocabulary.pickle', 'rb') as vocab_file:
+        vocab = pickle.load(vocab_file)
     # Recreate the model.
     model = AttentiveReader(
         embeddings, p_encoder, q_encoder, a_encoder, vocab)
     # Load the state from the file
-    with open(os.path.join(save_path, 'model.th'), 'rb') as model_file:
+    with open(save_path / 'model.th', 'rb') as model_file:
         model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
@@ -287,7 +288,7 @@ def test_attentive_reader_load(save_path: str,
         original_prediction['prob'], prediction['prob'])
 
 
-def test_attentive_load(save_path: str,
+def test_attentive_load(save_path: Path,
                         original_prediction: Dict[str, torch.Tensor],
                         word_embeddings: TextFieldEmbedder,
                         pos_embeddings: TextFieldEmbedder,
@@ -309,14 +310,14 @@ def test_attentive_load(save_path: str,
     cuda_device: Device number. -1 if CPU, >= 0 if GPU.
     """
     # Reload vocabulary
-    with open(os.path.join(save_path, 'vocabulary.pickle'), 'rb') as vfile:
-        vocab = pickle.load(vfile)
+    with open(save_path / 'vocabulary.pickle', 'rb') as vocab_file:
+        vocab = pickle.load(vocab_file)
     # Recreate the model.
     model = AttentiveClassifier(
         word_embeddings, pos_embeddings, ner_embeddings, rel_embeddings,
         p_encoder, q_encoder, a_encoder, vocab)
     # Load the state from the file
-    with open(os.path.join(save_path, 'model.th'), 'rb') as model_file:
+    with open(save_path / 'model.th', 'rb') as model_file:
         model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
@@ -340,7 +341,7 @@ def test_attentive_load(save_path: str,
         original_prediction['logits'], prediction['logits'])
 
 
-def test_baseline_load(save_path: str,
+def test_baseline_load(save_path: Path,
                        original_prediction: Dict[str, torch.Tensor],
                        embeddings: TextFieldEmbedder,
                        encoder: Seq2VecEncoder,
@@ -357,12 +358,12 @@ def test_baseline_load(save_path: str,
     cuda_device: Device number. -1 if CPU, >= 0 if GPU.
     """
     # Reload vocabulary
-    with open(os.path.join(save_path, 'vocabulary.pickle'), 'rb') as vfile:
-        vocab = pickle.load(vfile)
+    with open(save_path / 'vocabulary.pickle', 'rb') as vocab_file:
+        vocab = pickle.load(vocab_file)
     # Recreate the model.
     model = BaselineClassifier(embeddings, encoder, vocab)
     # Load the state from the file
-    with open(os.path.join(save_path, 'model.th'), 'rb') as model_file:
+    with open(save_path / 'model.th', 'rb') as model_file:
         model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
@@ -404,7 +405,7 @@ def run_model() -> None:
         return Adamax(model.parameters(), lr=2e-3)
 
     # Create SAVE_FOLDER if it doesn't exist
-    os.makedirs(SAVE_FOLDER, exist_ok=True)
+    SAVE_FOLDER.mkdir(exist_ok=True)
     reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
                            embedding_type=EMBEDDING_TYPE)
     dataset = load_data(data_path=DATA_PATH,

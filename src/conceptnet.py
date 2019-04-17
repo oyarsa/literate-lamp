@@ -4,6 +4,7 @@ base and make queries for relations between words and sentences.
 """
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Optional
+from pathlib import Path
 
 
 class ConceptNet:
@@ -14,7 +15,7 @@ class ConceptNet:
     """
     NULL_REL = '<NULL>'
 
-    def __init__(self, conceptnet_path: Optional[str] = None) -> None:
+    def __init__(self, conceptnet_path: Optional[Path] = None) -> None:
         """
         Loads(relation, word1, word2) triples from `triples_path`
         and then accepts queries for relations between words.

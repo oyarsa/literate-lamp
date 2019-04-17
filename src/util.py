@@ -2,7 +2,7 @@
 from typing import Tuple, List, Callable, Optional
 import pickle
 import datetime
-import os
+from pathlib import Path
 
 import torch
 from torch.optim import SGD, Optimizer
@@ -86,7 +86,7 @@ def train_val_test_split(
 
 
 def create_reader(embedding_type: str = 'bert',
-                  conceptnet_path: Optional[str] = None) -> DatasetReader:
+                  conceptnet_path: Optional[Path] = None) -> DatasetReader:
     " Creates a new reader and reads from data_path"
     if embedding_type == 'glove':
         word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
@@ -102,8 +102,8 @@ def create_reader(embedding_type: str = 'bert',
 
 
 def load_data(reader: Optional[DatasetReader] = None,
-              data_path: Optional[str] = None,
-              pre_processed_path: Optional[str] = None
+              data_path: Optional[Path] = None,
+              pre_processed_path: Optional[Path] = None
               ) -> List[Instance]:
     """
     Load data from file in data_path using McScriptReader.
@@ -118,7 +118,7 @@ def load_data(reader: Optional[DatasetReader] = None,
     """
     # We load pre-processed data to save time (we don't need to tokenise or
     # do parsing/POS-tagging/NER).
-    if pre_processed_path is not None and os.path.isfile(pre_processed_path):
+    if pre_processed_path is not None and pre_processed_path.is_file():
         print('>> Reading input from pre-processed file')
         with open(pre_processed_path, 'rb') as preprocessed_file:
             dataset = pickle.load(preprocessed_file)
@@ -142,7 +142,7 @@ def load_data(reader: Optional[DatasetReader] = None,
 
 def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 dataset: List[Instance],
-                save_path: Optional[str] = None,
+                save_path: Optional[Path] = None,
                 use_cuda: bool = True,
                 batch_size: int = 2,
                 patience: int = 10,
@@ -201,7 +201,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Patience is how many epochs without improvement we'll tolerate.
     # We also let the trainer know about CUDA availability.
     if save_path is not None:
-        serialization_dir = os.path.join(save_path, 'training')
+        serialization_dir = save_path / 'training'
     trainer = Trainer(model=model,
                       optimizer=optimiser,
                       learning_rate_scheduler=lr_scheduler,
@@ -229,11 +229,11 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Saving weights (model state)
     # TODO: Use `Path` here instead of strings.
     if save_path is not None:
-        with open(os.path.join(save_path, 'model.th'), 'wb') as model_file:
+        with open(save_path / 'model.th', 'wb') as model_file:
             torch.save(model.state_dict(), model_file)
         # Saving vocabulary data (namespaces and tokens)
-        with open(os.path.join(save_path, 'vocabulary.pickle'), 'wb') as vfile:
-            pickle.dump(vocab, vfile)
+        with open(save_path / 'vocabulary.pickle', 'wb') as vocab_file:
+            pickle.dump(vocab, vocab_file)
 
     return model
 

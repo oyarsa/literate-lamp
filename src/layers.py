@@ -2,6 +2,8 @@
 Implements some layers that AllenNLP doesn't have.
 """
 from typing import Optional
+from pathlib import Path
+
 import torch
 from overrides import overrides
 from allennlp.modules.attention import Attention
@@ -95,7 +97,7 @@ def learned_embeddings(vocab: Vocabulary, dimension: int,
     return embeddings
 
 
-def bert_embeddings(pretrained_model: str, training: bool = False,
+def bert_embeddings(pretrained_model: Path, training: bool = False,
                     top_layer_only: bool = True
                     ) -> BasicTextFieldEmbedder:
     "Pre-trained embeddings using BERT"
@@ -111,7 +113,7 @@ def bert_embeddings(pretrained_model: str, training: bool = False,
     return word_embeddings
 
 
-def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int,
+def glove_embeddings(vocab: Vocabulary, file_path: Path, dimension: int,
                      training: bool = False, namespace: str = 'tokens'
                      ) -> BasicTextFieldEmbedder:
     "Pre-trained embeddings using GloVe"
