@@ -24,7 +24,6 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
-from allennlp.data.dataset_readers import DatasetReader
 
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
 from predictor import McScriptPredictor
@@ -46,6 +45,8 @@ POS_EMBEDDING_DIM = 12
 DEFAULT_EMBEDDING_TYPE = 'glove'  # can also be 'glove'
 EMBEDDING_TYPE = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_EMBEDDING_TYPE
 
+EXTERNAL_FOLDER = '../External'
+
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
 # always going to be.
@@ -53,7 +54,7 @@ if CONFIG == 'large':
     # Path to our dataset
     DATA_PATH = './data/mctrain-data.json'
     # Path to our embeddings
-    GLOVE_PATH = '../External/glove.840B.300d.txt'
+    GLOVE_PATH = os.path.join(EXTERNAL_FOLDER, 'glove.840B.300d.txt')
     # Size of our embeddings
     EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
@@ -66,7 +67,7 @@ elif CONFIG == 'small':
     # Path to our dataset
     DATA_PATH = './data/small.json'
     # Path to our embeddings
-    GLOVE_PATH = '../External/glove.6B.50d.txt'
+    GLOVE_PATH = os.path.join(EXTERNAL_FOLDER, 'glove.6B.50d.txt')
     # Size of our embeddings
     EMBEDDING_DIM = 50
     # Size of our hidden layers (for each encoder)
@@ -79,7 +80,7 @@ elif CONFIG == 'medium':
     # Path to our dataset
     DATA_PATH = './data/mcdev-data.json'
     # Path to our embeddings
-    GLOVE_PATH = '../External/glove.6B.100d.txt'
+    GLOVE_PATH = os.path.join(EXTERNAL_FOLDER, 'glove.6B.100d.txt')
     # Size of our embeddings
     EMBEDDING_DIM = 100
     # Size of our hidden layers (for each encoder)
@@ -89,16 +90,17 @@ elif CONFIG == 'medium':
     # Number of epochs to train model
     NUM_EPOCHS = 10
 
-BERT_PATH = '../External/bert-base-uncased.tar.gz'
-CONCEPTNET_PATH = '../External/conceptnet.csv'
+BERT_PATH = os.path.join(EXTERNAL_FOLDER, 'bert-base-uncased.tar.gz')
+CONCEPTNET_PATH = os.path.join(EXTERNAL_FOLDER, 'conceptnet.csv')
 
 # Path to save the Model and Vocabulary
 SAVE_FOLDER = './experiments/'
-SAVE_PATH = SAVE_FOLDER + get_experiment_name(MODEL, CONFIG) + '/'
+SAVE_PATH = os.path.join(SAVE_FOLDER, get_experiment_name(MODEL, CONFIG))
 print('Save path', SAVE_PATH)
 
 # Path to save pre-processed input
-PREPROCESSED_PATH = f'../External/{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
+PREPROCESSED_NAME = f'{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
+PREPROCESSED_PATH = os.path.join(EXTERNAL_FOLDER, PREPROCESSED_NAME)
 print('Pre-processed data path:', PREPROCESSED_PATH)
 
 # Random seed (for reproducibility)
@@ -242,7 +244,6 @@ def test_attentive_reader_load(save_path: str,
                                p_encoder: Seq2VecEncoder,
                                q_encoder: Seq2VecEncoder,
                                a_encoder: Seq2VecEncoder,
-                               reader: DatasetReader,
                                cuda_device: int) -> None:
     """
     Test if we can load the model and if its prediction matches the original.
@@ -256,19 +257,21 @@ def test_attentive_reader_load(save_path: str,
     cuda_device: Device number. -1 if CPU, >= 0 if GPU.
     """
     # Reload vocabulary
-    with open(save_path + 'vocabulary.pickle', 'rb') as vocab_file:
-        vocab = pickle.load(vocab_file)
+    with open(os.path.join(save_path, 'vocabulary.pickle'), 'rb') as vfile:
+        vocab = pickle.load(vfile)
     # Recreate the model.
     model = AttentiveReader(
         embeddings, p_encoder, q_encoder, a_encoder, vocab)
     # Load the state from the file
-    with open(save_path + 'model.th', 'rb') as model_file:
+    with open(os.path.join(save_path, 'model.th'), 'rb') as model_file:
         model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
         model.cuda(cuda_device)
 
     # Try predicting again and see if we get the same results (we should).
+    reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
+                           embedding_type=EMBEDDING_TYPE)
     predictor = McScriptPredictor(model, dataset_reader=reader)
     passage, question, answer0, _ = example_input(0)
     _, _, answer1, _ = example_input(1)
@@ -293,7 +296,6 @@ def test_attentive_load(save_path: str,
                         p_encoder: Seq2VecEncoder,
                         q_encoder: Seq2VecEncoder,
                         a_encoder: Seq2VecEncoder,
-                        reader: DatasetReader,
                         cuda_device: int) -> None:
     """
     Test if we can load the model and if its prediction matches the original.
@@ -307,20 +309,22 @@ def test_attentive_load(save_path: str,
     cuda_device: Device number. -1 if CPU, >= 0 if GPU.
     """
     # Reload vocabulary
-    with open(save_path + 'vocabulary.pickle', 'rb') as vocab_file:
-        vocab = pickle.load(vocab_file)
+    with open(os.path.join(save_path, 'vocabulary.pickle'), 'rb') as vfile:
+        vocab = pickle.load(vfile)
     # Recreate the model.
     model = AttentiveClassifier(
         word_embeddings, pos_embeddings, ner_embeddings, rel_embeddings,
         p_encoder, q_encoder, a_encoder, vocab)
     # Load the state from the file
-    with open(save_path + 'model.th', 'rb') as model_file:
+    with open(os.path.join(save_path, 'model.th'), 'rb') as model_file:
         model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
         model.cuda(cuda_device)
 
     # Try predicting again and see if we get the same results (we should).
+    reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
+                           embedding_type=EMBEDDING_TYPE)
     predictor = McScriptPredictor(model, dataset_reader=reader)
     passage, question, answer0, _ = example_input(0)
     _, _, answer1, _ = example_input(1)
@@ -340,7 +344,6 @@ def test_baseline_load(save_path: str,
                        original_prediction: Dict[str, torch.Tensor],
                        embeddings: TextFieldEmbedder,
                        encoder: Seq2VecEncoder,
-                       reader: DatasetReader,
                        cuda_device: int) -> None:
     """
     Test if we can load the model and if its prediction matches the original.
@@ -354,18 +357,20 @@ def test_baseline_load(save_path: str,
     cuda_device: Device number. -1 if CPU, >= 0 if GPU.
     """
     # Reload vocabulary
-    with open(save_path + 'vocabulary.pickle', 'rb') as vocab_file:
-        vocab = pickle.load(vocab_file)
+    with open(os.path.join(save_path, 'vocabulary.pickle'), 'rb') as vfile:
+        vocab = pickle.load(vfile)
     # Recreate the model.
     model = BaselineClassifier(embeddings, encoder, vocab)
     # Load the state from the file
-    with open(save_path + 'model.th', 'rb') as model_file:
+    with open(os.path.join(save_path, 'model.th'), 'rb') as model_file:
         model.load_state_dict(torch.load(model_file))
     # We've loaded the model. Let's move it to the GPU again if available.
     if cuda_device > -1:
         model.cuda(cuda_device)
 
     # Try predicting again and see if we get the same results (we should).
+    reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
+                           embedding_type=EMBEDDING_TYPE)
     predictor = McScriptPredictor(model, dataset_reader=reader)
     passage, question, answer0, _ = example_input(0)
 
@@ -435,18 +440,17 @@ def run_model() -> None:
     cuda_device = 0 if is_cuda(model) else -1
     if MODEL == 'baseline':
         test_baseline_load(SAVE_PATH, result, model.word_embeddings,
-                           model.q_encoder, reader, cuda_device)
+                           model.q_encoder, cuda_device)
     elif MODEL == 'attentive':
         test_attentive_load(SAVE_PATH, result,
                             model.word_embeddings, model.pos_embeddings,
                             model.ner_embeddings, model.rel_embeddings,
                             model.p_encoder, model.q_encoder, model.a_encoder,
-                            reader, cuda_device)
+                            cuda_device)
     elif MODEL == 'reader':
         test_attentive_reader_load(SAVE_PATH, result,
                                    model.word_embeddings, model.p_encoder,
                                    model.q_encoder, model.a_encoder,
-                                   reader,
                                    cuda_device)
     else:
         raise ValueError('Invalid model name')

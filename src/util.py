@@ -201,7 +201,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Patience is how many epochs without improvement we'll tolerate.
     # We also let the trainer know about CUDA availability.
     if save_path is not None:
-        serialization_dir = save_path + 'training'
+        serialization_dir = os.path.join(save_path, 'training')
     trainer = Trainer(model=model,
                       optimizer=optimiser,
                       learning_rate_scheduler=lr_scheduler,
@@ -229,11 +229,11 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Saving weights (model state)
     # TODO: Use `Path` here instead of strings.
     if save_path is not None:
-        with open(save_path + 'model.th', 'wb') as model_file:
+        with open(os.path.join(save_path, 'model.th'), 'wb') as model_file:
             torch.save(model.state_dict(), model_file)
         # Saving vocabulary data (namespaces and tokens)
-        with open(save_path + 'vocabulary.pickle', 'wb') as vocab_file:
-            pickle.dump(vocab, vocab_file)
+        with open(os.path.join(save_path, 'vocabulary.pickle'), 'wb') as vfile:
+            pickle.dump(vocab, vfile)
 
     return model
 
