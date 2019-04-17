@@ -25,20 +25,10 @@ from allennlp.data.iterators import BucketIterator
 from allennlp.common.file_utils import cached_path
 from allennlp.common.params import Params
 
-# These create text embeddings from a `TextField` input. Since our text data
-# is represented using `TextField`s, this makes sense.
-# Again, `TextFieldEmbedder` is the abstract class, `BasicTextFieldEmbedder`
-# is the implementation (as we're just using simple embeddings, no fancy
-# ELMo or BERT so far).
-from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-# This is the actual neural layer for the embedding. This will be passed into
-# the embedder above.
-from allennlp.modules.token_embedders import Embedding, PretrainedBertEmbedder
-from allennlp.modules.seq2vec_encoders import (
-    PytorchSeq2VecWrapper, Seq2VecEncoder)
-from allennlp.modules.seq2seq_encoders import (
-    Seq2SeqEncoder, PytorchSeq2SeqWrapper)
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
+
+from allennlp.data.token_indexers import (PretrainedBertIndexer,
+                                          SingleIdTokenIndexer)
 
 from reader import McScriptReader
 
@@ -104,6 +94,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 num_epochs: int = 1,
                 optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
                 pre_processed_path: Optional[str] = None,
+                embedding_type: Optional[str] = 'bert',
                 grad_norm_clip: float = 10.0) -> Model:
     "Train and save our baseline model."
 
@@ -115,7 +106,15 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
             dataset = pickle.load(preprocessed_file)
     else:
         # Creates a new reader
-        reader = McScriptReader(conceptnet_path=conceptnet_path)
+        if embedding_type == 'glove':
+            word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
+        elif embedding_type == 'bert':
+            word_indexer = PretrainedBertIndexer(
+                pretrained_model='bert-base-uncased')
+        else:
+            raise ValueError('Invalid embedding type')
+        reader = McScriptReader(conceptnet_path=conceptnet_path,
+                                word_indexer=word_indexer)
         # Reads from our data. We're used `cached_path`, but data is currently
         # local, so it doesn't really do anything.
         print('>> Reading input from data file')
@@ -208,91 +207,6 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
         vocab.save_to_files(save_path + 'vocabulary')
 
     return model
-
-
-def learned_embeddings(vocab: Vocabulary, dimension: int,
-                       namespace: str = 'tokens') -> BasicTextFieldEmbedder:
-    "Returns an Embedding layer to be learned, i.e., not pre-trained."
-    embedding = Embedding(num_embeddings=vocab.get_vocab_size(namespace),
-                          embedding_dim=dimension)
-    embeddings = BasicTextFieldEmbedder({namespace: embedding})
-    return embeddings
-
-
-def bert_embeddings(pretrained_model: str, training: bool = False,
-                    top_layer_only: bool = True
-                    ) -> BasicTextFieldEmbedder:
-    "Pre-trained embeddings using BERT"
-    bert = PretrainedBertEmbedder(
-        requires_grad=training,
-        pretrained_model=pretrained_model,
-        top_layer_only=top_layer_only
-    )
-    word_embeddings = BasicTextFieldEmbedder(
-        token_embedders={'tokens': bert},
-        embedder_to_indexer_map={'tokens': ['tokens', 'tokens-offsets']},
-        allow_unmatched_keys=True)
-    return word_embeddings
-
-
-def glove_embeddings(vocab: Vocabulary, file_path: str, dimension: int,
-                     training: bool = False, namespace: str = 'tokens'
-                     ) -> BasicTextFieldEmbedder:
-    "Pre-trained embeddings using GloVe"
-    token_embedding = Embedding(num_embeddings=vocab.get_vocab_size('tokens'),
-                                embedding_dim=dimension,
-                                trainable=training,
-                                pretrained_file=file_path)
-    word_embeddings = BasicTextFieldEmbedder({namespace: token_embedding})
-    return word_embeddings
-
-
-def lstm_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
-                 bidirectional: bool = False, dropout: float = 0.0
-                 ) -> Seq2SeqEncoder:
-    """
-    Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
-    though.
-    """
-    return PytorchSeq2SeqWrapper(torch.nn.LSTM(
-        input_dim, output_dim, batch_first=True, num_layers=num_layers,
-        bidirectional=bidirectional, dropout=dropout))
-
-
-def gru_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
-                bidirectional: bool = False, dropout: float = 0.0
-                ) -> Seq2SeqEncoder:
-    """
-    Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
-    though.
-    """
-    return PytorchSeq2SeqWrapper(torch.nn.GRU(
-        input_dim, output_dim, batch_first=True, num_layers=num_layers,
-        bidirectional=bidirectional, dropout=dropout))
-
-
-def lstm_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
-                 bidirectional: bool = False, dropout: float = 0.0
-                 ) -> Seq2VecEncoder:
-    """
-    Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
-    though.
-    """
-    return PytorchSeq2VecWrapper(torch.nn.LSTM(
-        input_dim, output_dim, batch_first=True, num_layers=num_layers,
-        bidirectional=bidirectional, dropout=dropout))
-
-
-def gru_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
-                bidirectional: bool = False, dropout: float = 0.0
-                ) -> Seq2VecEncoder:
-    """
-    Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
-    though.
-    """
-    return PytorchSeq2VecWrapper(torch.nn.GRU(
-        input_dim, output_dim, batch_first=True, num_layers=num_layers,
-        bidirectional=bidirectional, dropout=dropout))
 
 
 def get_experiment_name(model: str, config: str) -> str:

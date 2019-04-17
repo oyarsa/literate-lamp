@@ -27,9 +27,9 @@ from allennlp.data.vocabulary import Vocabulary
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
 from predictor import McScriptPredictor
 from reader import McScriptReader
-from util import (example_input, is_cuda, train_model, glove_embeddings,
-                  lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
-                  get_experiment_name, learned_embeddings, bert_embeddings)
+from util import (example_input, is_cuda, train_model, get_experiment_name)
+from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
+                    glove_embeddings, learned_embeddings, bert_embeddings)
 
 DEFAULT_CONFIG = 'medium'  # Can be: _medium_ , _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
@@ -41,7 +41,7 @@ MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 NER_EMBEDDING_DIM = 8
 REL_EMBEDDING_DIM = 10
 POS_EMBEDDING_DIM = 12
-EMBEDDING_TYPE = 'bert'  # can also be 'glove'
+EMBEDDING_TYPE = 'glove'  # can also be 'glove'
 
 # TODO: Proper configuration path for the External folder. The data one is
 # going to be part of the repo, so this is fine for now, but External isn't
@@ -399,6 +399,7 @@ def run_model() -> None:
                         num_epochs=NUM_EPOCHS,
                         patience=50,
                         batch_size=BATCH_SIZE,
+                        embedding_type=EMBEDDING_TYPE,
                         pre_processed_path=PREPROCESSED_PATH,
                         optimiser_fn=optimiser)
 

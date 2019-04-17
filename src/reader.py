@@ -19,7 +19,7 @@ from allennlp.data.token_indexers import (PosTagIndexer, NerTagIndexer,
 # such.
 from allennlp.data.tokenizers import WordTokenizer, Token
 from allennlp.data.tokenizers.word_splitter import SpacyWordSplitter
-from allennlp.data.token_indexers import PretrainedBertIndexer
+from allennlp.data.token_indexers import PretrainedBertIndexer, TokenIndexer
 
 from conceptnet import ConceptNet
 
@@ -42,6 +42,7 @@ class McScriptReader(DatasetReader):
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
+                 word_indexer: Optional[TokenIndexer] = None,
                  conceptnet_path: Optional[str] = None):
         super().__init__(lazy=False)
         self.pos_indexers = {"pos_tokens": PosTagIndexer()}
@@ -52,8 +53,9 @@ class McScriptReader(DatasetReader):
         word_splitter = SpacyWordSplitter(pos_tags=True, ner=True)
         self.word_tokeniser = WordTokenizer(word_splitter=word_splitter)
 
-        self.bert_indexers = {'tokens': PretrainedBertIndexer(
-            pretrained_model='bert-base-uncased')}
+        word_indexer = word_indexer or PretrainedBertIndexer(
+            pretrained_model='bert-base-uncased')
+        self.word_indexers = {'tokens': word_indexer}
 
         self.conceptnet = ConceptNet(conceptnet_path=conceptnet_path)
 
@@ -93,13 +95,13 @@ class McScriptReader(DatasetReader):
         fields = {
             "passage_id": MetadataField(passage_id),
             "question_id": MetadataField(question_id),
-            "passage": TextField(passage_tokens, self.bert_indexers),
+            "passage": TextField(passage_tokens, self.word_indexers),
             "passage_pos": TextField(passage_tokens, self.pos_indexers),
             "passage_ner": TextField(passage_tokens, self.ner_indexers),
-            "question": TextField(question_tokens, self.bert_indexers),
+            "question": TextField(question_tokens, self.word_indexers),
             "question_pos": TextField(question_tokens, self.pos_indexers),
-            "answer0": TextField(answer0_tokens, self.bert_indexers),
-            "answer1": TextField(answer1_tokens, self.bert_indexers),
+            "answer0": TextField(answer0_tokens, self.word_indexers),
+            "answer1": TextField(answer1_tokens, self.word_indexers),
             "p_q_rel": TextField(p_q_relations, self.rel_indexers),
             "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
             "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
