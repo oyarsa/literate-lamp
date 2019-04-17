@@ -57,7 +57,7 @@ if CONFIG == 'large':
     # Path to our embeddings
     GLOVE_PATH = EXTERNAL_FOLDER / 'glove.840B.300d.txt'
     # Size of our embeddings
-    EMBEDDING_DIM = 300
+    GLOVE_EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 96
     # Size of minibatch
@@ -70,7 +70,7 @@ elif CONFIG == 'small':
     # Path to our embeddings
     GLOVE_PATH = EXTERNAL_FOLDER / 'glove.6B.50d.txt'
     # Size of our embeddings
-    EMBEDDING_DIM = 50
+    GLOVE_EMBEDDING_DIM = 50
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 50
     # Size of minibatch
@@ -83,7 +83,7 @@ elif CONFIG == 'medium':
     # Path to our embeddings
     GLOVE_PATH = EXTERNAL_FOLDER / 'glove.6B.100d.txt'
     # Size of our embeddings
-    EMBEDDING_DIM = 100
+    GLOVE_EMBEDDING_DIM = 100
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 64
     # Size of minibatch
@@ -128,7 +128,14 @@ def build_baseline(vocab: Vocabulary) -> Model:
     -------
     A `BaselineClassifier` model ready to be trained.
     """
-    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM)
+    if EMBEDDING_TYPE == 'glove':
+        embeddings = glove_embeddings(vocab, GLOVE_PATH, GLOVE_EMBEDDING_DIM,
+                                      training=True)
+    elif EMBEDDING_TYPE == 'bert':
+        embeddings = bert_embeddings(pretrained_model=BERT_PATH)
+    else:
+        raise ValueError('Invalid word embedding type')
+
     if RNN_TYPE == 'lstm':
         encoder_fn = lstm_encoder
     elif RNN_TYPE == 'gru':
@@ -136,7 +143,8 @@ def build_baseline(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid RNN type')
 
-    encoder = encoder_fn(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
+    embedding_dim = embeddings.get_output_dim()
+    encoder = encoder_fn(embedding_dim, HIDDEN_DIM, num_layers=RNN_LAYERS,
                          bidirectional=BIDIRECTIONAL)
 
     # Instantiate modele with our embedding, encoder and vocabulary
@@ -156,14 +164,20 @@ def build_attentive_reader(vocab: Vocabulary) -> Model:
     -------
     A `AttentiveClassifier` model ready to be trained.
     """
-    embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
-                                  training=True)
+    if EMBEDDING_TYPE == 'glove':
+        embeddings = glove_embeddings(vocab, GLOVE_PATH, GLOVE_EMBEDDING_DIM,
+                                      training=True)
+    elif EMBEDDING_TYPE == 'bert':
+        embeddings = bert_embeddings(pretrained_model=BERT_PATH)
+    else:
+        raise ValueError('Invalid word embedding type')
 
-    p_encoder = gru_seq2seq(EMBEDDING_DIM, HIDDEN_DIM, num_layers=RNN_LAYERS,
+    embedding_dim = embeddings.get_output_dim()
+    p_encoder = gru_seq2seq(embedding_dim, HIDDEN_DIM, num_layers=RNN_LAYERS,
                             bidirectional=BIDIRECTIONAL)
-    q_encoder = gru_encoder(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
+    q_encoder = gru_encoder(embedding_dim, HIDDEN_DIM, num_layers=1,
                             bidirectional=BIDIRECTIONAL)
-    a_encoder = gru_encoder(EMBEDDING_DIM, HIDDEN_DIM, num_layers=1,
+    a_encoder = gru_encoder(embedding_dim, HIDDEN_DIM, num_layers=1,
                             bidirectional=BIDIRECTIONAL)
 
     # Instantiate modele with our embedding, encoder and vocabulary
@@ -185,8 +199,8 @@ def build_attentive(vocab: Vocabulary) -> Model:
     A `AttentiveClassifier` model ready to be trained.
     """
     if EMBEDDING_TYPE == 'glove':
-        word_embeddings = glove_embeddings(vocab, GLOVE_PATH, EMBEDDING_DIM,
-                                           training=True)
+        word_embeddings = glove_embeddings(vocab, GLOVE_PATH,
+                                           GLOVE_EMBEDDING_DIM, training=True)
     elif EMBEDDING_TYPE == 'bert':
         word_embeddings = bert_embeddings(pretrained_model=BERT_PATH)
     else:
