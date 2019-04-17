@@ -23,6 +23,7 @@ from allennlp.data.iterators import BucketIterator
 # time it's ran, and uses the cached result in the next times. If it's a local
 # file, it does nothing.
 from allennlp.common.file_utils import cached_path
+from allennlp.common.params import Params
 
 # These create text embeddings from a `TextField` input. Since our text data
 # is represented using `TextField`s, this makes sense.
@@ -37,6 +38,7 @@ from allennlp.modules.seq2vec_encoders import (
     PytorchSeq2VecWrapper, Seq2VecEncoder)
 from allennlp.modules.seq2seq_encoders import (
     Seq2SeqEncoder, PytorchSeq2SeqWrapper)
+from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 
 from reader import McScriptReader
 
@@ -149,6 +151,14 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     else:
         optimiser = optimiser_fn(model)
 
+    params = Params(params={
+        "type": "reduce_on_plateau",
+        "factor": 0.5,
+        "patience": 5,
+        "verbose": True,
+    })
+    lr_scheduler = LearningRateScheduler.from_params(optimiser, params)
+
     # Our trainer needs an iterator to go through our data. This creates
     # batches, sorting them by the number of tokens in each text field, so we
     # have samples with similar number of tokens to minimise padding.
@@ -167,6 +177,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
         serialization_dir = save_path + 'training'
     trainer = Trainer(model=model,
                       optimizer=optimiser,
+                      learning_rate_scheduler=lr_scheduler,
                       iterator=iterator,
                       train_dataset=train_data,
                       validation_dataset=val_data,
