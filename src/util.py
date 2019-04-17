@@ -85,11 +85,26 @@ def train_val_test_split(
     return train_dataset, validation_dataset, test_dataset
 
 
-def load_data(data_path: Optional[str] = None,
-              embedding_type: str = 'bert',
-              conceptnet_path: Optional[str] = None,
+def create_reader(embedding_type: str = 'bert',
+                  conceptnet_path: Optional[str] = None) -> DatasetReader:
+    " Creates a new reader and reads from data_path"
+    if embedding_type == 'glove':
+        word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
+    elif embedding_type == 'bert':
+        word_indexer = PretrainedBertIndexer(
+            pretrained_model='bert-base-uncased')
+    else:
+        raise ValueError('Invalid embedding type')
+
+    reader = McScriptReader(conceptnet_path=conceptnet_path,
+                            word_indexer=word_indexer)
+    return reader
+
+
+def load_data(reader: Optional[DatasetReader] = None,
+              data_path: Optional[str] = None,
               pre_processed_path: Optional[str] = None
-              ) -> Tuple[DatasetReader, List[Instance]]:
+              ) -> List[Instance]:
     """
     Load data from file in data_path using McScriptReader.
     A pre-processed pickle will be used if provided.
@@ -106,32 +121,23 @@ def load_data(data_path: Optional[str] = None,
     if pre_processed_path is not None and os.path.isfile(pre_processed_path):
         print('>> Reading input from pre-processed file')
         with open(pre_processed_path, 'rb') as preprocessed_file:
-            reader, dataset = pickle.load(preprocessed_file)
+            dataset = pickle.load(preprocessed_file)
     else:
         # It shouldn't be, since we don't have a pre-processed file we need
         # to read from the original data.
-        if data_path is None:
+        if data_path is None or reader is None:
             raise ValueError('Please provide either a pre-processed file or '
-                             'a path to the dataset')
-        # Creates a new reader and reads from data_path
-        if embedding_type == 'glove':
-            word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
-        elif embedding_type == 'bert':
-            word_indexer = PretrainedBertIndexer(
-                pretrained_model='bert-base-uncased')
-        else:
-            raise ValueError('Invalid embedding type')
-        reader = McScriptReader(conceptnet_path=conceptnet_path,
-                                word_indexer=word_indexer)
+                             'a path to the dataset. If the path is provided, '
+                             'a DatasetReader is also needed to read it.')
         # Reads from our data. We're used `cached_path`, but data is currently
         # local, so it doesn't really do anything.
         print('>> Reading input from data file')
         dataset = reader.read(cached_path(data_path))
         if pre_processed_path is not None:
             with open(pre_processed_path, 'wb') as preprocessed_file:
-                pickle.dump((reader, dataset), preprocessed_file)
+                pickle.dump(dataset, preprocessed_file)
 
-    return reader, dataset
+    return dataset
 
 
 def train_model(build_model_fn: Callable[[Vocabulary], Model],

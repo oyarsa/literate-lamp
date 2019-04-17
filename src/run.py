@@ -29,7 +29,7 @@ from allennlp.data.dataset_readers import DatasetReader
 from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
-                  load_data)
+                  load_data, create_reader)
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings)
 
@@ -400,10 +400,11 @@ def run_model() -> None:
 
     # Create SAVE_FOLDER if it doesn't exist
     os.makedirs(SAVE_FOLDER, exist_ok=True)
-    reader, dataset = load_data(data_path=DATA_PATH,
-                                conceptnet_path=CONCEPTNET_PATH,
-                                pre_processed_path=PREPROCESSED_PATH,
-                                embedding_type=EMBEDDING_TYPE)
+    reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
+                           embedding_type=EMBEDDING_TYPE)
+    dataset = load_data(data_path=DATA_PATH,
+                        reader=reader,
+                        pre_processed_path=PREPROCESSED_PATH)
     model = train_model(build_fn,
                         dataset=dataset,
                         save_path=SAVE_PATH,
