@@ -1,7 +1,8 @@
 "Utility functions for the other modules"
-from typing import Tuple, List, Callable, Optional
+from typing import Tuple, List, Callable, Optional, Union
 import pickle
 import datetime
+import string
 from pathlib import Path
 
 import torch
@@ -27,11 +28,17 @@ from allennlp.common.params import Params
 
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 
+from allennlp.data.tokenizers import Token
 from allennlp.data.token_indexers import (PretrainedBertIndexer,
                                           SingleIdTokenIndexer)
 from allennlp.data.dataset_readers import DatasetReader
 
+from nltk.corpus import stopwords
+
 from reader import McScriptReader
+
+STOPWORDS = set(stopwords.words('english'))
+PUNCTUATION = set(string.punctuation)
 
 
 def visualise_model(model: Model) -> None:
@@ -246,3 +253,20 @@ def get_experiment_name(model: str, config: str) -> str:
     date = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     name = f'{model}.{config}.{date}'
     return name
+
+
+def is_stopword(word: Union[str, Token]) -> bool:
+    "Returns True if a word (or the text of Token) is a stopword."
+    if isinstance(word, Token):
+        word_str = word.text
+    word_str = word.lower()
+
+    return word_str in STOPWORDS
+
+
+def is_punctuation(word: Union[str, Token]) -> bool:
+    "Returns True if a word (or the text of Token) is punctuation."
+    if isinstance(word, Token):
+        word_str = word.text
+
+    return word_str in PUNCTUATION
