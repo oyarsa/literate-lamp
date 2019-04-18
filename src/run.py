@@ -361,7 +361,6 @@ def run_model() -> None:
                         test_data=test_dataset,
                         save_path=SAVE_PATH,
                         num_epochs=NUM_EPOCHS,
-                        patience=50,
                         batch_size=BATCH_SIZE,
                         optimiser_fn=optimiser,
                         cuda_device=CUDA_DEVICE)
