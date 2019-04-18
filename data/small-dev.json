@@ -1,0 +1,759 @@
+{
+    "data": {
+        "instance": [
+            {
+                "@id": "214",
+                "@scenario": "going to the theater",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "My friend Steve and I had seen advertisements on television for a new movie that was coming out to the theaters.  We waiting until opening day, and went down that night to buy our tickets to watch the show.  We waited in line for several minutes before we were able to pay for our tickets.  Once we had our tickets we got in line to buy some snacks.  I ordered a large popcorn with extra butter and a large Coke.  Steve ordered a medium popcorn with butter, some peanut M&Ms and a large Dr. Pepper.  Once we had our snacks we handed over our tickets to the usher and walked into the theater.  We carefully scouted for just the right seats.  When we found the perfect seats, we sat down and watched the movie previews to see what new movies would soon be coming out.  Once the previews were over, the theater darkened and the movie began."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Why did they see that particular movie?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "They had some free tickets",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "They saw the ads on television.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Why did they see that movie?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "They had seen it advertised",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "The movie they wanted to see was full",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Did they go with anyone else?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No they went alone",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Yes, their friend",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Did they buy anything at the concession stand?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Yes they did.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "No, they brought their own.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "Did they buy the ticket there or in advance?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "They bought them there.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "They bought them in advance.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Where did they go to see the movie?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Friend's house",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "They went to a movie theater.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "215",
+                "@scenario": "making breakfast",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "Today I woke up and decided to make bacon and eggs for breakfast. I walked to the kitchen and got out all of the ingredient I needed, which included, eggs, bacon, cheese, onion, and green pepper. I placed a skillet on the burner to heat up, and cracked two eggs into a bowl. I threw away the shells and stirred them up until mixed. I also put the bacon in the frying pan and flipped each piece after several minutes. Once the bacon was cooked, I poured the veggies and egg mixture into the pan, stirring occasionally, until the mixture set up and was solid. Once cooked, I removed the eggs and placed them on a plate along with the bacon. I put the plate on the table and poured out a glass of orange juice to go with my meal. I also peeled an orange and set it on the plate. It was delicious!"
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "What time of the day is breakfast eaten?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "In the morning.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "At night.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "From where did they purchase the ingredients for the breakfast?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Nowhere",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "The grocery store.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "How long did it take to cook breakfast?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "More than an hour.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "a little while",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Did they cook the food in the stove or in the oven?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "In the oven.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "on the stove",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "When did they start cooking?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Morning.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "In the afternoon",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Who prepared the food?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "the author",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "The storyteller's parents.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "216",
+                "@scenario": "calling 911",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "We had an emergency and needed to get help, so I decided I called 911. First I picked up the receiver to the phone and paste it to my ear to listen for a doubts home. Once I was sure that I heard the dial tone waiting for me to doubt a number, I pushed the number button labeled with the number 9 on the keypad, then I press the button with the number one on it  two times. I held the phone next to my ear and mouth, as I listened to the phone ring one time. He merely after that ring, the operator who worked as a dispatcher for the emergency center I was calling answered the phone on the other in, asking me what my emergency was. Speaking through the speaker piece of the telephone, I explained that we had an emergency and needed an ambulance to respond to our location immediately."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "How long did it take for someone to answer?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "quickly",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "after three minutes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Who called 911?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "The person telling the story.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "My Friend",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "What kind of phone did they use to call 911?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "cell phone",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Land line",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Why were the police dispatched?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "There was an emergency.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "For doughnuts",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "217",
+                "@scenario": "going grocery shopping",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "Today is grocery day , I go every Thursday . I check the paper on Wednesday and try to to match all the coupons I can to each sale . I grab my coupon book and head it to the store . AS I walk in there are item s stack that are unadvertised deals and I check the out to see if I need anything . I walk into the store and the way it is laid out I can easily find the items that I need pretty quickly , grocery shopping is not my favorite past time , I go to the deli counter and get lunch meat for help yourself nights and school lunches . I then head to the meat department to get some chicken and a roast for Sunday . Now time for the isles and my coupon matches , I head down each isle relativity quickly since I already know pretty much what I am going to buy and how much of it I need . I finish each isle and have all of my necessities . I go over to the bakery to see what they have on sale today and see a large carrot roll with cream cheese filling . So I place that in my cart and head for the checkout isle . I place all my purchases on the belt near the cashier and watch as each one is scanned , She totals my purchase and I pay for them . As I leave the store I look at my watch and realize it took me much less time as usual . Now I can enjoy the rest of my day ! "
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "What did they buy?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Just a few items.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "A week's worth of groceries.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Did they need groceries?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No, they had more than enough food at home.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Yes, they needed groceries.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Were they quick?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "yes, faster than usual",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "no, longer than usual",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "D they go to the store more than once a week?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Yes, Monday and Thursday",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "No, every Thursday",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "When did they pay?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Before going to the bakery.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "after the sales clerk rings the groceries up",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Did they need to buy any meat?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No, they don't eat meat.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Yes, they bought chicken and a roast.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "218",
+                "@scenario": "changing a light bulb",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "Just recently, the light in my hallway went out, and since my younger brother is afraid of sleeping in the dark, this became an unnecessary problem. In order to calm him down, my dad went to the nearest hardware store to buy a brand new light bulb. He needed to make sure that the light bulb was the right size, so he took the old, burned out light bulb with him to compare. After finding the right size bulb, he paid for it and brought it back home. He then grabbed a nearby chair so that he could stand on to reach the empty socket where the bulb would go. He had me turn off the light switch, which would make sure that he would not get electrocuted while putting the bulb on or burned when it turns on. After less than 5 minutes, he is finished screwing in the bulb. We flip the switch to see if it works, and it does. My brother was now relieved."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Why didn't they change the bulb by themselves?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "To be safe.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "They were afraid to",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Did they have to buy a light bulb from the store, or did they already have one at home?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "They had to buy one from the store",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Had one.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Who changed the light bulb?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Their father",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "The boss.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Why did they cut off the power first?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "To prevent electrocution or burn",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "To save electricity",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "Where did they get a new light bulb?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "From the garage",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "From the store",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Did they do it by them self?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Their father helped",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Why didn't they wait to change the light bulb?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Their brother was afraid of the dark",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Not fun.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "How did the light bulb burn out?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "From use.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "They were playing with it.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "8",
+                            "@text": "Did they have trouble changing it?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "No.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "9",
+                            "@text": "Did they test the bulb to see if it worked after they screwed it in?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No, they waited",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n",
+                "#text": "\n    "
+            }
+        ],
+        "#text": "\n  "
+    }
+}

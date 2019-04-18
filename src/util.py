@@ -151,30 +151,28 @@ def load_data(reader: Optional[DatasetReader] = None,
 
 
 def train_model(build_model_fn: Callable[[Vocabulary], Model],
-                dataset: Sequence[Instance],
+                train_data: List[Instance],
+                val_data: List[Instance],
+                test_data: List[Instance],
                 save_path: Optional[Path] = None,
-                use_cuda: bool = True,
                 batch_size: int = 2,
                 patience: int = 10,
                 num_epochs: int = 1,
                 optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
-                grad_norm_clip: float = 10.0) -> Model:
+                grad_norm_clip: float = 10.0,
+                cuda_device: int = 0) -> Model:
     "Train and save our baseline model."
 
-    # Splits our dataset into training (80%), validation (10%) and test (10%).
-    train_data, val_data, test_data = train_val_test_split(dataset, 0.8)
-
     # Create a vocabulary from our whole dataset. (for GloVe embeddings)
-    vocab = Vocabulary.from_instances(dataset)
+    vocab = Vocabulary.from_instances(train_data + val_data + test_data)
     print(vocab)
 
     model = build_model_fn(vocab)
     visualise_model(model)
 
     # Next let's check if we have access to a GPU, and use if we want to.
-    if torch.cuda.is_available() and use_cuda:
-        cuda_device = 0
-        # Since we do, we move our model to GPU 0.
+    if torch.cuda.is_available() and cuda_device >= 0:
+        # Since we do, we move our model to the GPU.
         model = model.cuda(cuda_device)
     else:
         # In this case we don't, so we specify -1 to fall back to the CPU.

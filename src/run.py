@@ -44,6 +44,19 @@ HANDCRAFTED_DIM = 7
 DEFAULT_EMBEDDING_TYPE = 'glove'  # can also be 'glove'
 EMBEDDING_TYPE = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_EMBEDDING_TYPE
 
+CUDA_DEVICE = int(sys.argv[4]) if len(sys.argv) >= 5 else 0
+
+USAGE = """
+USAGE:
+    run.py CONFIG MODEL [EMBEDDING_TYPE] [CUDA_DEVICE]
+
+ARGS:
+    CONFIG: configuration to use. One of: small, medium, large
+    MODEL: model to run. One of: baseline, attentive, reader
+    EMBEDDING_TYPE: word embeddings for the text. One of: glove, bert.
+    CUDA_DEVICE: device to run the training. -1 for CPU, >=0 for GPU.
+"""
+
 DATA_FOLDER = Path('data')
 EXTERNAL_FOLDER = Path('..', 'External')
 
@@ -52,7 +65,9 @@ EXTERNAL_FOLDER = Path('..', 'External')
 # always going to be.
 if CONFIG == 'large':
     # Path to our dataset
-    DATA_PATH = DATA_FOLDER / 'mctrain-data.json'
+    TRAIN_DATA_PATH = DATA_FOLDER / 'mctrain-data.json'
+    VAL_DATA_PATH = DATA_FOLDER / 'mcdev-data.json'
+    TEST_DATA_PATH = DATA_FOLDER / 'mctest-data.json'
     # Path to our embeddings
     GLOVE_PATH = EXTERNAL_FOLDER / 'glove.840B.300d.txt'
     # Size of our embeddings
@@ -65,7 +80,9 @@ if CONFIG == 'large':
     NUM_EPOCHS = 50
 elif CONFIG == 'small':
     # Path to our dataset
-    DATA_PATH = DATA_FOLDER / 'small.json'
+    TRAIN_DATA_PATH = DATA_FOLDER / 'small-train.json'
+    VAL_DATA_PATH = DATA_FOLDER / 'small-dev.json'
+    TEST_DATA_PATH = DATA_FOLDER / 'small-test.json'
     # Path to our embeddings
     GLOVE_PATH = EXTERNAL_FOLDER / 'glove.6B.50d.txt'
     # Size of our embeddings
@@ -99,9 +116,14 @@ SAVE_PATH = SAVE_FOLDER / get_experiment_name(MODEL, CONFIG)
 print('Save path', SAVE_PATH)
 
 # Path to save pre-processed input
-PREPROCESSED_NAME = f'{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
-PREPROCESSED_PATH = EXTERNAL_FOLDER / PREPROCESSED_NAME
-print('Pre-processed data path:', PREPROCESSED_PATH)
+TRAIN_PREPROCESSED_NAME = f'train.{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
+VAL_PREPROCESSED_NAME = f'val.{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
+TEST_PREPROCESSED_NAME = f'test.{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
+
+TRAIN_PREPROCESSED_PATH = EXTERNAL_FOLDER / TRAIN_PREPROCESSED_NAME
+VAL_PREPROCESSED_PATH = EXTERNAL_FOLDER / VAL_PREPROCESSED_NAME
+TEST_PREPROCESSED_PATH = EXTERNAL_FOLDER / TEST_PREPROCESSED_NAME
+print('Pre-processed data path:', TRAIN_PREPROCESSED_PATH)
 
 # Random seed (for reproducibility)
 RANDOM_SEED = 1234
@@ -324,16 +346,25 @@ def run_model() -> None:
     SAVE_FOLDER.mkdir(exist_ok=True, parents=True)
     reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
                            embedding_type=EMBEDDING_TYPE)
-    dataset = load_data(data_path=DATA_PATH,
-                        reader=reader,
-                        pre_processed_path=PREPROCESSED_PATH)
+    train_dataset = load_data(data_path=TRAIN_DATA_PATH,
+                              reader=reader,
+                              pre_processed_path=TRAIN_PREPROCESSED_PATH)
+    val_dataset = load_data(data_path=VAL_DATA_PATH,
+                            reader=reader,
+                            pre_processed_path=VAL_PREPROCESSED_PATH)
+    test_dataset = load_data(data_path=TEST_DATA_PATH,
+                             reader=reader,
+                             pre_processed_path=TEST_PREPROCESSED_PATH)
     model = train_model(build_fn,
-                        dataset=dataset,
+                        train_data=train_dataset,
+                        val_data=val_dataset,
+                        test_data=test_dataset,
                         save_path=SAVE_PATH,
                         num_epochs=NUM_EPOCHS,
                         patience=50,
                         batch_size=BATCH_SIZE,
-                        optimiser_fn=optimiser)
+                        optimiser_fn=optimiser,
+                        cuda_device=CUDA_DEVICE)
 
     model.eval()
     # Create a predictor to run our model and get predictions.
@@ -360,6 +391,9 @@ def run_model() -> None:
 
 
 if __name__ == '__main__':
+    if any('help' in arg or '-h' in arg for arg in sys.argv):
+        print(USAGE)
+        exit(0)
     # Manual seeding for reproducibility.
     torch.manual_seed(RANDOM_SEED)
 

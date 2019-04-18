@@ -1,0 +1,717 @@
+{
+    "data": {
+        "instance": [
+            {
+                "@id": "200",
+                "@scenario": "removing and replacing a garbage bag",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "The garbage in the kitchen was getting too high and needed to be changed.   I had four clips on the top of the garbage bag which I unclipped .  Then I took the bag from the waste basket.  I pulled the bag out of the container carefully so that it did not spill.   I secured the bag at the top with the ties that came with the bag and I set it aside on the floor.   I went to the kitchen cabinet, opened it and took a new garbage bag out of the box.  I closed the cabinet door.  Then I went back to the empty wastebasket.  I fluffed out the new garbage bag so that it would fill properly.   I inserted it into the empty container and secure it with clips on all sides at the top.   Then I took the full garbage bag out to the car to carry to the town dumpsters."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Where was the garbage bag changed?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "garage",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "In their kitchen.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Why do we use garbage bags?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "for trash",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "for the look of the bag",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "How long did it take to replace the garbage bag?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Just a few minutes.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "More than fifteen minutes.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Were they doing a chore?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no , they weren't",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes, they were",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "201",
+                "@scenario": "getting the newspaper",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "Today I wanted to read the newspaper, but I do not have a newspaper subscription.  I decided that the best way to get the newspaper would be to go to the library and read it there.  I got dressed, put on my bike helmet, and biked over to the local public library.  There, I went in and asked the library clerk where the daily newspapers were located.  She directed me to the third floor, where all of the periodicals and newspapers were kept.  I thanked her and went up the stairs to the third floor, seeing the newspapers held on large wooden sticks.  I found the newspaper I wanted, the New York Times, and took it over to a large empty reading table.  There, I scrolled through the pages that interested me, mainly the sports and politics sections, before returning the newspaper, exiting the library, and riding home on my bike."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "What did they do after they got the paper?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Sat at the table and read it",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Tore it up",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "Where was the newspaper located?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Basement",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "in periodicals on the 3rd floor",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Did they read it?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "No.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "How long did they have to wait til they got the newspaper?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Did not need to wait",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "About hour",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "What did they do with the newspaper after they read it?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "took it home",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Returned the paper.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "202",
+                "@scenario": "visiting a museum",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "Mikey and his mom went to the Natural Museum of History this weekend.  While he was there , he saw many wonderful things.  At the museum, they had old giant bones of dinosaurs, wonderful movies of them, and lots of other wonderful animals there as well.  They even had lions and tiger bones, and Mikey was thrilled.  He spent all day looking at wonderful sites of nature, and how beautiful God's creation is.  He learned about conservation, and taking care of our planet.  He learned about the earth, the water and ocean, and even the skies and planets.  While he was there, they had a shop that you could buy toys and cards in.  He bought a gift for his brother and dad. One of the gifts was a dinosaur for his brother, and his dad got a world cup for coffee. His mother and him ate lunch there, and they got to see a movie of dinosaurs. They had a wonderful time."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Why did they take so much time to see all of the museum?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "It is large",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Never went",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "How big was the museum?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "very large",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Small with few things to look at",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "All in all, would they go back to the museum ?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Yes",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "What type of ticket did they buy?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "lottery ticket",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "admissions ticket",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "Did they have fun at the museum ?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "No they didn't like it",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "Yes they enjoyed it",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Why did they go to the museum?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Because they had free tickets",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "they wanted to go",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Why did they end up going to the museum ?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Never went",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "To learn and have fun",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "203",
+                "@scenario": "changing a baby diaper",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "I was at home watching the baby while my wife was at work. I feed the baby and was just watching TV when I could tell that it was time to change the babies diaper. I went and got the diaper bag with everything that I would need to change the baby. I laid the baby down on the changing table and removed the old diaper and wiped down the baby to get her clean. Then I put some fresh powder on the baby and took out a new fresh diaper and put it on the baby. Now the baby was all fresh and clean and smelled really nice also.The baby was in a better mood after I changed her she was more at ease and happy because she was clean and feeling better. I always try to stay on top of changing the babies diaper because they feel better and it is better for them."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Who changed the baby diaper?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "the mother",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "the father",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "What did they lay the baby on to change the baby's diaper?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "Changing table.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "Coffee table.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Why did they have to change the diaper?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "The baby had pooped.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "for fun",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "How did they change the diaper?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "They had a babysitter do it",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "carefully",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "4",
+                            "@text": "Where did the dirty diaper get put?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "In a garbage can.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "on the floor",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "5",
+                            "@text": "Why did the baby's diaper need to be changed?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Their wife asked them to change the diaper",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "The baby had pooped.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "6",
+                            "@text": "Did anyone help to change the baby?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "No.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "7",
+                            "@text": "who changed the diaper?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "the father",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "another baby",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "8",
+                            "@text": "What did they use to clean the baby?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "a baby wipe",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "They didn't say.",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "9",
+                            "@text": "Who helped them change the baby's diaper?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "No one.",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "the wife",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            },
+            {
+                "@id": "204",
+                "@scenario": "making coffee",
+                "text": {
+                    "#tail": "\n    ",
+                    "#text": "Last weekend I woke up in a bad mood.  I went to make some coffee to wake me up.  I ground up the coffee.  The coffee grinder was loud and woke up my wife.  She asked me to make her some coffee too!  I had to grind up some more beans.  I put some filtered water in a microwave safe container.  I put the container into our microwave, which was three years old!  I had to heat up the water for six minutes because our microwave is not that fast.  I placed a filter on top of a coffee cup for my wife.  I filled the filter up with the coffee I had ground.  I tamped down the coffee grounds with my hand.  Then I carefully poured the hot water from the microwave over the coffee grounds.  I allowed the water to soak into the coffee grounds, and I allowed the grounds to come to rest in the filter.  Then I slowly poured more of the water into the grounds.  I gave my wife her cup of coffee when the water was done draining."
+                },
+                "questions": {
+                    "question": [
+                        {
+                            "@id": "0",
+                            "@text": "Did the coffee taste good?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "True",
+                                    "@id": "0",
+                                    "@text": "yes",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "False",
+                                    "@id": "1",
+                                    "@text": "no",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "1",
+                            "@text": "What did they use to make the coffee?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "a coffee pot",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "coffee filter and hot water",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "2",
+                            "@text": "Who drank the coffee?",
+                            "@type": "text",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "Visitors",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "narrator and their wife",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n      ",
+                            "#text": "\n        "
+                        },
+                        {
+                            "@id": "3",
+                            "@text": "Were they tired and in need of a lift?",
+                            "@type": "commonsense",
+                            "answer": [
+                                {
+                                    "@correct": "False",
+                                    "@id": "0",
+                                    "@text": "no, they were fine",
+                                    "#tail": "\n        "
+                                },
+                                {
+                                    "@correct": "True",
+                                    "@id": "1",
+                                    "@text": "yes, they woke up in a bad mode and hoped the coffee would make them feel better",
+                                    "#tail": "\n      "
+                                }
+                            ],
+                            "#tail": "\n    ",
+                            "#text": "\n        "
+                        }
+                    ],
+                    "#tail": "\n  ",
+                    "#text": "\n      "
+                },
+                "#tail": "\n  ",
+                "#text": "\n    "
+            }
+                    ],
+        "#text": "\n  "
+    }
+}
