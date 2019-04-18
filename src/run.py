@@ -11,7 +11,7 @@ concatenated and fed into a feed-forward layer that output class probabilities.
 This script builds the model, trains it, generates predictions and saves it.
 Then it checks if the saving went correctly.
 """
-from typing import Dict, Callable
+from typing import Dict, Callable, Optional
 import sys
 from pathlib import Path
 import pickle
@@ -342,10 +342,15 @@ def run_model() -> None:
     def optimiser(model: Model) -> torch.optim.Optimizer:
         return Adamax(model.parameters(), lr=2e-3)
 
+    max_length: Optional[int] = None
+    if EMBEDDING_TYPE == 'bert':
+        max_length = 400
+
     # Create SAVE_FOLDER if it doesn't exist
     SAVE_FOLDER.mkdir(exist_ok=True, parents=True)
     reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
-                           embedding_type=EMBEDDING_TYPE)
+                           embedding_type=EMBEDDING_TYPE,
+                           max_length=max_length)
     train_dataset = load_data(data_path=TRAIN_DATA_PATH,
                               reader=reader,
                               pre_processed_path=TRAIN_PREPROCESSED_PATH)

@@ -48,7 +48,8 @@ class McScriptReader(DatasetReader):
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
                  word_indexer: Optional[TokenIndexer] = None,
-                 conceptnet_path: Optional[Path] = None):
+                 conceptnet_path: Optional[Path] = None,
+                 max_length: Optional[int] = None):
         super().__init__(lazy=False)
         self.pos_indexers = {"pos_tokens": PosTagIndexer()}
         self.ner_indexers = {"ner_tokens": NerTagIndexer()}
@@ -63,6 +64,8 @@ class McScriptReader(DatasetReader):
         self.word_indexers = {'tokens': word_indexer}
 
         self.conceptnet = ConceptNet(conceptnet_path=conceptnet_path)
+
+        self.max_length = max_length
 
     # Converts the text from each field in the input to `Token`s, and then
     # initialises `TextField` with them. These also take the token indexer
@@ -80,6 +83,8 @@ class McScriptReader(DatasetReader):
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
+        passage = passage[:self.max_length]
+
         passage_tokens = self.word_tokeniser.tokenize(text=passage)
         question_tokens = self.word_tokeniser.tokenize(text=question)
         answer0_tokens = self.word_tokeniser.tokenize(text=answer0)
