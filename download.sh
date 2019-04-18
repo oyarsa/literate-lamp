@@ -8,6 +8,7 @@ mkdir -p $EXTERNAL
 wget https://s3.amazonaws.com/conceptnet/downloads/2017/edges/conceptnet-assertions-5.5.5.csv.gz
 gunzip conceptnet-assertions-5.5.5.csv.gz
 mv conceptnet-assertions-5.5.5.csv $EXTERNAL
+./src/preprocess.py $EXTERNAL/conceptnet-assertions-5.5.5.csv $EXTERNAL/conceptnet.csv
 
 # Download GloVe vectors
 wget http://nlp.stanford.edu/data/glove.840B.300d.zip
@@ -16,4 +17,4 @@ mv glove.840B.300d.txt $EXTERNAL
 
 # Download BERT-Base model
 wget https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz
-mv bert-base-uncase.tar.gz $EXTERNAL
+mv bert-base-uncased.tar.gz $EXTERNAL
