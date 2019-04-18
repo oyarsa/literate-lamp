@@ -3,12 +3,14 @@ from typing import Iterator, Optional, List
 import json
 from pathlib import Path
 
+import numpy as np
 # A sample is represented as an `Instance`, which data as `TextField`s, and
 # the target as a `LabelField`.
 from allennlp.data import Instance
 # As we have three parts in the input (passage, question, answer), we'll have
 # three such `TextField`s in an Instance. The `LabelField` will hold 0|1.
-from allennlp.data.fields import TextField, LabelField, MetadataField
+from allennlp.data.fields import (TextField, LabelField, MetadataField,
+                                  ArrayField)
 # This implements the logic for reading a data file and extracting a list of
 # `Instance`s from it.
 from allennlp.data.dataset_readers import DatasetReader
@@ -24,6 +26,7 @@ from allennlp.data.tokenizers.word_splitter import SpacyWordSplitter
 from allennlp.data.token_indexers import PretrainedBertIndexer, TokenIndexer
 
 from conceptnet import ConceptNet
+import util
 
 
 @DatasetReader.register('mcscript-reader')
@@ -94,6 +97,13 @@ class McScriptReader(DatasetReader):
         p_a1_relations = strs2toks(self.conceptnet.get_text_query_relations(
             passage_words, answer1_words))
 
+        handcrafted_features = compute_handcrafted_features(
+            passage=passage_tokens,
+            question=question_tokens,
+            answer0=answer0_tokens,
+            answer1=answer1_tokens
+        )
+
         fields = {
             "passage_id": MetadataField(passage_id),
             "question_id": MetadataField(question_id),
@@ -107,6 +117,7 @@ class McScriptReader(DatasetReader):
             "p_q_rel": TextField(p_q_relations, self.rel_indexers),
             "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
             "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
+            "hc_feat": ArrayField(handcrafted_features)
         }
 
         if label0 is not None:
@@ -171,3 +182,44 @@ def strs2toks(strings: List[str]) -> List[Token]:
 def toks2strs(tokens: List[Token]) -> List[str]:
     "Converts each Token in the list to a str (using the text attribute)"
     return [t.text for t in tokens]
+
+
+def compute_handcrafted_features(passage: List[Token],
+                                 question: List[Token],
+                                 answer0: List[Token],
+                                 answer1: List[Token]) -> np.ndarray:
+    def is_valid(token: Token) -> bool:
+        return not util.is_stopword(token) and not util.is_punctuation(token)
+
+    def co_occurrence(text: List[str], query: List[str]) -> List[float]:
+        query_set = set(q.lower() for q in query)
+        return [(is_valid(word) and word in query_set) for word in text]
+
+    p_lemmas = [t.lemma_ for t in passage]
+    q_lemmas = [t.lemma_ for t in question]
+    a0_lemmas = [t.lemma_ for t in answer0]
+    a1_lemmas = [t.lemma_ for t in answer1]
+
+    p_words = toks2strs(passage)
+    q_words = toks2strs(question)
+    a0_words = toks2strs(answer0)
+    a1_words = toks2strs(answer1)
+
+    p_q_co_occ = co_occurrence(p_words, q_words)
+    p_a0_co_occ = co_occurrence(p_words, a0_words)
+    p_a1_co_occ = co_occurrence(p_words, a1_words)
+    # dim: len * 3
+    co_occ = np.vstack((p_q_co_occ, p_a0_co_occ, p_a1_co_occ))
+
+    p_q_lem_co_occ = co_occurrence(p_lemmas, q_lemmas)
+    p_a0_lem_co_occ = co_occurrence(p_lemmas, a0_lemmas)
+    p_a1_lem_co_occ = co_occurrence(p_lemmas, a1_lemmas)
+    # dim: len * 3
+    lemma_co_occ = np.vstack((p_q_lem_co_occ, p_a0_lem_co_occ,
+                              p_a1_lem_co_occ))
+
+    # dim: len * 3 + len * 3 + len * 1 = len * 7
+    tf = np.array([util.get_term_frequency(word) for word in passage])
+
+    features = np.vstack((co_occ, lemma_co_occ, tf)).T
+    return features

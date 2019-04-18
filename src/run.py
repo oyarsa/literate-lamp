@@ -40,6 +40,7 @@ MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 NER_EMBEDDING_DIM = 8
 REL_EMBEDDING_DIM = 10
 POS_EMBEDDING_DIM = 12
+HANDCRAFTED_DIM = 7
 DEFAULT_EMBEDDING_TYPE = 'glove'  # can also be 'glove'
 EMBEDDING_TYPE = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_EMBEDDING_TYPE
 
@@ -217,8 +218,9 @@ def build_attentive(vocab: Vocabulary) -> Model:
     embedding_dim = word_embeddings.get_output_dim()
 
     # p_emb + p_q_weighted + p_pos_emb + p_ner_emb + p_q_rel + 2*p_a_rel
+    #       + hc_feat
     p_input_size = (2*embedding_dim + POS_EMBEDDING_DIM + NER_EMBEDDING_DIM
-                    + 3*REL_EMBEDDING_DIM)
+                    + 3*REL_EMBEDDING_DIM + HANDCRAFTED_DIM)
     # q_emb + q_pos_emb
     q_input_size = embedding_dim + POS_EMBEDDING_DIM
     # a_emb + a_q_match + a_p_match

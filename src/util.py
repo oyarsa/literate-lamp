@@ -127,6 +127,7 @@ def load_data(reader: Optional[DatasetReader] = None,
     """
     # We load pre-processed data to save time (we don't need to tokenise or
     # do parsing/POS-tagging/NER).
+    dataset: List[Instance]
     if pre_processed_path is not None and pre_processed_path.is_file():
         print('>> Reading input from pre-processed file')
         with open(pre_processed_path, 'rb') as preprocessed_file:
@@ -260,22 +261,31 @@ def get_experiment_name(model: str, config: str) -> str:
 def is_stopword(word: Union[str, Token]) -> bool:
     "Returns True if a word (or the text of Token) is a stopword."
     if isinstance(word, Token):
-        word_str = word.text
-    word_str = word.lower()
+        word = word.text
+    word = word.lower()
 
-    return word_str in STOPWORDS
+    return word in STOPWORDS
 
 
 def is_punctuation(word: Union[str, Token]) -> bool:
     "Returns True if a word (or the text of Token) is punctuation."
     if isinstance(word, Token):
-        word_str = word.text
-
-    return word_str in PUNCTUATION
+        word = word.text
+    return word in PUNCTUATION
 
 
 def get_term_frequency(word: Union[str, Token]) -> float:
+    """
+    Returns the Term Frequency of word in the Wikipedia corpus. Calculated
+    as:
+
+        tf_w = log(1 + f_w)
+
+    Where `f_w` is the number of occurrences of the word in the corpus.
+    """
     if isinstance(word, Token):
-        word_str = word.text
-    occurrences = wikiwords.occ(word_str)
+        word = word.text
+    # I'd like to use wikiwords.occ instead of this, but it's broken.
+    # So I compute the occurence and N * freq (since freq = occ/N).
+    occurrences = wikiwords.N * wikiwords.freq(word)
     return math.log(1 + occurrences)

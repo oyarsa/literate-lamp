@@ -104,6 +104,7 @@ class BaselineClassifier(Model):
                 p_q_rel: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
+                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -262,6 +263,7 @@ class AttentiveClassifier(Model):
                 p_q_rel: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
+                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -304,7 +306,7 @@ class AttentiveClassifier(Model):
         a1_p_match = util.weighted_sum(p_emb, a1_p_scores)
 
         # We combine the inputs to our encoder
-        p_input = torch.cat((p_emb, p_q_match, p_pos_emb, p_ner_emb,
+        p_input = torch.cat((p_emb, p_q_match, p_pos_emb, p_ner_emb, hc_feat,
                              p_q_rel_emb, p_a0_rel_emb, p_a1_rel_emb), dim=2)
         a0_input = torch.cat((a0_emb, a0_p_match, a0_q_match), dim=2)
         a1_input = torch.cat((a1_emb, a1_p_match, a1_q_match), dim=2)
@@ -434,6 +436,7 @@ class AttentiveReader(Model):
                 p_q_rel: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
+                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
