@@ -3,7 +3,7 @@ This module implements the ConceptNet class, to interact with the knowledge
 base and make queries for relations between words and sentences.
 """
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Optional
+from typing import DefaultDict, Dict, List, Optional, Sequence
 from pathlib import Path
 
 
@@ -48,8 +48,8 @@ class ConceptNet:
             return self._relations[word1].get(word2, ConceptNet.NULL_REL)
         return ConceptNet.NULL_REL
 
-    def get_text_query_relations(self, text: List[str], query: List[str]
-                                 ) -> List[str]:
+    def get_text_query_relations(self, text: Sequence[str],
+                                 query: Sequence[str]) -> List[str]:
         """
         Gets a list of relations. For each word in text, we see if there's
         a relation for any word in query. If there is, we use the first we

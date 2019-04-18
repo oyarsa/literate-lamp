@@ -1,5 +1,5 @@
 "Reads data from file and extracts features used in the models"
-from typing import Iterator, Optional, List
+from typing import Iterator, Optional, List, Sequence
 import json
 from pathlib import Path
 
@@ -174,24 +174,25 @@ class McScriptReader(DatasetReader):
                                             answers[1], labels[0])
 
 
-def strs2toks(strings: List[str]) -> List[Token]:
+def strs2toks(strings: Sequence[str]) -> List[Token]:
     "Converts each string in the list to a Token"
     return [Token(s) for s in strings]
 
 
-def toks2strs(tokens: List[Token]) -> List[str]:
+def toks2strs(tokens: Sequence[Token]) -> List[str]:
     "Converts each Token in the list to a str (using the text attribute)"
     return [t.text for t in tokens]
 
 
-def compute_handcrafted_features(passage: List[Token],
-                                 question: List[Token],
-                                 answer0: List[Token],
-                                 answer1: List[Token]) -> np.ndarray:
+def compute_handcrafted_features(passage: Sequence[Token],
+                                 question: Sequence[Token],
+                                 answer0: Sequence[Token],
+                                 answer1: Sequence[Token]) -> np.ndarray:
     def is_valid(token: Token) -> bool:
         return not util.is_stopword(token) and not util.is_punctuation(token)
 
-    def co_occurrence(text: List[str], query: List[str]) -> List[float]:
+    def co_occurrence(text: Sequence[str], query: Sequence[str]
+                      ) -> List[float]:
         query_set = set(q.lower() for q in query)
         return [(is_valid(word) and word in query_set) for word in text]
 

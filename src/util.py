@@ -1,5 +1,5 @@
 "Utility functions for the other modules"
-from typing import Tuple, List, Callable, Optional, Union
+from typing import Tuple, List, Callable, Optional, Union, Sequence
 import pickle
 import datetime
 import string
@@ -75,8 +75,8 @@ def is_cuda(model: Model) -> bool:
 
 
 def train_val_test_split(
-        dataset: List[Instance], train_size: float
-) -> Tuple[List[Instance], List[Instance], List[Instance]]:
+        dataset: Sequence[Instance], train_size: float
+) -> Tuple[Sequence[Instance], Sequence[Instance], Sequence[Instance]]:
     """
     Split `dataset` into 3 parts: train, validation and test.
     The size of the training set is `train_size`% of the whole dataset.
@@ -85,12 +85,12 @@ def train_val_test_split(
     """
 
     train_size = int(train_size * len(dataset))
-
     val_size = (len(dataset) - train_size) // 2
 
     train_dataset = dataset[:train_size]
     validation_dataset = dataset[train_size:train_size+val_size]
     test_dataset = dataset[train_size + val_size:]
+
     return train_dataset, validation_dataset, test_dataset
 
 
@@ -151,7 +151,7 @@ def load_data(reader: Optional[DatasetReader] = None,
 
 
 def train_model(build_model_fn: Callable[[Vocabulary], Model],
-                dataset: List[Instance],
+                dataset: Sequence[Instance],
                 save_path: Optional[Path] = None,
                 use_cuda: bool = True,
                 batch_size: int = 2,

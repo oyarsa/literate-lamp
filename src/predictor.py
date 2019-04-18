@@ -1,5 +1,5 @@
 "Predictor for the McScript dataset"
-from typing import List, TextIO, cast
+from typing import TextIO, cast, Sequence
 
 import torch
 # Base class for the Model we'll implement. Inherits from `torch.nn.Model`,
@@ -67,7 +67,7 @@ class McScriptPredictor(Predictor):
 
 def score_questions(model: Model,
                     output_file: TextIO,
-                    testset: List[Instance]
+                    testset: Sequence[Instance]
                     ) -> float:
     metric = CategoricalAccuracy()
 
