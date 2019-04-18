@@ -3,6 +3,7 @@ from typing import Tuple, List, Callable, Optional, Union
 import pickle
 import datetime
 import string
+import math
 from pathlib import Path
 
 import torch
@@ -34,6 +35,7 @@ from allennlp.data.token_indexers import (PretrainedBertIndexer,
 from allennlp.data.dataset_readers import DatasetReader
 
 from nltk.corpus import stopwords
+import wikiwords
 
 from reader import McScriptReader
 
@@ -270,3 +272,10 @@ def is_punctuation(word: Union[str, Token]) -> bool:
         word_str = word.text
 
     return word_str in PUNCTUATION
+
+
+def get_term_frequency(word: Union[str, Token]) -> float:
+    if isinstance(word, Token):
+        word_str = word.text
+    occurrences = wikiwords.occ(word_str)
+    return math.log(1 + occurrences)
