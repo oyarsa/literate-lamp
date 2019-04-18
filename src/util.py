@@ -129,7 +129,7 @@ def load_data(reader: Optional[DatasetReader] = None,
     # do parsing/POS-tagging/NER).
     dataset: List[Instance]
     if pre_processed_path is not None and pre_processed_path.is_file():
-        print('>> Reading input from pre-processed file')
+        print('>> Reading input from pre-processed file', pre_processed_path)
         with open(pre_processed_path, 'rb') as preprocessed_file:
             dataset = pickle.load(preprocessed_file)
     else:
@@ -141,7 +141,7 @@ def load_data(reader: Optional[DatasetReader] = None,
                              'a DatasetReader is also needed to read it.')
         # Reads from our data. We're used `cached_path`, but data is currently
         # local, so it doesn't really do anything.
-        print('>> Reading input from data file')
+        print('>> Reading input from data file', data_path)
         dataset = reader.read(cached_path(data_path))
         if pre_processed_path is not None:
             with open(pre_processed_path, 'wb') as preprocessed_file:

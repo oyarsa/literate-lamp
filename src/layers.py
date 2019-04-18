@@ -6,6 +6,7 @@ from pathlib import Path
 
 import torch
 from overrides import overrides
+from allennlp.common import Params
 from allennlp.modules.attention import Attention
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.nn.activations import Activation
@@ -117,10 +118,11 @@ def glove_embeddings(vocab: Vocabulary, file_path: Path, dimension: int,
                      training: bool = False, namespace: str = 'tokens'
                      ) -> BasicTextFieldEmbedder:
     "Pre-trained embeddings using GloVe"
-    token_embedding = Embedding(num_embeddings=vocab.get_vocab_size('tokens'),
-                                embedding_dim=dimension,
-                                trainable=training,
-                                pretrained_file=file_path)
+    token_embedding = Embedding.from_params(vocab, Params({
+        "embedding_dim": dimension,
+        "vocab_namespace": 'tokens',
+        "pretrained_file": str(file_path)
+    }))
     word_embeddings = BasicTextFieldEmbedder({namespace: token_embedding})
     return word_embeddings
 
