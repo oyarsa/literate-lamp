@@ -60,7 +60,8 @@ class McScriptReader(DatasetReader):
         self.word_tokeniser = WordTokenizer(word_splitter=word_splitter)
 
         word_indexer = word_indexer or PretrainedBertIndexer(
-            pretrained_model='bert-base-uncased')
+            pretrained_model='bert-base-uncased',
+            truncate_long_sequences=False)
         self.word_indexers = {'tokens': word_indexer}
 
         self.conceptnet = ConceptNet(conceptnet_path=conceptnet_path)
