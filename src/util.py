@@ -102,7 +102,8 @@ def create_reader(embedding_type: str = 'bert',
         word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
     elif embedding_type == 'bert':
         word_indexer = PretrainedBertIndexer(
-            pretrained_model='bert-base-uncased')
+            pretrained_model='bert-base-uncased',
+            truncate_long_sequences=False)
     else:
         raise ValueError('Invalid embedding type')
 
