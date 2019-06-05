@@ -343,8 +343,6 @@ def run_model() -> None:
         return Adamax(model.parameters(), lr=2e-3)
 
     max_length: Optional[int] = None
-    if EMBEDDING_TYPE == 'bert':
-        max_length = 400
 
     # Create SAVE_FOLDER if it doesn't exist
     SAVE_FOLDER.mkdir(exist_ok=True, parents=True)
