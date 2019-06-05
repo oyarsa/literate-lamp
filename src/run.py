@@ -30,7 +30,7 @@ from util import (example_input, is_cuda, train_model, get_experiment_name,
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings)
 
-DEFAULT_CONFIG = 'medium'  # Can be: _medium_ , _large_ or _small_
+DEFAULT_CONFIG = 'small'  # Can be: _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
 
 # Which model to use: 'baseline' or 'attentive' for now.
@@ -51,7 +51,7 @@ USAGE:
     run.py CONFIG MODEL [EMBEDDING_TYPE] [CUDA_DEVICE]
 
 ARGS:
-    CONFIG: configuration to use. One of: small, medium, large
+    CONFIG: configuration to use. One of: small, large
     MODEL: model to run. One of: baseline, attentive, reader
     EMBEDDING_TYPE: word embeddings for the text. One of: glove, bert.
     CUDA_DEVICE: device to run the training. -1 for CPU, >=0 for GPU.
@@ -93,19 +93,6 @@ elif CONFIG == 'small':
     BATCH_SIZE = 3
     # Number of epochs to train model
     NUM_EPOCHS = 5
-elif CONFIG == 'medium':
-    # Path to our dataset
-    DATA_PATH = DATA_FOLDER / 'mcdev-data.json'
-    # Path to our embeddings
-    GLOVE_PATH = EXTERNAL_FOLDER / 'glove.6B.100d.txt'
-    # Size of our embeddings
-    GLOVE_EMBEDDING_DIM = 100
-    # Size of our hidden layers (for each encoder)
-    HIDDEN_DIM = 64
-    # Size of minibatch
-    BATCH_SIZE = 25
-    # Number of epochs to train model
-    NUM_EPOCHS = 10
 
 BERT_PATH = EXTERNAL_FOLDER / 'bert-base-uncased.tar.gz'
 CONCEPTNET_PATH = EXTERNAL_FOLDER / 'conceptnet.csv'
