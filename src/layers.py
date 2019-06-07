@@ -25,6 +25,45 @@ from allennlp.modules.seq2seq_encoders import (
     Seq2SeqEncoder, PytorchSeq2SeqWrapper)
 
 
+class BilinearAttention(Attention):
+    """
+    Implements bilinear attention.
+
+        alpha = softmax(x'Wy)    (1)
+
+    Outputs the scores (alpha), which should be used to compute a weighted sum
+    of v. That means that the other part:
+
+        Att(u, v) = sum_i(alpha_i * v_i)   (2)
+
+    Is not computed here. Should be ran as:
+
+        allennlp.util.weighted_sum(v, alpha)   (3)
+
+    This was done so this class is consistent with how `Attention`-derived
+    classes work in AllenNLP, as they only output the scores.
+
+    Although the equation (1) doesn't mention masks, we do accept the mask for
+    the second vector (v), and compute the softmax using that mask (zero-ing
+    the padded dimensions).
+    """
+
+    def __init__(self,
+                 vector_dim: int,
+                 matrix_dim: int,
+                 normalise: bool = True) -> None:
+        super().__init__(normalise)
+        self._weights = torch.nn.Linear(in_features=vector_dim,
+                                        out_features=matrix_dim)
+
+    @overrides
+    def _forward_internal(self, vector: torch.Tensor, matrix: torch.Tensor
+                          ) -> torch.Tensor:
+        Wy = self._weights(vector).unsqueeze(1)
+        alpha = Wy.bmm(matrix.transpose(1, 2)).squeeze(1)
+        return alpha
+
+
 class SequenceAttention(Attention):
     """
     Implements sequence attention as defined in Yuanfudao
@@ -40,7 +79,7 @@ class SequenceAttention(Attention):
 
         allennlp.util.weighted_sum(v, alpha)   (3)
 
-    This was done so this class ir consistent with how `Attention`-derived
+    This was done so this class is consistent with how `Attention`-derived
     classes work in AllenNLP, as they only output the scores.
 
     Although the equation (1) doesn't mention masks, we do accept the mask for

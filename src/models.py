@@ -23,7 +23,7 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 # interface the library expects.
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
-from allennlp.modules.attention import LinearAttention, BilinearAttention
+from allennlp.modules.attention import LinearAttention
 from allennlp.training.metrics import CategoricalAccuracy
 
 # Holds the vocabulary, learned from the whole data. Also knows the mapping
@@ -36,7 +36,7 @@ from allennlp.data.vocabulary import Vocabulary
 #   - `clone` creates N copies of a layer.
 from allennlp.nn import util
 
-from layers import SequenceAttention
+from layers import SequenceAttention, BilinearAttention
 
 
 @Model.register('baseline-classifier')
