@@ -23,7 +23,8 @@ import numpy as np
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 
-from models import BaselineClassifier, AttentiveClassifier, AttentiveReader
+from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
+                    SimpleBertClassifier)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, create_reader)
@@ -34,7 +35,7 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
 DEFAULT_CONFIG = 'small'  # Can be: _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
 
-# Which model to use: 'baseline' or 'attentive' for now.
+# Which model to use: 'baseline', 'reader', 'simple-bert' or 'attentive'.
 DEFAULT_MODEL = 'attentive'
 MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 
@@ -123,6 +124,24 @@ BIDIRECTIONAL = True
 RNN_LAYERS = 1
 RNN_DROPOUT = 0.5
 EMBEDDDING_DROPOUT = 0.5
+
+
+def build_simple_bert(vocab: Vocabulary) -> Model:
+    """
+    Builds the simple BERT-Based classifier.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `SimpleBertClassifier` model ready to be trained.
+    """
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = SimpleBertClassifier(bert_path=BERT_PATH, vocab=vocab)
+    return model
 
 
 def build_baseline(vocab: Vocabulary) -> Model:
@@ -251,11 +270,26 @@ def build_attentive(vocab: Vocabulary) -> Model:
                                num_layers=1, bidirectional=BIDIRECTIONAL)
     elif ENCODER_TYPE == 'transformer':
         p_encoder = transformer_seq2seq(
-            input_dim=p_input_size, hidden_dim=HIDDEN_DIM)
+            input_dim=p_input_size,
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=1024
+        )
         q_encoder = transformer_seq2seq(
-            input_dim=q_input_size, hidden_dim=HIDDEN_DIM)
+            input_dim=q_input_size,
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=512
+        )
         a_encoder = transformer_seq2seq(
-            input_dim=a_input_size, hidden_dim=HIDDEN_DIM)
+            input_dim=a_input_size,
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=512
+        )
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AttentiveClassifier(
@@ -332,6 +366,8 @@ def run_model() -> None:
         build_fn = build_attentive
     elif MODEL == 'reader':
         build_fn = build_attentive_reader
+    elif MODEL == 'simple-bert':
+        build_fn = build_simple_bert
     else:
         raise ValueError('Invalid model name')
 

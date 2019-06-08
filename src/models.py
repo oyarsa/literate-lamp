@@ -1,5 +1,6 @@
 "Deep Learning models for Commonsense Question Answering"
 from typing import Dict, Optional
+from pathlib import Path
 
 import torch
 
@@ -35,7 +36,8 @@ from allennlp.data.vocabulary import Vocabulary
 #   - `clone` creates N copies of a layer.
 from allennlp.nn import util
 
-from layers import SequenceAttention, BilinearAttention, LinearSelfAttention
+from layers import (SequenceAttention, BilinearAttention, LinearSelfAttention,
+                    bert_embeddings, BertSentencePooler)
 
 
 @Model.register('baseline-classifier')
@@ -93,6 +95,7 @@ class BaselineClassifier(Model):
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
+                text: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
@@ -248,6 +251,7 @@ class AttentiveClassifier(Model):
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
+                text: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
@@ -421,6 +425,7 @@ class AttentiveReader(Model):
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
+                text: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
@@ -472,6 +477,93 @@ class AttentiveReader(Model):
         if label is not None:
             self.accuracy(prob, label)
             output["loss"] = self.loss(prob, label)
+
+        # The output is the dict we've been building, with the logits, loss
+        # and the prediction.
+        return output
+
+    # This function computes the metrics we want to see during training.
+    # For now, we only have the accuracy metric, but we could have a number
+    # of different metrics here.
+    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
+        return {"accuracy": self.accuracy.get_metric(reset)}
+
+
+@Model.register('bert-classifier')
+class SimpleBertClassifier(Model):
+    """
+    Model that encodes input using BERT, takes the embedding for the CLS
+    token (using BertPooler) and puts the output through a FFN to get the
+    probabilities.
+    """
+
+    def __init__(self,
+                 bert_path: Path,
+                 vocab: Vocabulary) -> None:
+        # We have to pass the vocabulary to the constructor.
+        super().__init__(vocab)
+        self.word_embeddings = bert_embeddings(pretrained_model=bert_path)
+
+        self.encoder = BertSentencePooler(
+            self.word_embeddings.get_output_dim())
+
+        hidden_dim = self.encoder.get_output_dim()
+        self.hidden2logit = torch.nn.Linear(
+            in_features=hidden_dim,
+            out_features=vocab.get_vocab_size('label')
+        )
+
+        # Categorical (as this is a classification task) accuracy
+        self.accuracy = CategoricalAccuracy()
+        # CrossEntropyLoss is a combinational of LogSoftmax and
+        # Negative Log Likelihood. We won't directly use Softmax in training.
+        self.loss = torch.nn.CrossEntropyLoss()
+
+    # This is the computation bit of the model. The arguments of this function
+    # are the fields from the `Instance` we created, as that's what's going to
+    # be passed to this. We also have the optional `label`, which is only
+    # available at training time, used to calculate the loss.
+    def forward(self,
+                passage_id: Dict[str, torch.Tensor],
+                question_id: Dict[str, torch.Tensor],
+                text: Dict[str, torch.Tensor],
+                passage: Dict[str, torch.Tensor],
+                question: Dict[str, torch.Tensor],
+                answer0: Dict[str, torch.Tensor],
+                answer1: Dict[str, torch.Tensor],
+                passage_pos: Dict[str, torch.Tensor],
+                passage_ner: Dict[str, torch.Tensor],
+                question_pos: Dict[str, torch.Tensor],
+                p_q_rel: Dict[str, torch.Tensor],
+                p_a0_rel: Dict[str, torch.Tensor],
+                p_a1_rel: Dict[str, torch.Tensor],
+                hc_feat: Dict[str, torch.Tensor],
+                label: Optional[torch.Tensor] = None
+                ) -> Dict[str, torch.Tensor]:
+
+        # Every sample in a batch has to have the same size (as it's a tensor),
+        # so smaller entries are padded. The mask is used to counteract this
+        # padding.
+        t_mask = util.get_text_field_mask(text)
+
+        # We create the embeddings from the input text
+        t_emb = self.word_embeddings(passage)
+        # Then we use those embeddings (along with the masks) as inputs for
+        # our encoders
+        encoder_out = self.encoder(t_emb, t_mask)
+
+        # Finally, we pass each encoded output tensor to the feedforward layer
+        # to produce logits corresponding to each class.
+        logits = self.hidden2logit(encoder_out)
+        # We also compute the class with highest likelihood (our prediction)
+        prob = torch.softmax(logits, dim=-1)
+        output = {"logits": logits, "prob": prob}
+
+        # Labels are optional. If they're present, we calculate the accuracy
+        # and the loss function.
+        if label is not None:
+            self.accuracy(prob, label)
+            output["loss"] = self.loss(logits, label)
 
         # The output is the dict we've been building, with the logits, loss
         # and the prediction.

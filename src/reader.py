@@ -22,7 +22,8 @@ from allennlp.data.token_indexers import (PosTagIndexer, NerTagIndexer,
 # This converts a word into a `Token` object, with fields for POS tags and
 # such.
 from allennlp.data.tokenizers import WordTokenizer, Token
-from allennlp.data.tokenizers.word_splitter import SpacyWordSplitter
+from allennlp.data.tokenizers.word_splitter import (SpacyWordSplitter,
+                                                    BertBasicWordSplitter)
 from allennlp.data.token_indexers import PretrainedBertIndexer, TokenIndexer
 
 from conceptnet import ConceptNet
@@ -58,6 +59,8 @@ class McScriptReader(DatasetReader):
 
         word_splitter = SpacyWordSplitter(pos_tags=True, ner=True, parse=True)
         self.word_tokeniser = WordTokenizer(word_splitter=word_splitter)
+        bert_splitter = BertBasicWordSplitter()
+        self.bert_tokeniser = WordTokenizer(word_splitter=bert_splitter)
 
         word_indexer = word_indexer or PretrainedBertIndexer(
             pretrained_model='bert-base-uncased',
@@ -86,10 +89,14 @@ class McScriptReader(DatasetReader):
                          ) -> Instance:
         passage = passage[:self.max_length]
 
+        bert_text = f'[CLS]{question}[SEP]{passage}[SEP]{question}[SEP]' \
+            '{answer0}[SEP]{answer1}'
+
         passage_tokens = self.word_tokeniser.tokenize(text=passage)
         question_tokens = self.word_tokeniser.tokenize(text=question)
         answer0_tokens = self.word_tokeniser.tokenize(text=answer0)
         answer1_tokens = self.word_tokeniser.tokenize(text=answer1)
+        text_tokens = self.bert_tokeniser.tokenize(text=bert_text)
 
         passage_words = toks2strs(passage_tokens)
         question_words = toks2strs(question_tokens)
@@ -113,6 +120,7 @@ class McScriptReader(DatasetReader):
         fields = {
             "passage_id": MetadataField(passage_id),
             "question_id": MetadataField(question_id),
+            "text": TextField(text_tokens, self.word_indexers),
             "passage": TextField(passage_tokens, self.word_indexers),
             "passage_pos": TextField(passage_tokens, self.pos_indexers),
             "passage_ner": TextField(passage_tokens, self.ner_indexers),
