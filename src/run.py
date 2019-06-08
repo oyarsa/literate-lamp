@@ -28,7 +28,8 @@ from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, create_reader)
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
-                    glove_embeddings, learned_embeddings, bert_embeddings)
+                    glove_embeddings, learned_embeddings, bert_embeddings,
+                    transformer_seq2seq)
 
 DEFAULT_CONFIG = 'small'  # Can be: _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
@@ -116,8 +117,8 @@ print('Pre-processed data path:', TRAIN_PREPROCESSED_PATH)
 RANDOM_SEED = 1234
 
 # Model Configuration
-# Use LSTM or GRU
-RNN_TYPE = 'lstm'
+# Use LSTM, GRU or Transformer
+ENCODER_TYPE = 'transformer'
 BIDIRECTIONAL = True
 RNN_LAYERS = 1
 RNN_DROPOUT = 0.5
@@ -144,12 +145,10 @@ def build_baseline(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid word embedding type')
 
-    if RNN_TYPE == 'lstm':
-        encoder_fn = lstm_encoder
-    elif RNN_TYPE == 'gru':
+    if ENCODER_TYPE == 'gru':
         encoder_fn = gru_encoder
     else:
-        raise ValueError('Invalid RNN type')
+        encoder_fn = lstm_encoder
 
     embedding_dim = embeddings.get_output_dim()
     encoder = encoder_fn(embedding_dim, HIDDEN_DIM, num_layers=RNN_LAYERS,
@@ -217,10 +216,13 @@ def build_attentive(vocab: Vocabulary) -> Model:
     ner_embeddings = learned_embeddings(vocab, NER_EMBEDDING_DIM, 'ner_tokens')
     rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
 
-    if RNN_TYPE == 'lstm':
+    if ENCODER_TYPE == 'lstm':
         encoder_fn = lstm_seq2seq
-    elif RNN_TYPE == 'gru':
+    elif ENCODER_TYPE == 'gru':
         encoder_fn = gru_seq2seq
+    elif ENCODER_TYPE == 'transformer':
+        # Transformer has to be handled differently, but the two RNNs can share
+        pass
     else:
         raise ValueError('Invalid RNN type')
 
@@ -239,13 +241,21 @@ def build_attentive(vocab: Vocabulary) -> Model:
     # between layers of the stacked RNN.
     dropout = RNN_DROPOUT if RNN_LAYERS > 1 else 0
 
-    p_encoder = encoder_fn(input_dim=p_input_size, output_dim=HIDDEN_DIM,
-                           num_layers=RNN_LAYERS, bidirectional=BIDIRECTIONAL,
-                           dropout=dropout)
-    q_encoder = encoder_fn(input_dim=q_input_size, output_dim=HIDDEN_DIM,
-                           num_layers=1, bidirectional=BIDIRECTIONAL)
-    a_encoder = encoder_fn(input_dim=a_input_size, output_dim=HIDDEN_DIM,
-                           num_layers=1, bidirectional=BIDIRECTIONAL)
+    if ENCODER_TYPE in ['lstm', 'gru']:
+        p_encoder = encoder_fn(input_dim=p_input_size, output_dim=HIDDEN_DIM,
+                               num_layers=RNN_LAYERS,
+                               bidirectional=BIDIRECTIONAL, dropout=dropout)
+        q_encoder = encoder_fn(input_dim=q_input_size, output_dim=HIDDEN_DIM,
+                               num_layers=1, bidirectional=BIDIRECTIONAL)
+        a_encoder = encoder_fn(input_dim=a_input_size, output_dim=HIDDEN_DIM,
+                               num_layers=1, bidirectional=BIDIRECTIONAL)
+    elif ENCODER_TYPE == 'transformer':
+        p_encoder = transformer_seq2seq(
+            input_dim=p_input_size, hidden_dim=HIDDEN_DIM)
+        q_encoder = transformer_seq2seq(
+            input_dim=q_input_size, hidden_dim=HIDDEN_DIM)
+        a_encoder = transformer_seq2seq(
+            input_dim=a_input_size, hidden_dim=HIDDEN_DIM)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AttentiveClassifier(

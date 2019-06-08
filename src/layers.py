@@ -22,7 +22,7 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding, PretrainedBertEmbedder
 from allennlp.modules.seq2vec_encoders import PytorchSeq2VecWrapper
 from allennlp.modules.seq2seq_encoders import (
-    Seq2SeqEncoder, PytorchSeq2SeqWrapper)
+    Seq2SeqEncoder, PytorchSeq2SeqWrapper, StackedSelfAttentionEncoder)
 
 
 class LinearSelfAttention(Attention):
@@ -226,6 +226,22 @@ def gru_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
     return PytorchSeq2SeqWrapper(torch.nn.GRU(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
         bidirectional=bidirectional, dropout=dropout))
+
+
+def transformer_seq2seq(input_dim: int,
+                        hidden_dim: int,
+                        feedforward_hidden_dim: int = 2048,
+                        num_layers: int = 6,
+                        projection_dim: int = 64,
+                        num_attention_heads: int = 8,
+                        dropout: float = 0.1) -> Seq2SeqEncoder:
+    return StackedSelfAttentionEncoder(
+        input_dim=input_dim,
+        hidden_dim=hidden_dim,
+        feedforward_hidden_dim=feedforward_hidden_dim,
+        num_layers=num_layers,
+        projection_dim=projection_dim,
+        num_attention_heads=num_attention_heads)
 
 
 def lstm_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
