@@ -489,7 +489,7 @@ class AttentiveReader(Model):
         return {"accuracy": self.accuracy.get_metric(reset)}
 
 
-@Model.register('bert-classifier')
+@Model.register('simple-bert-classifier')
 class SimpleBertClassifier(Model):
     """
     Model that encodes input using BERT, takes the embedding for the CLS
@@ -499,13 +499,14 @@ class SimpleBertClassifier(Model):
 
     def __init__(self,
                  bert_path: Path,
-                 vocab: Vocabulary) -> None:
+                 vocab: Vocabulary,
+                 train_bert: bool = False
+                 ) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
-        self.word_embeddings = bert_embeddings(pretrained_model=bert_path)
+        self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
+                                               training=train_bert)
 
-        # self.encoder = BertSentencePooler(
-        #     self.word_embeddings.get_output_dim())
         self.encoder = BertPooler(pretrained_model=str(bert_path))
 
         hidden_dim = self.encoder.get_output_dim()
@@ -557,6 +558,165 @@ class SimpleBertClassifier(Model):
         # to produce logits corresponding to each class.
         logits = self.hidden2logit(encoder_out)
         # We also compute the class with highest likelihood (our prediction)
+        prob = torch.softmax(logits, dim=-1)
+        output = {"logits": logits, "prob": prob}
+
+        # Labels are optional. If they're present, we calculate the accuracy
+        # and the loss function.
+        if label is not None:
+            self.accuracy(prob, label)
+            output["loss"] = self.loss(logits, label)
+
+        # The output is the dict we've been building, with the logits, loss
+        # and the prediction.
+        return output
+
+    # This function computes the metrics we want to see during training.
+    # For now, we only have the accuracy metric, but we could have a number
+    # of different metrics here.
+    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
+        return {"accuracy": self.accuracy.get_metric(reset)}
+
+
+@Model.register('advanced-bert-classifier')
+class AdvancedBertClassifier(Model):
+    """
+    Model similar to the AttentiveClassifier with BERT, but without external
+    features.
+    """
+
+    def __init__(self,
+                 bert_path: Path,
+                 p_encoder: Seq2SeqEncoder,
+                 q_encoder: Seq2SeqEncoder,
+                 a_encoder: Seq2SeqEncoder,
+                 rel_embeddings: TextFieldEmbedder,
+                 vocab: Vocabulary,
+                 encoder_dropout: float = 0.0,
+                 train_bert: bool = False
+                 ) -> None:
+        # We have to pass the vocabulary to the constructor.
+        super().__init__(vocab)
+        self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
+                                               training=train_bert)
+
+        self.rel_embeddings = rel_embeddings
+
+        if encoder_dropout > 0:
+            self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
+        else:
+            self.encoder_dropout = lambda x: x
+
+        # Our model has different encoders for each of the fields (passage,
+        # answer and question).
+        self.p_encoder = p_encoder
+        self.q_encoder = q_encoder
+        self.a_encoder = a_encoder
+
+        # Attention layers: passage-question, question-self, answer-self
+        self.p_q_attn = BilinearAttention(
+            vector_dim=self.q_encoder.get_output_dim(),
+            matrix_dim=self.p_encoder.get_output_dim(),
+        )
+        self.q_self_attn = LinearSelfAttention(
+            input_dim=self.q_encoder.get_output_dim()
+        )
+        self.a_self_attn = LinearSelfAttention(
+            input_dim=self.a_encoder.get_output_dim()
+        )
+        self.p_a_bilinear = torch.nn.Linear(
+            in_features=self.p_encoder.get_output_dim(),
+            out_features=self.a_encoder.get_output_dim()
+        )
+        self.q_a_bilinear = torch.nn.Linear(
+            in_features=self.q_encoder.get_output_dim(),
+            out_features=self.a_encoder.get_output_dim()
+        )
+
+        # Categorical (as this is a classification task) accuracy
+        self.accuracy = CategoricalAccuracy()
+        # CrossEntropyLoss is a combinational of LogSoftmax and
+        # Negative Log Likelihood. We won't directly use Softmax in training.
+        self.loss = torch.nn.CrossEntropyLoss()
+
+    # This is the computation bit of the model. The arguments of this function
+    # are the fields from the `Instance` we created, as that's what's going to
+    # be passed to this. We also have the optional `label`, which is only
+    # available at training time, used to calculate the loss.
+    def forward(self,
+                passage_id: Dict[str, torch.Tensor],
+                question_id: Dict[str, torch.Tensor],
+                text: Dict[str, torch.Tensor],
+                passage: Dict[str, torch.Tensor],
+                question: Dict[str, torch.Tensor],
+                answer0: Dict[str, torch.Tensor],
+                answer1: Dict[str, torch.Tensor],
+                passage_pos: Dict[str, torch.Tensor],
+                passage_ner: Dict[str, torch.Tensor],
+                question_pos: Dict[str, torch.Tensor],
+                p_q_rel: Dict[str, torch.Tensor],
+                p_a0_rel: Dict[str, torch.Tensor],
+                p_a1_rel: Dict[str, torch.Tensor],
+                hc_feat: Dict[str, torch.Tensor],
+                label: Optional[torch.Tensor] = None
+                ) -> Dict[str, torch.Tensor]:
+        # Every sample in a batch has to have the same size (as it's a tensor),
+        # so smaller entries are padded. The mask is used to counteract this
+        # padding.
+        p_mask = util.get_text_field_mask(passage)
+        q_mask = util.get_text_field_mask(question)
+        a0_mask = util.get_text_field_mask(answer0)
+        a1_mask = util.get_text_field_mask(answer1)
+
+        # We create the embeddings from the input text
+        p_emb = self.word_embeddings(passage)
+        q_emb = self.word_embeddings(question)
+        a0_emb = self.word_embeddings(answer0)
+        a1_emb = self.word_embeddings(answer1)
+        # And the relations
+        p_q_rel_emb = self.rel_embeddings(p_q_rel)
+        p_a0_rel_emb = self.rel_embeddings(p_a0_rel)
+        p_a1_rel_emb = self.rel_embeddings(p_a1_rel)
+
+        # We combine the inputs to our encoder
+        p_input = torch.cat(
+            (p_emb, p_q_rel_emb, p_a0_rel_emb, p_a1_rel_emb), dim=2)
+        a0_input = a0_emb
+        a1_input = a1_emb
+        q_input = q_emb
+
+        # Then we use those (along with the masks) as inputs for
+        # our encoders
+        p_hiddens = self.encoder_dropout(self.p_encoder(p_input, p_mask))
+        q_hiddens = self.encoder_dropout(self.q_encoder(q_input, q_mask))
+        a0_hiddens = self.encoder_dropout(self.a_encoder(a0_input, a0_mask))
+        a1_hiddens = self.encoder_dropout(self.a_encoder(a1_input, a1_mask))
+
+        # We compute the self-attention scores
+        q_attn = self.q_self_attn(q_hiddens, q_hiddens, q_mask)
+        a0_attn = self.a_self_attn(a0_hiddens, a0_hiddens, a0_mask)
+        a1_attn = self.a_self_attn(a1_hiddens, a1_hiddens, a1_mask)
+
+        # Then we weight the hidden-states with those scores
+        q_weighted = util.weighted_sum(q_hiddens, q_attn)
+        a0_weighted = util.weighted_sum(a0_hiddens, a0_attn)
+        a1_weighted = util.weighted_sum(a1_hiddens, a1_attn)
+
+        # We weight the text states with a passage-question bilinear attention
+        p_q_attn = self.p_q_attn(q_weighted, p_hiddens, p_mask)
+        p_weighted = util.weighted_sum(p_hiddens, p_q_attn)
+
+        # Calculate the outputs for each answer, from passage-answer and
+        # question-answer attention again
+        out_0 = (self.p_a_bilinear(p_weighted) * a0_weighted).sum(dim=1)
+        out_0 += (self.q_a_bilinear(q_weighted) * a0_weighted).sum(dim=1)
+
+        out_1 = (self.p_a_bilinear(p_weighted) * a1_weighted).sum(dim=1)
+        out_1 += (self.q_a_bilinear(q_weighted) * a1_weighted).sum(dim=1)
+
+        # Output vector is 2-dim vector with both logits
+        logits = torch.stack((out_0, out_1), dim=1)
+        # # We softmax to turn those logits into probabilities
         prob = torch.softmax(logits, dim=-1)
         output = {"logits": logits, "prob": prob}
 

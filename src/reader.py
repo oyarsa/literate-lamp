@@ -97,10 +97,10 @@ class McScriptReader(DatasetReader):
         answer1_wordpieces = self.bert_tokeniser.tokenize(text=answer1)
         text_wordpieces = self.bert_tokeniser.tokenize(text=bert_text)
 
-        passage_words = toks2strs(passage_tokens)
-        question_words = toks2strs(question_tokens)
-        answer0_words = toks2strs(answer0_tokens)
-        answer1_words = toks2strs(answer1_tokens)
+        passage_words = toks2strs(passage_wordpieces)
+        question_words = toks2strs(question_wordpieces)
+        answer0_words = toks2strs(answer0_wordpieces)
+        answer1_words = toks2strs(answer1_wordpieces)
 
         p_q_relations = strs2toks(self.conceptnet.get_text_query_relations(
             passage_words, question_words))

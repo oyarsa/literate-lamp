@@ -246,13 +246,13 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     return model
 
 
-def get_experiment_name(model: str, config: str) -> str:
+def get_experiment_name(model: str, config: str, embedding: str) -> str:
     """
     Sets up the name for the experiment based on the model type, the
     configuration being used and the current date and time.
     """
     date = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    name = f'{model}.{config}.{date}'
+    name = f'{model}.{config}.{embedding}.{date}'
     return name
 
 

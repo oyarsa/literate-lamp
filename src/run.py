@@ -11,7 +11,7 @@ concatenated and fed into a feed-forward layer that output class probabilities.
 This script builds the model, trains it, generates predictions and saves it.
 Then it checks if the saving went correctly.
 """
-from typing import Dict, Callable, Optional
+from typing import Dict, Callable
 import sys
 from pathlib import Path
 import pickle
@@ -24,7 +24,7 @@ from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 
 from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
-                    SimpleBertClassifier)
+                    SimpleBertClassifier, AdvancedBertClassifier)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, create_reader)
@@ -35,7 +35,8 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
 DEFAULT_CONFIG = 'small'  # Can be: _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
 
-# Which model to use: 'baseline', 'reader', 'simple-bert' or 'attentive'.
+# Which model to use: 'baseline', 'reader', 'simple-bert', 'advanced-bert',
+#  or 'attentive'.
 DEFAULT_MODEL = 'attentive'
 MODEL = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_MODEL
 
@@ -101,7 +102,7 @@ CONCEPTNET_PATH = EXTERNAL_FOLDER / 'conceptnet.csv'
 
 # Path to save the Model and Vocabulary
 SAVE_FOLDER = Path('experiments')
-SAVE_PATH = SAVE_FOLDER / get_experiment_name(MODEL, CONFIG)
+SAVE_PATH = SAVE_FOLDER / get_experiment_name(MODEL, CONFIG, EMBEDDING_TYPE)
 print('Save path', SAVE_PATH)
 
 # Path to save pre-processed input
@@ -119,11 +120,94 @@ RANDOM_SEED = 1234
 
 # Model Configuration
 # Use LSTM, GRU or Transformer
-ENCODER_TYPE = 'transformer'
+ENCODER_TYPE = 'lstm'
 BIDIRECTIONAL = True
 RNN_LAYERS = 1
 RNN_DROPOUT = 0.5
 EMBEDDDING_DROPOUT = 0.5
+
+
+def build_advanced_bert(vocab: Vocabulary) -> Model:
+    """
+    Builds the AdvancedBertClassifier.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `AdvancedBertClassifier` model ready to be trained.
+    """
+    rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
+
+    if ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_seq2seq
+    elif ENCODER_TYPE == 'gru':
+        encoder_fn = gru_seq2seq
+    elif ENCODER_TYPE == 'transformer':
+        # Transformer has to be handled differently, but the two RNNs can share
+        pass
+    else:
+        raise ValueError('Invalid RNN type')
+
+    bert = bert_embeddings(BERT_PATH)
+    embedding_dim = bert.get_output_dim()
+
+    # p_emb + p_q_rel + 2*p_a_rel
+    p_input_size = (embedding_dim + 3*REL_EMBEDDING_DIM)
+    # q_emb + q_pos_emb
+    q_input_size = embedding_dim
+    # a_emb + a_q_match + a_p_match
+    a_input_size = embedding_dim
+
+    # To prevent the warning on single-layer, as the dropout is only
+    # between layers of the stacked RNN.
+    dropout = RNN_DROPOUT if RNN_LAYERS > 1 else 0
+
+    if ENCODER_TYPE in ['lstm', 'gru']:
+        p_encoder = encoder_fn(input_dim=p_input_size, output_dim=HIDDEN_DIM,
+                               num_layers=RNN_LAYERS,
+                               bidirectional=BIDIRECTIONAL, dropout=dropout)
+        q_encoder = encoder_fn(input_dim=q_input_size, output_dim=HIDDEN_DIM,
+                               num_layers=1, bidirectional=BIDIRECTIONAL)
+        a_encoder = encoder_fn(input_dim=a_input_size, output_dim=HIDDEN_DIM,
+                               num_layers=1, bidirectional=BIDIRECTIONAL)
+    elif ENCODER_TYPE == 'transformer':
+        p_encoder = transformer_seq2seq(
+            input_dim=p_input_size,
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=1024
+        )
+        q_encoder = transformer_seq2seq(
+            input_dim=q_input_size,
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=512
+        )
+        a_encoder = transformer_seq2seq(
+            input_dim=a_input_size,
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=512
+        )
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = AdvancedBertClassifier(
+        bert_path=BERT_PATH,
+        p_encoder=p_encoder,
+        q_encoder=q_encoder,
+        a_encoder=a_encoder,
+        rel_embeddings=rel_embeddings,
+        vocab=vocab,
+        encoder_dropout=RNN_DROPOUT
+    )
+
+    return model
 
 
 def build_simple_bert(vocab: Vocabulary) -> Model:
@@ -368,6 +452,8 @@ def run_model() -> None:
         build_fn = build_attentive_reader
     elif MODEL == 'simple-bert':
         build_fn = build_simple_bert
+    elif MODEL == 'advanced-bert':
+        build_fn = build_advanced_bert
     else:
         raise ValueError('Invalid model name')
 
