@@ -95,8 +95,8 @@ def train_val_test_split(
 
 
 def create_reader(embedding_type: str = 'bert',
-                  conceptnet_path: Optional[Path] = None,
-                  max_length: Optional[int] = None) -> DatasetReader:
+                  conceptnet_path: Optional[Path] = None
+                  ) -> DatasetReader:
     " Creates a new reader and reads from data_path"
     if embedding_type == 'glove':
         word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
@@ -108,8 +108,7 @@ def create_reader(embedding_type: str = 'bert',
         raise ValueError('Invalid embedding type')
 
     reader = McScriptReader(conceptnet_path=conceptnet_path,
-                            word_indexer=word_indexer,
-                            max_length=max_length)
+                            word_indexer=word_indexer)
     return reader
 
 
