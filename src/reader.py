@@ -89,8 +89,7 @@ class McScriptReader(DatasetReader):
                          ) -> Instance:
         passage = passage[:self.max_length]
 
-        bert_text = f'[CLS]{question}[SEP]{passage}[SEP]{question}[SEP]' \
-            '{answer0}[SEP]{answer1}'
+        bert_text = f'{question}[SEP]{passage}[SEP]{answer0}[SEP]{answer1}'
 
         passage_tokens = self.word_tokeniser.tokenize(text=passage)
         question_tokens = self.word_tokeniser.tokenize(text=question)
