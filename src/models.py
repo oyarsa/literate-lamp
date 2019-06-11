@@ -37,7 +37,7 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.nn import util
 
 from layers import (SequenceAttention, BilinearAttention, LinearSelfAttention,
-                    bert_embeddings, BertSentencePooler)
+                    bert_embeddings)
 
 
 @Model.register('baseline-classifier')

@@ -143,29 +143,6 @@ class SequenceAttention(Attention):
         return alpha
 
 
-class BertSentencePooler(Seq2VecEncoder):
-    """
-    Produces a vector out of a Bert embedding layer by getting the first
-    token(CLS)
-    """
-
-    def __init__(self, embedding_dim: int) -> None:
-        super(BertSentencePooler, self).__init__()
-        self.embedding_dim = embedding_dim
-
-    @overrides
-    def get_input_dim(self) -> int:
-        return self.embedding_dim
-
-    @overrides
-    def get_output_dim(self) -> int:
-        return self.embedding_dim
-
-    def forward(self, embeddings: torch.Tensor,
-                _mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-        return embeddings[:, 0]
-
-
 def learned_embeddings(vocab: Vocabulary, dimension: int,
                        namespace: str = 'tokens') -> BasicTextFieldEmbedder:
     "Returns an Embedding layer to be learned, i.e., not pre-trained."

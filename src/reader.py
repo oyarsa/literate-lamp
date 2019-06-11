@@ -96,7 +96,12 @@ class McScriptReader(DatasetReader):
         question_tokens = self.word_tokeniser.tokenize(text=question)
         answer0_tokens = self.word_tokeniser.tokenize(text=answer0)
         answer1_tokens = self.word_tokeniser.tokenize(text=answer1)
-        text_tokens = self.bert_tokeniser.tokenize(text=bert_text)
+
+        passage_wordpieces = self.bert_tokeniser.tokenize(text=passage)
+        question_wordpieces = self.bert_tokeniser.tokenize(text=question)
+        answer0_wordpieces = self.bert_tokeniser.tokenize(text=answer0)
+        answer1_wordpieces = self.bert_tokeniser.tokenize(text=answer1)
+        text_wordpieces = self.bert_tokeniser.tokenize(text=bert_text)
 
         passage_words = toks2strs(passage_tokens)
         question_words = toks2strs(question_tokens)
@@ -120,14 +125,14 @@ class McScriptReader(DatasetReader):
         fields = {
             "passage_id": MetadataField(passage_id),
             "question_id": MetadataField(question_id),
-            "text": TextField(text_tokens, self.word_indexers),
-            "passage": TextField(passage_tokens, self.word_indexers),
+            "text": TextField(text_wordpieces, self.word_indexers),
+            "passage": TextField(passage_wordpieces, self.word_indexers),
             "passage_pos": TextField(passage_tokens, self.pos_indexers),
             "passage_ner": TextField(passage_tokens, self.ner_indexers),
-            "question": TextField(question_tokens, self.word_indexers),
+            "question": TextField(question_wordpieces, self.word_indexers),
             "question_pos": TextField(question_tokens, self.pos_indexers),
-            "answer0": TextField(answer0_tokens, self.word_indexers),
-            "answer1": TextField(answer1_tokens, self.word_indexers),
+            "answer0": TextField(answer0_wordpieces, self.word_indexers),
+            "answer1": TextField(answer1_wordpieces, self.word_indexers),
             "p_q_rel": TextField(p_q_relations, self.rel_indexers),
             "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
             "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
@@ -233,8 +238,9 @@ def compute_handcrafted_features(passage: Sequence[Token],
     lemma_co_occ = np.vstack((p_q_lem_co_occ, p_a0_lem_co_occ,
                               p_a1_lem_co_occ))
 
-    # dim: len * 3 + len * 3 + len * 1 = len * 7
+    # dim: len * 1
     tf = np.array([util.get_term_frequency(word) for word in passage])
 
+    # dim: len * 3 + len * 3 + len * 1 = len * 7
     features = np.vstack((co_occ, lemma_co_occ, tf)).T
     return features
