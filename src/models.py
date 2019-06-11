@@ -23,7 +23,7 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 # (such as the LSTM we'll use later on), as they don't exactly follow the
 # interface the library expects.
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
-from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
+from allennlp.modules.seq2vec_encoders import Seq2VecEncoder, BertPooler
 from allennlp.training.metrics import CategoricalAccuracy
 
 # Holds the vocabulary, learned from the whole data. Also knows the mapping
@@ -504,8 +504,9 @@ class SimpleBertClassifier(Model):
         super().__init__(vocab)
         self.word_embeddings = bert_embeddings(pretrained_model=bert_path)
 
-        self.encoder = BertSentencePooler(
-            self.word_embeddings.get_output_dim())
+        # self.encoder = BertSentencePooler(
+        #     self.word_embeddings.get_output_dim())
+        self.encoder = BertPooler(pretrained_model=str(bert_path))
 
         hidden_dim = self.encoder.get_output_dim()
         self.hidden2logit = torch.nn.Linear(
