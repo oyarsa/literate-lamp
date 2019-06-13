@@ -100,15 +100,18 @@ def create_reader(embedding_type: str = 'bert',
     " Creates a new reader and reads from data_path"
     if embedding_type == 'glove':
         word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
+        is_bert = False
     elif embedding_type == 'bert':
         word_indexer = PretrainedBertIndexer(
             pretrained_model='bert-base-uncased',
             truncate_long_sequences=False)
+        is_bert = True
     else:
         raise ValueError('Invalid embedding type')
 
     reader = McScriptReader(conceptnet_path=conceptnet_path,
-                            word_indexer=word_indexer)
+                            word_indexer=word_indexer,
+                            is_bert=is_bert)
     return reader
 
 

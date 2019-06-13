@@ -49,6 +49,7 @@ class McScriptReader(DatasetReader):
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
                  word_indexer: Optional[TokenIndexer] = None,
+                 is_bert: bool = False,
                  conceptnet_path: Optional[Path] = None):
         super().__init__(lazy=False)
         self.pos_indexers = {"pos_tokens": PosTagIndexer()}
@@ -60,6 +61,11 @@ class McScriptReader(DatasetReader):
         self.word_tokeniser = WordTokenizer(word_splitter=word_splitter)
         bert_splitter = BertBasicWordSplitter()
         self.bert_tokeniser = WordTokenizer(word_splitter=bert_splitter)
+
+        if is_bert:
+            self.tokeniser = self.bert_tokeniser
+        else:
+            self.tokeniser = self.word_tokeniser
 
         word_indexer = word_indexer or PretrainedBertIndexer(
             pretrained_model='bert-base-uncased',
@@ -84,18 +90,20 @@ class McScriptReader(DatasetReader):
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
-        bert_text = f'{question}[SEP]{passage}[SEP]{answer0}[SEP]{answer1}'
+        bert_text0 = f'{question}[SEP]{passage}[SEP]{answer0}'
+        bert_text1 = f'{question}[SEP]{passage}[SEP]{answer1}'
 
         passage_tokens = self.word_tokeniser.tokenize(text=passage)
         question_tokens = self.word_tokeniser.tokenize(text=question)
         answer0_tokens = self.word_tokeniser.tokenize(text=answer0)
         answer1_tokens = self.word_tokeniser.tokenize(text=answer1)
 
-        passage_wordpieces = self.bert_tokeniser.tokenize(text=passage)
-        question_wordpieces = self.bert_tokeniser.tokenize(text=question)
-        answer0_wordpieces = self.bert_tokeniser.tokenize(text=answer0)
-        answer1_wordpieces = self.bert_tokeniser.tokenize(text=answer1)
-        text_wordpieces = self.bert_tokeniser.tokenize(text=bert_text)
+        passage_wordpieces = self.tokeniser.tokenize(text=passage)
+        question_wordpieces = self.tokeniser.tokenize(text=question)
+        answer0_wordpieces = self.tokeniser.tokenize(text=answer0)
+        answer1_wordpieces = self.tokeniser.tokenize(text=answer1)
+        text0_wordpieces = self.bert_tokeniser.tokenize(text=bert_text0)
+        text1_wordpieces = self.bert_tokeniser.tokenize(text=bert_text1)
 
         passage_words = toks2strs(passage_wordpieces)
         question_words = toks2strs(question_wordpieces)
@@ -119,7 +127,8 @@ class McScriptReader(DatasetReader):
         fields = {
             "passage_id": MetadataField(passage_id),
             "question_id": MetadataField(question_id),
-            "text": TextField(text_wordpieces, self.word_indexers),
+            "bert0": TextField(text0_wordpieces, self.word_indexers),
+            "bert1": TextField(text1_wordpieces, self.word_indexers),
             "passage": TextField(passage_wordpieces, self.word_indexers),
             "passage_pos": TextField(passage_tokens, self.pos_indexers),
             "passage_ner": TextField(passage_tokens, self.ner_indexers),
