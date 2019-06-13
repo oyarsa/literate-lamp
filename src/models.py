@@ -95,19 +95,10 @@ class BaselineClassifier(Model):
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
-                bert0: Dict[str, torch.Tensor],
-                bert1: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
-                passage_pos: Dict[str, torch.Tensor],
-                passage_ner: Dict[str, torch.Tensor],
-                question_pos: Dict[str, torch.Tensor],
-                p_q_rel: Dict[str, torch.Tensor],
-                p_a0_rel: Dict[str, torch.Tensor],
-                p_a1_rel: Dict[str, torch.Tensor],
-                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -252,8 +243,6 @@ class AttentiveClassifier(Model):
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
-                bert0: Dict[str, torch.Tensor],
-                bert1: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
@@ -427,19 +416,10 @@ class AttentiveReader(Model):
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
-                bert0: Dict[str, torch.Tensor],
-                bert1: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
-                passage_pos: Dict[str, torch.Tensor],
-                passage_ner: Dict[str, torch.Tensor],
-                question_pos: Dict[str, torch.Tensor],
-                p_q_rel: Dict[str, torch.Tensor],
-                p_a0_rel: Dict[str, torch.Tensor],
-                p_a1_rel: Dict[str, torch.Tensor],
-                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -537,13 +517,6 @@ class SimpleBertClassifier(Model):
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
-                passage_pos: Dict[str, torch.Tensor],
-                passage_ner: Dict[str, torch.Tensor],
-                question_pos: Dict[str, torch.Tensor],
-                p_q_rel: Dict[str, torch.Tensor],
-                p_a0_rel: Dict[str, torch.Tensor],
-                p_a1_rel: Dict[str, torch.Tensor],
-                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -592,6 +565,8 @@ class AdvancedBertClassifier(Model):
     """
     Model similar to the AttentiveClassifier with BERT, but without external
     features.
+
+    SimpleTrian is this with the attention before the encoders.
     """
 
     def __init__(self,
@@ -655,19 +630,13 @@ class AdvancedBertClassifier(Model):
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
-                bert0: Dict[str, torch.Tensor],
-                bert1: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
-                passage_pos: Dict[str, torch.Tensor],
-                passage_ner: Dict[str, torch.Tensor],
-                question_pos: Dict[str, torch.Tensor],
                 p_q_rel: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
-                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
         # Every sample in a batch has to have the same size (as it's a tensor),
@@ -837,19 +806,13 @@ class SimpleTrian(Model):
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
-                bert0: Dict[str, torch.Tensor],
-                bert1: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
-                passage_pos: Dict[str, torch.Tensor],
-                passage_ner: Dict[str, torch.Tensor],
-                question_pos: Dict[str, torch.Tensor],
                 p_q_rel: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
-                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 

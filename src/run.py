@@ -19,7 +19,6 @@ import pickle
 import torch
 from torch.optim import Adamax
 import numpy as np
-
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 
@@ -27,10 +26,12 @@ from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
-                  load_data, create_reader)
+                  load_data, get_preprocessed_name)
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
                     transformer_seq2seq)
+from reader import (SimpleBertReader, SimpleMcScriptReader, SimpleTrianReader,
+                    FullTrianReader, McScriptReader)
 
 DEFAULT_CONFIG = 'small'  # Can be: _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
@@ -105,10 +106,15 @@ SAVE_FOLDER = Path('experiments')
 SAVE_PATH = SAVE_FOLDER / get_experiment_name(MODEL, CONFIG, EMBEDDING_TYPE)
 print('Save path', SAVE_PATH)
 
+
+def preprocessed_name(split_type: str) -> str:
+    return get_preprocessed_name(split_type, MODEL, CONFIG, EMBEDDING_TYPE)
+
+
 # Path to save pre-processed input
-TRAIN_PREPROCESSED_NAME = f'train.{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
-VAL_PREPROCESSED_NAME = f'val.{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
-TEST_PREPROCESSED_NAME = f'test.{CONFIG}.{EMBEDDING_TYPE}.processed.pickle'
+TRAIN_PREPROCESSED_NAME = preprocessed_name('train')
+VAL_PREPROCESSED_NAME = preprocessed_name('val')
+TEST_PREPROCESSED_NAME = preprocessed_name('test')
 
 TRAIN_PREPROCESSED_PATH = EXTERNAL_FOLDER / TRAIN_PREPROCESSED_NAME
 VAL_PREPROCESSED_PATH = EXTERNAL_FOLDER / VAL_PREPROCESSED_NAME
@@ -483,6 +489,7 @@ def build_attentive(vocab: Vocabulary) -> Model:
 
 
 def test_load(build_model_fn: Callable[[Vocabulary], Model],
+              reader: McScriptReader,
               save_path: Path,
               original_prediction: Dict[str, torch.Tensor],
               cuda_device: int) -> None:
@@ -512,8 +519,6 @@ def test_load(build_model_fn: Callable[[Vocabulary], Model],
         model.cuda(cuda_device)
 
     # Try predicting again and see if we get the same results (we should).
-    reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
-                           embedding_type=EMBEDDING_TYPE)
     predictor = McScriptPredictor(model, dataset_reader=reader)
     passage, question, answer0, _ = example_input(0)
 
@@ -536,18 +541,36 @@ def run_model() -> None:
     # Which model to use?
     if MODEL == 'baseline':
         build_fn = build_baseline
+        reader_type = 'simple'
     elif MODEL == 'attentive':
         build_fn = build_attentive
+        reader_type = 'full-trian'
     elif MODEL == 'reader':
         build_fn = build_attentive_reader
+        reader_type = 'simple'
     elif MODEL == 'simple-bert':
         build_fn = build_simple_bert
+        reader_type = 'simple-bert'
     elif MODEL == 'advanced-bert':
         build_fn = build_advanced_bert
+        reader_type = 'simple-trian'
     elif MODEL == 'simple-trian':
         build_fn = build_simple_trian
+        reader_type = 'simple-trian'
     else:
         raise ValueError('Invalid model name')
+
+    is_bert = EMBEDDING_TYPE == 'bert'
+    if reader_type == 'simple':
+        reader = SimpleMcScriptReader(is_bert=is_bert)
+    elif reader_type == 'full-trian':
+        reader = FullTrianReader(
+            is_bert=is_bert, conceptnet_path=CONCEPTNET_PATH)
+    elif reader_type == 'simple-bert':
+        reader = SimpleBertReader()
+    elif reader_type == 'simple-trian':
+        reader = SimpleTrianReader(
+            is_bert=is_bert, conceptnet_path=CONCEPTNET_PATH)
 
     # Train and save our model
     def optimiser(model: Model) -> torch.optim.Optimizer:
@@ -555,8 +578,6 @@ def run_model() -> None:
 
     # Create SAVE_FOLDER if it doesn't exist
     SAVE_FOLDER.mkdir(exist_ok=True, parents=True)
-    reader = create_reader(conceptnet_path=CONCEPTNET_PATH,
-                           embedding_type=EMBEDDING_TYPE)
     train_dataset = load_data(data_path=TRAIN_DATA_PATH,
                               reader=reader,
                               pre_processed_path=TRAIN_PREPROCESSED_PATH)
@@ -597,7 +618,7 @@ def run_model() -> None:
 
     # Test if we can load the saved model
     cuda_device = 0 if is_cuda(model) else -1
-    test_load(build_fn, SAVE_PATH, result, cuda_device)
+    test_load(build_fn, reader, SAVE_PATH, result, cuda_device)
 
 
 if __name__ == '__main__':

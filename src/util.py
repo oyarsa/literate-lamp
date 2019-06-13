@@ -30,14 +30,10 @@ from allennlp.common.params import Params
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler
 
 from allennlp.data.tokenizers import Token
-from allennlp.data.token_indexers import (PretrainedBertIndexer,
-                                          SingleIdTokenIndexer)
 from allennlp.data.dataset_readers import DatasetReader
 
 from nltk.corpus import stopwords
 import wikiwords
-
-from reader import McScriptReader
 
 STOPWORDS = set(stopwords.words('english'))
 PUNCTUATION = set(string.punctuation)
@@ -92,27 +88,6 @@ def train_val_test_split(
     test_dataset = dataset[train_size + val_size:]
 
     return train_dataset, validation_dataset, test_dataset
-
-
-def create_reader(embedding_type: str = 'bert',
-                  conceptnet_path: Optional[Path] = None
-                  ) -> DatasetReader:
-    " Creates a new reader and reads from data_path"
-    if embedding_type == 'glove':
-        word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
-        is_bert = False
-    elif embedding_type == 'bert':
-        word_indexer = PretrainedBertIndexer(
-            pretrained_model='bert-base-uncased',
-            truncate_long_sequences=False)
-        is_bert = True
-    else:
-        raise ValueError('Invalid embedding type')
-
-    reader = McScriptReader(conceptnet_path=conceptnet_path,
-                            word_indexer=word_indexer,
-                            is_bert=is_bert)
-    return reader
 
 
 def load_data(reader: Optional[DatasetReader] = None,
@@ -247,6 +222,11 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
             pickle.dump(vocab, vocab_file)
 
     return model
+
+
+def get_preprocessed_name(split_name: str, model: str, config: str,
+                          embedding: str) -> str:
+    return f'{split_name}.{model}.{config}.{embedding}.pickle'
 
 
 def get_experiment_name(model: str, config: str, embedding: str) -> str:
