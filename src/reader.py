@@ -501,19 +501,19 @@ class SimpleBertReader(McScriptReader):
                          label0: Optional[str] = None
                          ) -> Instance:
         max_pieces = self.word_indexers['tokens'].max_pieces
-        bert0 = bert_sliding_window(question, answer0, passage, max_pieces)
-        bert1 = bert_sliding_window(question, answer1, passage, max_pieces)
-
-        bert0_tokens = [self.tokeniser.tokenize(text=b) for b in bert0]
-        bert1_tokens = [self.tokeniser.tokenize(text=b) for b in bert1]
-
-        bert0_fields = [TextField(b, self.word_indexers) for b in bert0_tokens]
-        bert1_fields = [TextField(b, self.word_indexers) for b in bert1_tokens]
 
         passage_tokens = self.tokeniser.tokenize(text=passage)
         question_tokens = self.tokeniser.tokenize(text=question)
         answer0_tokens = self.tokeniser.tokenize(text=answer0)
         answer1_tokens = self.tokeniser.tokenize(text=answer1)
+
+        bert0 = bert_sliding_window(
+            question_tokens, answer0_tokens, passage_tokens, max_pieces)
+        bert1 = bert_sliding_window(
+            question_tokens, answer1_tokens, passage_tokens, max_pieces)
+
+        bert0_fields = [TextField(b, self.word_indexers) for b in bert0]
+        bert1_fields = [TextField(b, self.word_indexers) for b in bert1]
 
         fields = {
             "passage_id": MetadataField(passage_id),
@@ -539,15 +539,19 @@ class SimpleBertReader(McScriptReader):
         return Instance(fields)
 
 
-def bert_sliding_window(question: str, answer: str, passage: str,
-                        max_wordpieces: int, stride: int = 10) -> List[str]:
+def bert_sliding_window(question: List[Token],
+                        answer: List[Token],
+                        passage: List[Token],
+                        max_wordpieces: int) -> List[List[Token]]:
+    max_wordpieces -= 50  # To account for the extra wordpieces that will arise
     pieces = []
     special_tokens = 4  # [CLS] + 3 [SEP]
     window_size = max_wordpieces - len(question) - len(answer) - special_tokens
+    separator = Token('SEP')
 
     for i in range(0, len(passage), window_size):
         window = passage[i:i + window_size]
-        piece = f'{question}[SEP]{answer}[SEP]{window}'
+        piece = question + [separator] + answer + [separator] + window
         pieces.append(piece)
 
     return pieces
