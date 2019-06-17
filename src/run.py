@@ -131,7 +131,7 @@ ENCODER_TYPE = 'lstm'
 BIDIRECTIONAL = True
 RNN_LAYERS = 1
 RNN_DROPOUT = 0.5
-EMBEDDDING_DROPOUT = 0.5
+EMBEDDDING_DROPOUT = 0.5 if EMBEDDING_TYPE != 'bert' else 0
 
 
 def build_hierarchical_bert(vocab: Vocabulary) -> Model:

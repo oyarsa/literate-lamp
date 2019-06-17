@@ -510,7 +510,7 @@ class SimpleBertReader(McScriptReader):
         bert0_fields = [TextField(b, self.word_indexers) for b in bert0_tokens]
         bert1_fields = [TextField(b, self.word_indexers) for b in bert1_tokens]
 
-        passage_tokens = self.tokeniser.tokenize(text=passage)
+        passage_tokens = self.tokeniser.tokenize(text=passage[:max_pieces])
         question_tokens = self.tokeniser.tokenize(text=question)
         answer0_tokens = self.tokeniser.tokenize(text=answer0)
         answer1_tokens = self.tokeniser.tokenize(text=answer1)
@@ -540,12 +540,16 @@ class SimpleBertReader(McScriptReader):
 
 
 def bert_sliding_window(question: str, answer: str, passage: str,
-                        max_wordpieces: int, stride: int = 10) -> List[str]:
+                        max_wordpieces: int, stride: Optional[int] = None
+                        ) -> List[str]:
     pieces = []
     special_tokens = 4  # [CLS] + 3 [SEP]
     window_size = max_wordpieces - len(question) - len(answer) - special_tokens
 
-    for i in range(0, len(passage), window_size):
+    if stride is None:
+        stride = window_size
+
+    for i in range(0, len(passage), stride):
         window = passage[i:i + window_size]
         piece = f'{question}[SEP]{answer}[SEP]{window}'
         pieces.append(piece)
