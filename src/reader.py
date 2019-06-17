@@ -481,7 +481,7 @@ class SimpleBertReader(McScriptReader):
         if word_indexer is None:
             word_indexer = PretrainedBertIndexer(
                 pretrained_model='bert-base-uncased',
-                truncate_long_sequences=False)
+                truncate_long_sequences=True)
         self.word_indexers = {'tokens': word_indexer}
 
     # Converts the text from each field in the input to `Token`s, and then

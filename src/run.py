@@ -23,7 +23,8 @@ from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 
 from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
-                    SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian)
+                    SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
+                    HierarchicalBert)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, get_preprocessed_name)
@@ -133,6 +134,71 @@ RNN_DROPOUT = 0.5
 EMBEDDDING_DROPOUT = 0.5
 
 
+def build_hierarchical_bert(vocab: Vocabulary) -> Model:
+    """
+    Builds the HierarchicalBert.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `HierarchicalBert` model ready to be trained.
+    """
+    rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
+
+    if ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_encoder
+    elif ENCODER_TYPE == 'gru':
+        encoder_fn = gru_encoder
+    # elif ENCODER_TYPE == 'transformer':
+    #     # Transformer has to be handled differently, but the 2 RNNs can share
+    #     pass
+    else:
+        raise ValueError('Invalid RNN type')
+
+    bert = bert_embeddings(BERT_PATH)
+    embedding_dim = bert.get_output_dim()
+
+    # To prevent the warning on single-layer, as the dropout is only
+    # between layers of the stacked RNN.
+    dropout = RNN_DROPOUT if RNN_LAYERS > 1 else 0
+
+    if ENCODER_TYPE in ['lstm', 'gru']:
+        sentence_encoder = encoder_fn(input_dim=embedding_dim,
+                                      output_dim=HIDDEN_DIM,
+                                      num_layers=RNN_LAYERS,
+                                      bidirectional=BIDIRECTIONAL,
+                                      dropout=dropout)
+        document_encoder = encoder_fn(
+            input_dim=sentence_encoder.get_output_dim(),
+            output_dim=HIDDEN_DIM,
+            num_layers=1,
+            bidirectional=BIDIRECTIONAL,
+            dropout=dropout)
+    # elif ENCODER_TYPE == 'transformer':
+    #     encoder = transformer_seq2seq(
+    #         input_dim=embedding_dim,
+    #         hidden_dim=HIDDEN_DIM,
+    #         num_layers=4,
+    #         num_attention_heads=4,
+    #         feedforward_hidden_dim=1024
+    #     )
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = HierarchicalBert(
+        bert_path=BERT_PATH,
+        sentence_encoder=sentence_encoder,
+        document_encoder=document_encoder,
+        rel_embeddings=rel_embeddings,
+        vocab=vocab,
+        encoder_dropout=RNN_DROPOUT
+    )
+
+    return model
+
+
 def build_simple_trian(vocab: Vocabulary) -> Model:
     """
     Builds the TriAN classifier without the extra features (NER, POS, HC).
@@ -238,66 +304,39 @@ def build_advanced_bert(vocab: Vocabulary) -> Model:
     rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
 
     if ENCODER_TYPE == 'lstm':
-        encoder_fn = lstm_seq2seq
+        encoder_fn = lstm_encoder
     elif ENCODER_TYPE == 'gru':
-        encoder_fn = gru_seq2seq
-    elif ENCODER_TYPE == 'transformer':
-        # Transformer has to be handled differently, but the two RNNs can share
-        pass
+        encoder_fn = gru_encoder
+    # elif ENCODER_TYPE == 'transformer':
+    #     # Transformer has to be handled differently, but the 2 RNNs can share
+    #     pass
     else:
         raise ValueError('Invalid RNN type')
 
     bert = bert_embeddings(BERT_PATH)
     embedding_dim = bert.get_output_dim()
 
-    # p_emb + p_q_rel + 2*p_a_rel
-    p_input_size = (embedding_dim + 3*REL_EMBEDDING_DIM)
-    # q_emb + q_pos_emb
-    q_input_size = embedding_dim
-    # a_emb + a_q_match + a_p_match
-    a_input_size = embedding_dim
-
     # To prevent the warning on single-layer, as the dropout is only
     # between layers of the stacked RNN.
     dropout = RNN_DROPOUT if RNN_LAYERS > 1 else 0
 
     if ENCODER_TYPE in ['lstm', 'gru']:
-        p_encoder = encoder_fn(input_dim=p_input_size, output_dim=HIDDEN_DIM,
-                               num_layers=RNN_LAYERS,
-                               bidirectional=BIDIRECTIONAL, dropout=dropout)
-        q_encoder = encoder_fn(input_dim=q_input_size, output_dim=HIDDEN_DIM,
-                               num_layers=1, bidirectional=BIDIRECTIONAL)
-        a_encoder = encoder_fn(input_dim=a_input_size, output_dim=HIDDEN_DIM,
-                               num_layers=1, bidirectional=BIDIRECTIONAL)
-    elif ENCODER_TYPE == 'transformer':
-        p_encoder = transformer_seq2seq(
-            input_dim=p_input_size,
-            hidden_dim=HIDDEN_DIM,
-            num_layers=4,
-            num_attention_heads=4,
-            feedforward_hidden_dim=1024
-        )
-        q_encoder = transformer_seq2seq(
-            input_dim=q_input_size,
-            hidden_dim=HIDDEN_DIM,
-            num_layers=4,
-            num_attention_heads=4,
-            feedforward_hidden_dim=512
-        )
-        a_encoder = transformer_seq2seq(
-            input_dim=a_input_size,
-            hidden_dim=HIDDEN_DIM,
-            num_layers=4,
-            num_attention_heads=4,
-            feedforward_hidden_dim=512
-        )
+        encoder = encoder_fn(input_dim=embedding_dim, output_dim=HIDDEN_DIM,
+                             num_layers=RNN_LAYERS,
+                             bidirectional=BIDIRECTIONAL, dropout=dropout)
+    # elif ENCODER_TYPE == 'transformer':
+    #     encoder = transformer_seq2seq(
+    #         input_dim=embedding_dim,
+    #         hidden_dim=HIDDEN_DIM,
+    #         num_layers=4,
+    #         num_attention_heads=4,
+    #         feedforward_hidden_dim=1024
+    #     )
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AdvancedBertClassifier(
         bert_path=BERT_PATH,
-        p_encoder=p_encoder,
-        q_encoder=q_encoder,
-        a_encoder=a_encoder,
+        encoder=encoder,
         rel_embeddings=rel_embeddings,
         vocab=vocab,
         encoder_dropout=RNN_DROPOUT
@@ -553,7 +592,10 @@ def run_model() -> None:
         reader_type = 'simple-bert'
     elif MODEL == 'advanced-bert':
         build_fn = build_advanced_bert
-        reader_type = 'simple-trian'
+        reader_type = 'simple-bert'
+    elif MODEL == 'hierarchical-bert':
+        build_fn = build_hierarchical_bert
+        reader_type = 'simple-bert'
     elif MODEL == 'simple-trian':
         build_fn = build_simple_trian
         reader_type = 'simple-trian'
