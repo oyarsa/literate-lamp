@@ -10,7 +10,7 @@ from allennlp.data import Instance
 # As we have three parts in the input (passage, question, answer), we'll have
 # three such `TextField`s in an Instance. The `LabelField` will hold 0|1.
 from allennlp.data.fields import (TextField, LabelField, MetadataField,
-                                  ArrayField)
+                                  ArrayField, ListField)
 # This implements the logic for reading a data file and extracting a list of
 # `Instance`s from it.
 from allennlp.data.dataset_readers import DatasetReader
@@ -461,6 +461,9 @@ class SimpleBertReader(McScriptReader):
         - `answer1`: the second candidate answer
         - `label`: 0 if answer0 is the correct one, 1 if answer1 is correct
 
+    For `bert0` and `bert1`, the input text is split into windows, as the
+    passage text is likely to be bigger than BERT's maximum size.
+
     Even though the models won't anything besides `bert0` and `bert1`, the
     fields are going to be used for sorting the input to minimise padding.
     This is done in the training function.  It isn't necessary, but changing
@@ -497,11 +500,15 @@ class SimpleBertReader(McScriptReader):
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
-        bert0 = f'{question}[SEP]{answer0}[SEP]{passage}'
-        bert1 = f'{question}[SEP]{answer1}[SEP]{passage}'
+        max_pieces = self.word_indexers['tokens'].max_pieces
+        bert0 = bert_sliding_window(question, answer0, passage, max_pieces)
+        bert1 = bert_sliding_window(question, answer1, passage, max_pieces)
 
-        bert0_tokens = self.tokeniser.tokenize(text=bert0)
-        bert1_tokens = self.tokeniser.tokenize(text=bert1)
+        bert0_tokens = [self.tokeniser.tokenize(text=b) for b in bert0]
+        bert1_tokens = [self.tokeniser.tokenize(text=b) for b in bert1]
+
+        bert0_fields = [TextField(b, self.word_indexers) for b in bert0_tokens]
+        bert1_fields = [TextField(b, self.word_indexers) for b in bert1_tokens]
 
         passage_tokens = self.tokeniser.tokenize(text=passage)
         question_tokens = self.tokeniser.tokenize(text=question)
@@ -511,8 +518,8 @@ class SimpleBertReader(McScriptReader):
         fields = {
             "passage_id": MetadataField(passage_id),
             "question_id": MetadataField(question_id),
-            "bert0": TextField(bert0_tokens, self.word_indexers),
-            "bert1": TextField(bert1_tokens, self.word_indexers),
+            "bert0": ListField(bert0_fields),
+            "bert1": ListField(bert1_fields),
             "passage": TextField(passage_tokens, self.word_indexers),
             "question": TextField(question_tokens, self.word_indexers),
             "answer0": TextField(answer0_tokens, self.word_indexers),
@@ -530,3 +537,17 @@ class SimpleBertReader(McScriptReader):
             fields["label"] = LabelField(label=label, skip_indexing=True)
 
         return Instance(fields)
+
+
+def bert_sliding_window(question: str, answer: str, passage: str,
+                        max_wordpieces: int, stride: int = 10) -> List[str]:
+    pieces = []
+    special_tokens = 4  # [CLS] + 3 [SEP]
+    window_size = max_wordpieces - len(question) - len(answer) - special_tokens
+
+    for i in range(0, len(passage), window_size):
+        window = passage[i:i + window_size]
+        piece = f'{question}[SEP]{answer}[SEP]{window}'
+        pieces.append(piece)
+
+    return pieces

@@ -523,22 +523,25 @@ class SimpleBertClassifier(Model):
         # Every sample in a batch has to have the same size (as it's a tensor),
         # so smaller entries are padded. The mask is used to counteract this
         # padding.
-        t0_mask = util.get_text_field_mask(bert0)
-        t1_mask = util.get_text_field_mask(bert1)
+        t0_masks = util.get_text_field_mask(bert0)
+        t1_masks = util.get_text_field_mask(bert1)
 
         # We create the embeddings from the input text
-        t0_emb = self.word_embeddings(bert0)
-        t1_emb = self.word_embeddings(bert1)
+        t0_embs = self.word_embeddings(bert0)
+        t1_embs = self.word_embeddings(bert1)
+
         # Then we use those embeddings (along with the masks) as inputs for
         # our encoders
-        enc0_out = self.encoder(t0_emb, t0_mask)
-        enc1_out = self.encoder(t1_emb, t1_mask)
+        enc0_outs = self.encoder(t0_embs, t0_masks)
+        enc1_outs = self.encoder(t1_embs, t1_masks)
 
         # Finally, we pass each encoded output tensor to the feedforward layer
         # to produce logits corresponding to each class.
-        logit0 = self.hidden2logit(enc0_out)
-        logit1 = self.hidden2logit(enc1_out)
-        logits = torch.cat((logit0, logit1), dim=-1)
+        logit0 = self.hidden2logit(enc0_outs).squeeze(-1)
+        logit1 = self.hidden2logit(enc1_outs).squeeze(-1)
+        logit0, _ = torch.max(logit0, dim=1)
+        logit1, _ = torch.max(logit1, dim=1)
+        logits = torch.stack((logit0, logit1), dim=-1)
         # We also compute the class with highest likelihood (our prediction)
         prob = torch.softmax(logits, dim=-1)
         output = {"logits": logits, "prob": prob}
