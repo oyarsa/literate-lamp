@@ -894,7 +894,7 @@ class HierarchicalBert(Model):
         self.document_encoder = document_encoder
         self.dense = torch.nn.Linear(
             in_features=document_encoder.get_output_dim(),
-            out_features=vocab.get_vocab_size('label')
+            out_features=1
         )
 
         # Categorical (as this is a classification task) accuracy
@@ -958,8 +958,7 @@ class HierarchicalBert(Model):
         # print('logit0', logit0.shape)
         # print('logit1', logit1.shape)
 
-        # logits = torch.stack((logit0, logit1), dim=-1)
-        logits = logit0 + logit1
+        logits = torch.stack((logit0, logit1), dim=-1)
         # We also compute the class with highest likelihood (our prediction)
         prob = torch.softmax(logits, dim=-1)
         output = {"logits": logits, "prob": prob}
