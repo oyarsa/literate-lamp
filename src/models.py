@@ -490,7 +490,7 @@ class SimpleBertClassifier(Model):
         self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
                                                training=train_bert)
 
-        self.encoder = BertPooler(pretrained_model=str(bert_path))
+        self.pooler = BertPooler(pretrained_model=str(bert_path))
 
         hidden_dim = self.encoder.get_output_dim()
         self.hidden2logit = torch.nn.Linear(
@@ -531,8 +531,8 @@ class SimpleBertClassifier(Model):
 
         # Then we use those embeddings (along with the masks) as inputs for
         # our encoders
-        enc0_outs = self.encoder(t0_embs, t0_masks)
-        enc1_outs = self.encoder(t1_embs, t1_masks)
+        enc0_outs = self.pooler(t0_embs, t0_masks)
+        enc1_outs = self.pooler(t1_embs, t1_masks)
 
         # Finally, we pass each encoded output tensor to the feedforward layer
         # to produce logits corresponding to each class.
@@ -576,6 +576,7 @@ class AdvancedBertClassifier(Model):
                  encoder: Seq2VecEncoder,
                  rel_embeddings: TextFieldEmbedder,
                  vocab: Vocabulary,
+                 hidden_dim: int = 100,
                  encoder_dropout: float = 0.0,
                  train_bert: bool = False
                  ) -> None:
@@ -592,8 +593,12 @@ class AdvancedBertClassifier(Model):
             self.encoder_dropout = lambda x: x
 
         self.pooler = BertPooler(pretrained_model=str(bert_path))
+        self.dense1 = torch.nn.Linear(
+            in_features=self.pooler.get_output_dim(),
+            out_features=hidden_dim
+        )
         self.encoder = encoder
-        self.dense = torch.nn.Linear(
+        self.dense2 = torch.nn.Linear(
             in_features=encoder.get_output_dim(),
             out_features=1
         )
@@ -623,34 +628,40 @@ class AdvancedBertClassifier(Model):
         # so smaller entries are padded. The mask is used to counteract this
         # padding.
 
-        # t0_masks = util.get_text_field_mask(bert0)
-        # t1_masks = util.get_text_field_mask(bert1)
-
         # We create the embeddings from the input text
         t0_embs = self.word_embeddings(bert0)
         t1_embs = self.word_embeddings(bert1)
 
+        #print('t0_embs', t0_embs.shape)
+        #print('t1_embs', t1_embs.shape)
+
         t0_pooled = self.pooler(t0_embs)
         t1_pooled = self.pooler(t1_embs)
 
-        # print('t0_pooled', t0_pooled.shape)
-        # print('t1_pooled', t1_pooled.shape)
+        #print('t0_pooled', t0_pooled.shape)
+        #print('t1_pooled', t1_pooled.shape)
 
-        t0_enc_out = self.encoder(t0_pooled, mask=None)
-        t1_enc_out = self.encoder(t1_pooled, mask=None)
+        t0_transformed = self.dense1(t0_pooled)
+        t1_transformed = self.dense1(t1_pooled)
 
-        # print('t0_enc_out', t0_enc_out.shape)
-        # print('t1_enc_out', t1_enc_out.shape)
+        t0_enc_out = self.encoder_dropout(self.encoder(t0_transformed, mask=None))
+        t1_enc_out = self.encoder_dropout(self.encoder(t1_transformed, mask=None))
 
-        logit0 = self.dense(t0_enc_out).squeeze(-1)
-        logit1 = self.dense(t1_enc_out).squeeze(-1)
+        #print('t0_enc_out', t0_enc_out.shape)
+        #print('t1_enc_out', t1_enc_out.shape)
 
-        # print('logit0', logit0.shape)
-        # print('logit1', logit1.shape)
+        logit0 = self.dense2(t0_enc_out).squeeze(-1)
+        logit1 = self.dense2(t1_enc_out).squeeze(-1)
+
+        #print('logit0', logit0.shape)
+        #print('logit1', logit1.shape)
 
         logits = torch.stack((logit0, logit1), dim=-1)
+        #print('logits', logits.shape)
+
         # We also compute the class with highest likelihood (our prediction)
         prob = torch.softmax(logits, dim=-1)
+        #print('probs', prob.shape)
         output = {"logits": logits, "prob": prob}
 
         # Labels are optional. If they're present, we calculate the accuracy

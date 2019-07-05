@@ -313,15 +313,14 @@ def build_advanced_bert(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid RNN type')
 
-    bert = bert_embeddings(BERT_PATH)
-    embedding_dim = bert.get_output_dim()
+    hidden_dim = 100
 
     # To prevent the warning on single-layer, as the dropout is only
     # between layers of the stacked RNN.
     dropout = RNN_DROPOUT if RNN_LAYERS > 1 else 0
 
     if ENCODER_TYPE in ['lstm', 'gru']:
-        encoder = encoder_fn(input_dim=embedding_dim, output_dim=HIDDEN_DIM,
+        encoder = encoder_fn(input_dim=hidden_dim, output_dim=HIDDEN_DIM,
                              num_layers=RNN_LAYERS,
                              bidirectional=BIDIRECTIONAL, dropout=dropout)
     # elif ENCODER_TYPE == 'transformer':
@@ -339,7 +338,8 @@ def build_advanced_bert(vocab: Vocabulary) -> Model:
         encoder=encoder,
         rel_embeddings=rel_embeddings,
         vocab=vocab,
-        encoder_dropout=RNN_DROPOUT
+        encoder_dropout=RNN_DROPOUT,
+        hidden_dim=hidden_dim
     )
 
     return model
