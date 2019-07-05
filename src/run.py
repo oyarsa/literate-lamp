@@ -24,7 +24,8 @@ from allennlp.data.vocabulary import Vocabulary
 
 from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
-                    HierarchicalBert)
+                    HierarchicalBert, AdvancedAttentionBertClassifier,
+                    HierarchicalAttentionBert)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, get_preprocessed_name)
@@ -134,7 +135,7 @@ RNN_DROPOUT = 0.5
 EMBEDDDING_DROPOUT = 0.5 if EMBEDDING_TYPE != 'bert' else 0
 
 
-def build_hierarchical_bert(vocab: Vocabulary) -> Model:
+def build_hierarchical_attn_bert(vocab: Vocabulary) -> Model:
     """
     Builds the HierarchicalBert.
 
@@ -149,12 +150,12 @@ def build_hierarchical_bert(vocab: Vocabulary) -> Model:
     rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
 
     if ENCODER_TYPE == 'lstm':
-        encoder_fn = lstm_encoder
+        encoder_fn = lstm_seq2seq
     elif ENCODER_TYPE == 'gru':
-        encoder_fn = gru_encoder
-    # elif ENCODER_TYPE == 'transformer':
-    #     # Transformer has to be handled differently, but the 2 RNNs can share
-    #     pass
+        encoder_fn = gru_seq2seq
+    elif ENCODER_TYPE == 'transformer':
+        # Transformer has to be handled differently, but the 2 RNNs can share
+        pass
     else:
         raise ValueError('Invalid RNN type')
 
@@ -177,14 +178,131 @@ def build_hierarchical_bert(vocab: Vocabulary) -> Model:
             num_layers=1,
             bidirectional=BIDIRECTIONAL,
             dropout=dropout)
-    # elif ENCODER_TYPE == 'transformer':
-    #     encoder = transformer_seq2seq(
-    #         input_dim=embedding_dim,
-    #         hidden_dim=HIDDEN_DIM,
-    #         num_layers=4,
-    #         num_attention_heads=4,
-    #         feedforward_hidden_dim=1024
-    #     )
+    elif ENCODER_TYPE == 'transformer':
+        sentence_encoder = transformer_seq2seq(
+            input_dim=embedding_dim,
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=1024
+        )
+        sentence_encoder = transformer_seq2seq(
+            input_dim=sentence_encoder.get_output_dim(),
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=1024
+        )
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = HierarchicalAttentionBert(
+        bert_path=BERT_PATH,
+        sentence_encoder=sentence_encoder,
+        document_encoder=document_encoder,
+        rel_embeddings=rel_embeddings,
+        vocab=vocab,
+        encoder_dropout=RNN_DROPOUT
+    )
+
+    return model
+
+
+def build_advanced_attn_bert(vocab: Vocabulary) -> Model:
+    """
+    Builds the AdvancedBertClassifier.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `AdvancedBertClassifier` model ready to be trained.
+    """
+    rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
+
+    if ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_seq2seq
+    elif ENCODER_TYPE == 'gru':
+        encoder_fn = gru_seq2seq
+    elif ENCODER_TYPE == 'transformer':
+        # Transformer has to be handled differently, but the 2 RNNs can share
+        pass
+    else:
+        raise ValueError('Invalid RNN type')
+
+    hidden_dim = 100
+
+    # To prevent the warning on single-layer, as the dropout is only
+    # between layers of the stacked RNN.
+    dropout = RNN_DROPOUT if RNN_LAYERS > 1 else 0
+
+    if ENCODER_TYPE in ['lstm', 'gru']:
+        encoder = encoder_fn(input_dim=hidden_dim, output_dim=HIDDEN_DIM,
+                             num_layers=RNN_LAYERS,
+                             bidirectional=BIDIRECTIONAL, dropout=dropout)
+    elif ENCODER_TYPE == 'transformer':
+        encoder = transformer_seq2seq(
+            input_dim=hidden_dim,
+            hidden_dim=HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=1024
+        )
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = AdvancedAttentionBertClassifier(
+        bert_path=BERT_PATH,
+        encoder=encoder,
+        rel_embeddings=rel_embeddings,
+        vocab=vocab,
+        encoder_dropout=0,
+        hidden_dim=hidden_dim
+    )
+
+    return model
+
+
+def build_hierarchical_bert(vocab: Vocabulary) -> Model:
+    """
+    Builds the HierarchicalBert.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `HierarchicalBert` model ready to be trained.
+    """
+    rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
+
+    if ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_encoder
+    elif ENCODER_TYPE == 'gru':
+        encoder_fn = gru_encoder
+    else:
+        raise ValueError('Invalid RNN type')
+
+    bert = bert_embeddings(BERT_PATH)
+    embedding_dim = bert.get_output_dim()
+
+    # To prevent the warning on single-layer, as the dropout is only
+    # between layers of the stacked RNN.
+    dropout = RNN_DROPOUT if RNN_LAYERS > 1 else 0
+
+    if ENCODER_TYPE in ['lstm', 'gru']:
+        sentence_encoder = encoder_fn(input_dim=embedding_dim,
+                                      output_dim=HIDDEN_DIM,
+                                      num_layers=RNN_LAYERS,
+                                      bidirectional=BIDIRECTIONAL,
+                                      dropout=dropout)
+        document_encoder = encoder_fn(
+            input_dim=sentence_encoder.get_output_dim(),
+            output_dim=HIDDEN_DIM,
+            num_layers=1,
+            bidirectional=BIDIRECTIONAL,
+            dropout=dropout)
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = HierarchicalBert(
@@ -307,9 +425,6 @@ def build_advanced_bert(vocab: Vocabulary) -> Model:
         encoder_fn = lstm_encoder
     elif ENCODER_TYPE == 'gru':
         encoder_fn = gru_encoder
-    # elif ENCODER_TYPE == 'transformer':
-    #     # Transformer has to be handled differently, but the 2 RNNs can share
-    #     pass
     else:
         raise ValueError('Invalid RNN type')
 
@@ -323,14 +438,6 @@ def build_advanced_bert(vocab: Vocabulary) -> Model:
         encoder = encoder_fn(input_dim=hidden_dim, output_dim=HIDDEN_DIM,
                              num_layers=RNN_LAYERS,
                              bidirectional=BIDIRECTIONAL, dropout=dropout)
-    # elif ENCODER_TYPE == 'transformer':
-    #     encoder = transformer_seq2seq(
-    #         input_dim=embedding_dim,
-    #         hidden_dim=HIDDEN_DIM,
-    #         num_layers=4,
-    #         num_attention_heads=4,
-    #         feedforward_hidden_dim=1024
-    #     )
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = AdvancedBertClassifier(
@@ -338,7 +445,7 @@ def build_advanced_bert(vocab: Vocabulary) -> Model:
         encoder=encoder,
         rel_embeddings=rel_embeddings,
         vocab=vocab,
-        encoder_dropout=RNN_DROPOUT,
+        encoder_dropout=0,
         hidden_dim=hidden_dim
     )
 
@@ -599,6 +706,12 @@ def run_model() -> None:
     elif MODEL == 'simple-trian':
         build_fn = build_simple_trian
         reader_type = 'simple-trian'
+    elif MODEL == 'advanced-attn-bert':
+        build_fn = build_advanced_attn_bert
+        reader_type = 'simple-bert'
+    elif MODEL == 'hierarchical-attn-bert':
+        build_fn = build_hierarchical_attn_bert
+        reader_type = 'simple-bert'
     else:
         raise ValueError('Invalid model name')
 

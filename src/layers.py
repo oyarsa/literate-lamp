@@ -50,10 +50,11 @@ class LinearSelfAttention(Attention):
 
     def __init__(self,
                  input_dim: int,
-                 normalise: bool = True) -> None:
+                 normalise: bool = True,
+                 bias: bool = False) -> None:
         super().__init__(normalise)
         self._weights = torch.nn.Linear(in_features=input_dim,
-                                        out_features=1, bias=False)
+                                        out_features=1, bias=bias)
         self.input_dim = input_dim
 
     @overrides

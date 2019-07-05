@@ -632,36 +632,24 @@ class AdvancedBertClassifier(Model):
         t0_embs = self.word_embeddings(bert0)
         t1_embs = self.word_embeddings(bert1)
 
-        #print('t0_embs', t0_embs.shape)
-        #print('t1_embs', t1_embs.shape)
-
         t0_pooled = self.pooler(t0_embs)
         t1_pooled = self.pooler(t1_embs)
-
-        #print('t0_pooled', t0_pooled.shape)
-        #print('t1_pooled', t1_pooled.shape)
 
         t0_transformed = self.dense1(t0_pooled)
         t1_transformed = self.dense1(t1_pooled)
 
-        t0_enc_out = self.encoder_dropout(self.encoder(t0_transformed, mask=None))
-        t1_enc_out = self.encoder_dropout(self.encoder(t1_transformed, mask=None))
-
-        #print('t0_enc_out', t0_enc_out.shape)
-        #print('t1_enc_out', t1_enc_out.shape)
+        t0_enc_out = self.encoder_dropout(
+            self.encoder(t0_transformed, mask=None))
+        t1_enc_out = self.encoder_dropout(
+            self.encoder(t1_transformed, mask=None))
 
         logit0 = self.dense2(t0_enc_out).squeeze(-1)
         logit1 = self.dense2(t1_enc_out).squeeze(-1)
 
-        #print('logit0', logit0.shape)
-        #print('logit1', logit1.shape)
-
         logits = torch.stack((logit0, logit1), dim=-1)
-        #print('logits', logits.shape)
 
         # We also compute the class with highest likelihood (our prediction)
         prob = torch.softmax(logits, dim=-1)
-        #print('probs', prob.shape)
         output = {"logits": logits, "prob": prob}
 
         # Labels are optional. If they're present, we calculate the accuracy
@@ -935,39 +923,20 @@ class HierarchicalBert(Model):
         t0_masks = util.get_text_field_mask(bert0)
         t1_masks = util.get_text_field_mask(bert1)
 
-        # print('t0_masks', t0_masks.shape)
-        # print('t1_masks', t1_masks.shape)
-
         # We create the embeddings from the input text
         t0_embs = self.word_embeddings(bert0)
         t1_embs = self.word_embeddings(bert1)
-
-        # print('t0_embs', t0_embs.shape)
-        # print('t1_embs', t1_embs.shape)
-
-        # num_batch0, num_sent0, _ = t0_masks.shape
-        # enc_size = self.sentence_encoder.get_output_dim()
-        # t0_sentence_encodings = torch.empty(num_batch0, num_sent0, enc_size)
 
         t0_sentence_encodings = seq_over_seq(self.sentence_encoder, t0_embs,
                                              t0_masks)
         t1_sentence_encodings = seq_over_seq(self.sentence_encoder, t1_embs,
                                              t1_masks)
 
-        # print('t0_sentence_encodings', t0_sentence_encodings.shape)
-        # print('t1_sentence_encodings', t1_sentence_encodings.shape)
-
         t0_enc_out = self.document_encoder(t0_sentence_encodings, mask=None)
         t1_enc_out = self.document_encoder(t1_sentence_encodings, mask=None)
 
-        # print('t0_enc_out', t0_enc_out.shape)
-        # print('t1_enc_out', t1_enc_out.shape)
-
         logit0 = self.dense(t0_enc_out).squeeze(-1)
         logit1 = self.dense(t1_enc_out).squeeze(-1)
-
-        # print('logit0', logit0.shape)
-        # print('logit1', logit1.shape)
 
         logits = torch.stack((logit0, logit1), dim=-1)
         # We also compute the class with highest likelihood (our prediction)
@@ -1004,3 +973,265 @@ def seq_over_seq(encoder: Seq2VecEncoder,
         sentence_encodings[:, i, :] = encoder(sentence_emb, sentence_mask)
 
     return sentence_encodings
+
+
+def hierarchical_seq_over_seq(encoder: Seq2SeqEncoder,
+                              sentences: torch.Tensor,
+                              masks: torch.Tensor) -> torch.Tensor:
+    num_batch, num_sent, num_tokens = masks.shape
+    enc_size = encoder.get_output_dim()
+    sentence_hiddens = sentences.new_empty(
+        num_batch, num_sent, num_tokens, enc_size)
+
+    for i in range(num_sent):
+        sentence_emb = sentences[:, i, :, :]
+        sentence_mask = masks[:, i, :]
+        sentence_hiddens[:, i, :, :] = encoder(sentence_emb, sentence_mask)
+
+    return sentence_hiddens
+
+
+@Model.register('advattn-bert-classifier')
+class AdvancedAttentionBertClassifier(Model):
+    """
+    Model similar to the AttentiveClassifier with BERT, but without external
+    features.
+
+    SimpleTrian is this with the attention before the encoders.
+    """
+
+    def __init__(self,
+                 bert_path: Path,
+                 encoder: Seq2SeqEncoder,
+                 rel_embeddings: TextFieldEmbedder,
+                 vocab: Vocabulary,
+                 hidden_dim: int = 100,
+                 encoder_dropout: float = 0.0,
+                 train_bert: bool = False
+                 ) -> None:
+        # We have to pass the vocabulary to the constructor.
+        super().__init__(vocab)
+        self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
+                                               training=train_bert)
+
+        # self.rel_embeddings = rel_embeddings
+
+        if encoder_dropout > 0:
+            self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
+        else:
+            self.encoder_dropout = lambda x: x
+
+        self.pooler = BertPooler(pretrained_model=str(bert_path))
+        self.dense1 = torch.nn.Linear(
+            in_features=self.pooler.get_output_dim(),
+            out_features=hidden_dim
+        )
+        self.encoder = encoder
+        self.self_attn = LinearSelfAttention(
+            input_dim=self.encoder.get_output_dim(),
+            bias=True
+        )
+        self.dense2 = torch.nn.Linear(
+            in_features=self.encoder.get_output_dim(),
+            out_features=1
+        )
+
+        # Categorical (as this is a classification task) accuracy
+        self.accuracy = CategoricalAccuracy()
+        # CrossEntropyLoss is a combinational of LogSoftmax and
+        # Negative Log Likelihood. We won't directly use Softmax in training.
+        self.loss = torch.nn.CrossEntropyLoss()
+
+    # This is the computation bit of the model. The arguments of this function
+    # are the fields from the `Instance` we created, as that's what's going to
+    # be passed to this. We also have the optional `label`, which is only
+    # available at training time, used to calculate the loss.
+    def forward(self,
+                passage_id: Dict[str, torch.Tensor],
+                question_id: Dict[str, torch.Tensor],
+                bert0: Dict[str, torch.Tensor],
+                bert1: Dict[str, torch.Tensor],
+                passage: Dict[str, torch.Tensor],
+                question: Dict[str, torch.Tensor],
+                answer0: Dict[str, torch.Tensor],
+                answer1: Dict[str, torch.Tensor],
+                label: Optional[torch.Tensor] = None
+                ) -> Dict[str, torch.Tensor]:
+        # Every sample in a batch has to have the same size (as it's a tensor),
+        # so smaller entries are padded. The mask is used to counteract this
+        # padding.
+
+        # We create the embeddings from the input text
+        t0_embs = self.word_embeddings(bert0)
+        t1_embs = self.word_embeddings(bert1)
+
+        t0_pooled = self.pooler(t0_embs)
+        t1_pooled = self.pooler(t1_embs)
+
+        t0_transformed = self.dense1(t0_pooled)
+        t1_transformed = self.dense1(t1_pooled)
+
+        t0_enc_hiddens = self.encoder_dropout(
+            self.encoder(t0_transformed, mask=None))
+        t1_enc_hiddens = self.encoder_dropout(
+            self.encoder(t1_transformed, mask=None))
+
+        t0_enc_attn = self.self_attn(t0_enc_hiddens, t0_enc_hiddens)
+        t1_enc_attn = self.self_attn(t1_enc_hiddens, t1_enc_hiddens)
+
+        t0_enc_out = util.weighted_sum(t0_enc_hiddens, t0_enc_attn)
+        t1_enc_out = util.weighted_sum(t1_enc_hiddens, t1_enc_attn)
+
+        logit0 = self.dense2(t0_enc_out).squeeze(-1)
+        logit1 = self.dense2(t1_enc_out).squeeze(-1)
+
+        logits = torch.stack((logit0, logit1), dim=-1)
+
+        # We also compute the class with highest likelihood (our prediction)
+        prob = torch.softmax(logits, dim=-1)
+        output = {"logits": logits, "prob": prob}
+
+        # Labels are optional. If they're present, we calculate the accuracy
+        # and the loss function.
+        if label is not None:
+            self.accuracy(prob, label)
+            output["loss"] = self.loss(logits, label)
+
+        # The output is the dict we've been building, with the logits, loss
+        # and the prediction.
+        return output
+
+    # This function computes the metrics we want to see during training.
+    # For now, we only have the accuracy metric, but we could have a number
+    # of different metrics here.
+    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
+        return {"accuracy": self.accuracy.get_metric(reset)}
+
+
+@Model.register('hierarchical-attn-bert')
+class HierarchicalAttentionBert(Model):
+    """
+    Uses hierarchical RNNs to build a sentence representation (from the BERT
+    windows) and then build a document representation from those sentences.
+    """
+
+    def __init__(self,
+                 bert_path: Path,
+                 sentence_encoder: Seq2SeqEncoder,
+                 document_encoder: Seq2SeqEncoder,
+                 rel_embeddings: TextFieldEmbedder,
+                 vocab: Vocabulary,
+                 encoder_dropout: float = 0.0,
+                 train_bert: bool = False
+                 ) -> None:
+        # We have to pass the vocabulary to the constructor.
+        super().__init__(vocab)
+        self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
+                                               training=train_bert)
+
+        # self.rel_embeddings = rel_embeddings
+
+        if encoder_dropout > 0:
+            self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
+        else:
+            self.encoder_dropout = lambda x: x
+
+        self.sentence_encoder = sentence_encoder
+        self.sentence_attn = LinearSelfAttention(
+            input_dim=self.sentence_encoder.get_output_dim(),
+            bias=True
+        )
+        self.document_encoder = document_encoder
+        self.document_attn = LinearSelfAttention(
+            input_dim=self.document_encoder.get_output_dim(),
+            bias=True
+        )
+        self.dense = torch.nn.Linear(
+            in_features=document_encoder.get_output_dim(),
+            out_features=1
+        )
+
+        # Categorical (as this is a classification task) accuracy
+        self.accuracy = CategoricalAccuracy()
+        # CrossEntropyLoss is a combinational of LogSoftmax and
+        # Negative Log Likelihood. We won't directly use Softmax in training.
+        self.loss = torch.nn.CrossEntropyLoss()
+
+    # This is the computation bit of the model. The arguments of this function
+    # are the fields from the `Instance` we created, as that's what's going to
+    # be passed to this. We also have the optional `label`, which is only
+    # available at training time, used to calculate the loss.
+    def forward(self,
+                passage_id: Dict[str, torch.Tensor],
+                question_id: Dict[str, torch.Tensor],
+                bert0: Dict[str, torch.Tensor],
+                bert1: Dict[str, torch.Tensor],
+                passage: Dict[str, torch.Tensor],
+                question: Dict[str, torch.Tensor],
+                answer0: Dict[str, torch.Tensor],
+                answer1: Dict[str, torch.Tensor],
+                label: Optional[torch.Tensor] = None
+                ) -> Dict[str, torch.Tensor]:
+        # Every sample in a batch has to have the same size (as it's a tensor),
+        # so smaller entries are padded. The mask is used to counteract this
+        # padding.
+        t0_masks = util.get_text_field_mask(bert0)
+        t1_masks = util.get_text_field_mask(bert1)
+
+        # We create the embeddings from the input text
+        t0_embs = self.word_embeddings(bert0)
+        t1_embs = self.word_embeddings(bert1)
+
+        t0_sentence_hiddens = hierarchical_seq_over_seq(self.sentence_encoder,
+                                                        t0_embs, t0_masks)
+        t1_sentence_hiddens = hierarchical_seq_over_seq(self.sentence_encoder,
+                                                        t1_embs, t1_masks)
+
+        t0_sentence_attns = self.sentence_attn(
+            t0_sentence_hiddens, t0_sentence_hiddens)
+        t1_sentence_attns = self.sentence_attn(
+            t1_sentence_hiddens, t1_sentence_hiddens)
+
+        t0_sentence_encodings = util.weighted_sum(
+            t0_sentence_hiddens, t0_sentence_attns)
+        t1_sentence_encodings = util.weighted_sum(
+            t1_sentence_hiddens, t1_sentence_attns)
+
+        t0_document_hiddens = self.document_encoder(
+            t0_sentence_encodings, mask=None)
+        t1_document_hiddens = self.document_encoder(
+            t1_sentence_encodings, mask=None)
+
+        t0_document_attn = self.document_attn(
+            t0_document_hiddens, t0_document_hiddens)
+        t1_document_attn = self.document_attn(
+            t1_document_hiddens, t1_document_hiddens)
+
+        t0_document_encoding = util.weighted_sum(
+            t0_document_hiddens, t0_document_attn)
+        t1_document_encoding = util.weighted_sum(
+            t1_document_hiddens, t1_document_attn)
+
+        logit0 = self.dense(t0_document_encoding).squeeze(-1)
+        logit1 = self.dense(t1_document_encoding).squeeze(-1)
+
+        logits = torch.stack((logit0, logit1), dim=-1)
+        # We also compute the class with highest likelihood (our prediction)
+        prob = torch.softmax(logits, dim=-1)
+        output = {"logits": logits, "prob": prob}
+
+        # Labels are optional. If they're present, we calculate the accuracy
+        # and the loss function.
+        if label is not None:
+            self.accuracy(prob, label)
+            output["loss"] = self.loss(logits, label)
+
+        # The output is the dict we've been building, with the logits, loss
+        # and the prediction.
+        return output
+
+    # This function computes the metrics we want to see during training.
+    # For now, we only have the accuracy metric, but we could have a number
+    # of different metrics here.
+    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
+        return {"accuracy": self.accuracy.get_metric(reset)}
