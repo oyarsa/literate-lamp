@@ -927,13 +927,17 @@ class HierarchicalBert(Model):
         t0_embs = self.word_embeddings(bert0)
         t1_embs = self.word_embeddings(bert1)
 
-        t0_sentence_encodings = seq_over_seq(self.sentence_encoder, t0_embs,
-                                             t0_masks)
-        t1_sentence_encodings = seq_over_seq(self.sentence_encoder, t1_embs,
-                                             t1_masks)
+        t0_sentence_encodings = self.encoder_dropout(
+            seq_over_seq(self.sentence_encoder, t0_embs,
+                         t0_masks))
+        t1_sentence_encodings = self.encoder_dropout(
+            seq_over_seq(self.sentence_encoder, t1_embs,
+                         t1_masks))
 
-        t0_enc_out = self.document_encoder(t0_sentence_encodings, mask=None)
-        t1_enc_out = self.document_encoder(t1_sentence_encodings, mask=None)
+        t0_enc_out = self.encoder_dropout(
+            self.document_encoder(t0_sentence_encodings, mask=None))
+        t1_enc_out = self.encoder_dropout(
+            self.document_encoder(t1_sentence_encodings, mask=None))
 
         logit0 = self.dense(t0_enc_out).squeeze(-1)
         logit1 = self.dense(t1_enc_out).squeeze(-1)
@@ -1182,10 +1186,12 @@ class HierarchicalAttentionBert(Model):
         t0_embs = self.word_embeddings(bert0)
         t1_embs = self.word_embeddings(bert1)
 
-        t0_sentence_hiddens = hierarchical_seq_over_seq(self.sentence_encoder,
-                                                        t0_embs, t0_masks)
-        t1_sentence_hiddens = hierarchical_seq_over_seq(self.sentence_encoder,
-                                                        t1_embs, t1_masks)
+        t0_sentence_hiddens = self.encoder_dropout(
+            hierarchical_seq_over_seq(self.sentence_encoder, t0_embs,
+                                      t0_masks))
+        t1_sentence_hiddens = self.encoder_dropout(
+            hierarchical_seq_over_seq(self.sentence_encoder, t1_embs,
+                                      t1_masks))
 
         t0_sentence_attns = self.sentence_attn(
             t0_sentence_hiddens, t0_sentence_hiddens)
@@ -1197,10 +1203,10 @@ class HierarchicalAttentionBert(Model):
         t1_sentence_encodings = util.weighted_sum(
             t1_sentence_hiddens, t1_sentence_attns)
 
-        t0_document_hiddens = self.document_encoder(
-            t0_sentence_encodings, mask=None)
-        t1_document_hiddens = self.document_encoder(
-            t1_sentence_encodings, mask=None)
+        t0_document_hiddens = self.encoder_dropout(self.document_encoder(
+            t0_sentence_encodings, mask=None))
+        t1_document_hiddens = self.encoder_dropout(self.document_encoder(
+            t1_sentence_encodings, mask=None))
 
         t0_document_attn = self.document_attn(
             t0_document_hiddens, t0_document_hiddens)
