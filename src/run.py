@@ -33,7 +33,7 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
                     transformer_seq2seq)
 from reader import (SimpleBertReader, SimpleMcScriptReader, SimpleTrianReader,
-                    FullTrianReader, McScriptReader)
+                    FullTrianReader, McScriptReader, RelationBertReader)
 
 DEFAULT_CONFIG = 'small'  # Can be: _large_ or _small_
 CONFIG = sys.argv[1] if len(sys.argv) >= 2 else DEFAULT_CONFIG
@@ -194,11 +194,18 @@ def build_hierarchical_attn_bert(vocab: Vocabulary) -> Model:
             feedforward_hidden_dim=512
         )
 
+    relation_encoder = gru_encoder(input_dim=REL_EMBEDDING_DIM,
+                                   output_dim=HIDDEN_DIM,
+                                   num_layers=1,
+                                   bidirectional=BIDIRECTIONAL,
+                                   dropout=dropout)
+
     # Instantiate modele with our embedding, encoder and vocabulary
     model = HierarchicalAttentionBert(
         bert_path=BERT_PATH,
         sentence_encoder=sentence_encoder,
         document_encoder=document_encoder,
+        relation_encoder=relation_encoder,
         rel_embeddings=rel_embeddings,
         vocab=vocab,
         encoder_dropout=RNN_DROPOUT
@@ -711,7 +718,7 @@ def run_model() -> None:
         reader_type = 'simple-bert'
     elif MODEL == 'hierarchical-attn-bert':
         build_fn = build_hierarchical_attn_bert
-        reader_type = 'simple-bert'
+        reader_type = 'relation-bert'
     else:
         raise ValueError('Invalid model name')
 
@@ -726,6 +733,8 @@ def run_model() -> None:
     elif reader_type == 'simple-trian':
         reader = SimpleTrianReader(
             is_bert=is_bert, conceptnet_path=CONCEPTNET_PATH)
+    elif reader_type == 'relation-bert':
+        reader = RelationBertReader(conceptnet_path=CONCEPTNET_PATH)
 
     # Train and save our model
     def optimiser(model: Model) -> torch.optim.Optimizer:

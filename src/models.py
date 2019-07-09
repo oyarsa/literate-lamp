@@ -1123,6 +1123,7 @@ class HierarchicalAttentionBert(Model):
                  bert_path: Path,
                  sentence_encoder: Seq2SeqEncoder,
                  document_encoder: Seq2SeqEncoder,
+                 relation_encoder: Seq2VecEncoder,
                  rel_embeddings: TextFieldEmbedder,
                  vocab: Vocabulary,
                  encoder_dropout: float = 0.0,
@@ -1133,7 +1134,8 @@ class HierarchicalAttentionBert(Model):
         self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
                                                training=train_bert)
 
-        # self.rel_embeddings = rel_embeddings
+        self.rel_embeddings = rel_embeddings
+        self.relation_encoder = relation_encoder
 
         if encoder_dropout > 0:
             self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
@@ -1150,8 +1152,11 @@ class HierarchicalAttentionBert(Model):
             input_dim=self.document_encoder.get_output_dim(),
             bias=True
         )
+
+        dense_input_dim = (document_encoder.get_output_dim() +
+                           2 * relation_encoder.get_output_dim())
         self.dense = torch.nn.Linear(
-            in_features=document_encoder.get_output_dim(),
+            in_features=dense_input_dim,
             out_features=1
         )
 
@@ -1174,6 +1179,9 @@ class HierarchicalAttentionBert(Model):
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
+                p_q_rel: Dict[str, torch.Tensor],
+                p_a0_rel: Dict[str, torch.Tensor],
+                p_a1_rel: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
         # Every sample in a batch has to have the same size (as it's a tensor),
@@ -1218,8 +1226,25 @@ class HierarchicalAttentionBert(Model):
         t1_document_encoding = util.weighted_sum(
             t1_document_hiddens, t1_document_attn)
 
-        logit0 = self.dense(t0_document_encoding).squeeze(-1)
-        logit1 = self.dense(t1_document_encoding).squeeze(-1)
+        # Now, the relations
+        p_q_rel_mask = util.get_text_field_mask(p_q_rel)
+        p_a0_rel_mask = util.get_text_field_mask(p_a0_rel)
+        p_a1_rel_mask = util.get_text_field_mask(p_a1_rel)
+
+        p_q_rel_emb = self.rel_embeddings(p_q_rel)
+        p_a0_rel_emb = self.rel_embeddings(p_a0_rel)
+        p_a1_rel_emb = self.rel_embeddings(p_a1_rel)
+
+        p_q_enc = self.relation_encoder(p_q_rel_emb, p_q_rel_mask)
+        p_a0_enc = self.relation_encoder(p_a0_rel_emb, p_a0_rel_mask)
+        p_a1_enc = self.relation_encoder(p_a1_rel_emb, p_a1_rel_mask)
+
+        t0_final = torch.cat((t0_document_encoding, p_q_enc, p_a0_enc), dim=-1)
+        t1_final = torch.cat((t1_document_encoding, p_q_enc, p_a1_enc), dim=-1)
+
+        # Joining everything and getting the result
+        logit0 = self.dense(t0_final).squeeze(-1)
+        logit1 = self.dense(t1_final).squeeze(-1)
 
         logits = torch.stack((logit0, logit1), dim=-1)
         # We also compute the class with highest likelihood (our prediction)
