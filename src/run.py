@@ -181,17 +181,17 @@ def build_hierarchical_attn_bert(vocab: Vocabulary) -> Model:
     elif ENCODER_TYPE == 'transformer':
         sentence_encoder = transformer_seq2seq(
             input_dim=embedding_dim,
-            hidden_dim=HIDDEN_DIM,
-            num_layers=4,
+            hidden_dim=512,
+            num_layers=6,
             num_attention_heads=4,
-            feedforward_hidden_dim=1024
+            feedforward_hidden_dim=512
         )
-        sentence_encoder = transformer_seq2seq(
+        document_encoder = transformer_seq2seq(
             input_dim=sentence_encoder.get_output_dim(),
-            hidden_dim=HIDDEN_DIM,
+            hidden_dim=512,
             num_layers=4,
             num_attention_heads=4,
-            feedforward_hidden_dim=1024
+            feedforward_hidden_dim=512
         )
 
     # Instantiate modele with our embedding, encoder and vocabulary
