@@ -25,7 +25,7 @@ from allennlp.data.vocabulary import Vocabulary
 from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
                     HierarchicalBert, AdvancedAttentionBertClassifier,
-                    HierarchicalAttentionBert)
+                    HierarchicalAttentionNetwork)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, get_preprocessed_name)
@@ -135,9 +135,9 @@ RNN_DROPOUT = 0.5
 EMBEDDDING_DROPOUT = 0.5 if EMBEDDING_TYPE != 'bert' else 0
 
 
-def build_hierarchical_attn_bert(vocab: Vocabulary) -> Model:
+def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
     """
-    Builds the HierarchicalBert.
+    Builds the HierarchicalAttentionNetwork.
 
     Parameters
     ---------
@@ -145,8 +145,16 @@ def build_hierarchical_attn_bert(vocab: Vocabulary) -> Model:
 
     Returns
     -------
-    A `HierarchicalBert` model ready to be trained.
+    A `HierarchicalAttentionNetwork` model ready to be trained.
     """
+    if EMBEDDING_TYPE == 'glove':
+        word_embeddings = glove_embeddings(vocab, GLOVE_PATH,
+                                           GLOVE_EMBEDDING_DIM, training=True)
+    elif EMBEDDING_TYPE == 'bert':
+        word_embeddings = bert_embeddings(pretrained_model=BERT_PATH)
+    else:
+        raise ValueError('Invalid word embedding type')
+
     rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
 
     if ENCODER_TYPE == 'lstm':
@@ -159,8 +167,7 @@ def build_hierarchical_attn_bert(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid RNN type')
 
-    bert = bert_embeddings(BERT_PATH)
-    embedding_dim = bert.get_output_dim()
+    embedding_dim = word_embeddings.get_output_dim()
 
     # To prevent the warning on single-layer, as the dropout is only
     # between layers of the stacked RNN.
@@ -201,8 +208,8 @@ def build_hierarchical_attn_bert(vocab: Vocabulary) -> Model:
                                    dropout=dropout)
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = HierarchicalAttentionBert(
-        bert_path=BERT_PATH,
+    model = HierarchicalAttentionNetwork(
+        word_embeddings=word_embeddings,
         sentence_encoder=sentence_encoder,
         document_encoder=document_encoder,
         relation_encoder=relation_encoder,
@@ -716,8 +723,8 @@ def run_model() -> None:
     elif MODEL == 'advanced-attn-bert':
         build_fn = build_advanced_attn_bert
         reader_type = 'simple-bert'
-    elif MODEL == 'hierarchical-attn-bert':
-        build_fn = build_hierarchical_attn_bert
+    elif MODEL == 'han':
+        build_fn = build_hierarchical_attn_net
         reader_type = 'relation-bert'
     else:
         raise ValueError('Invalid model name')
@@ -734,7 +741,8 @@ def run_model() -> None:
         reader = SimpleTrianReader(
             is_bert=is_bert, conceptnet_path=CONCEPTNET_PATH)
     elif reader_type == 'relation-bert':
-        reader = RelationBertReader(conceptnet_path=CONCEPTNET_PATH)
+        reader = RelationBertReader(conceptnet_path=CONCEPTNET_PATH,
+                                    is_bert=is_bert)
 
     # Train and save our model
     def optimiser(model: Model) -> torch.optim.Optimizer:

@@ -1113,14 +1113,14 @@ class AdvancedAttentionBertClassifier(Model):
 
 
 @Model.register('hierarchical-attn-bert')
-class HierarchicalAttentionBert(Model):
+class HierarchicalAttentionNetwork(Model):
     """
-    Uses hierarchical RNNs to build a sentence representation (from the BERT
+    Uses hierarchical RNNs to build a sentence representation (from the
     windows) and then build a document representation from those sentences.
     """
 
     def __init__(self,
-                 bert_path: Path,
+                 word_embeddings: TextFieldEmbedder,
                  sentence_encoder: Seq2SeqEncoder,
                  document_encoder: Seq2SeqEncoder,
                  relation_encoder: Seq2VecEncoder,
@@ -1131,11 +1131,10 @@ class HierarchicalAttentionBert(Model):
                  ) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
-        self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
-                                               training=train_bert)
 
-        self.rel_embeddings = rel_embeddings
-        self.relation_encoder = relation_encoder
+        self.word_embeddings = word_embeddings
+        # self.rel_embeddings = rel_embeddings
+        # self.relation_encoder = relation_encoder
 
         if encoder_dropout > 0:
             self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
@@ -1153,10 +1152,10 @@ class HierarchicalAttentionBert(Model):
             bias=True
         )
 
-        dense_input_dim = (document_encoder.get_output_dim() +
-                           2 * relation_encoder.get_output_dim())
+        # dense_input_dim = (document_encoder.get_output_dim() +
+        #                    2 * relation_encoder.get_output_dim())
         self.dense = torch.nn.Linear(
-            in_features=dense_input_dim,
+            in_features=document_encoder.get_output_dim(),
             out_features=1
         )
 
@@ -1187,8 +1186,9 @@ class HierarchicalAttentionBert(Model):
         # Every sample in a batch has to have the same size (as it's a tensor),
         # so smaller entries are padded. The mask is used to counteract this
         # padding.
-        t0_masks = util.get_text_field_mask(bert0)
-        t1_masks = util.get_text_field_mask(bert1)
+
+        t0_masks = util.get_text_field_mask(bert0, num_wrapping_dims=1)
+        t1_masks = util.get_text_field_mask(bert1, num_wrapping_dims=1)
 
         # We create the embeddings from the input text
         t0_embs = self.word_embeddings(bert0)
@@ -1227,21 +1227,25 @@ class HierarchicalAttentionBert(Model):
             t1_document_hiddens, t1_document_attn)
 
         # Now, the relations
-        p_q_rel_mask = util.get_text_field_mask(p_q_rel)
-        p_a0_rel_mask = util.get_text_field_mask(p_a0_rel)
-        p_a1_rel_mask = util.get_text_field_mask(p_a1_rel)
+        # p_q_rel_mask = util.get_text_field_mask(p_q_rel)
+        # p_a0_rel_mask = util.get_text_field_mask(p_a0_rel)
+        # p_a1_rel_mask = util.get_text_field_mask(p_a1_rel)
 
-        p_q_rel_emb = self.rel_embeddings(p_q_rel)
-        p_a0_rel_emb = self.rel_embeddings(p_a0_rel)
-        p_a1_rel_emb = self.rel_embeddings(p_a1_rel)
+        # p_q_rel_emb = self.rel_embeddings(p_q_rel)
+        # p_a0_rel_emb = self.rel_embeddings(p_a0_rel)
+        # p_a1_rel_emb = self.rel_embeddings(p_a1_rel)
 
-        p_q_enc = self.relation_encoder(p_q_rel_emb, p_q_rel_mask)
-        p_a0_enc = self.relation_encoder(p_a0_rel_emb, p_a0_rel_mask)
-        p_a1_enc = self.relation_encoder(p_a1_rel_emb, p_a1_rel_mask)
+        # p_q_enc = self.relation_encoder(p_q_rel_emb, p_q_rel_mask)
+        # p_a0_enc = self.relation_encoder(p_a0_rel_emb, p_a0_rel_mask)
+        # p_a1_enc = self.relation_encoder(p_a1_rel_emb, p_a1_rel_mask)
 
-        t0_final = torch.cat((t0_document_encoding, p_q_enc, p_a0_enc), dim=-1)
-        t1_final = torch.cat((t1_document_encoding, p_q_enc, p_a1_enc), dim=-1)
+        # t0_final = torch.cat((t0_document_encoding, p_q_enc, p_a0_enc),
+        # dim=-1)
+        # t1_final = torch.cat((t1_document_encoding, p_q_enc, p_a1_enc),
+        # dim=-1)
 
+        t0_final = t0_document_encoding
+        t1_final = t1_document_encoding
         # Joining everything and getting the result
         logit0 = self.dense(t0_final).squeeze(-1)
         logit1 = self.dense(t1_final).squeeze(-1)

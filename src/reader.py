@@ -472,17 +472,24 @@ class RelationBertReader(McScriptReader):
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
+                 is_bert: bool,
                  conceptnet_path: Path,
                  word_indexer: Optional[TokenIndexer] = None):
         super().__init__(lazy=False)
 
-        splitter = BertBasicWordSplitter()
+        if is_bert:
+            splitter = BertBasicWordSplitter()
+        else:
+            splitter = SpacyWordSplitter()
         self.tokeniser = WordTokenizer(word_splitter=splitter)
 
         if word_indexer is None:
-            word_indexer = PretrainedBertIndexer(
-                pretrained_model='bert-base-uncased',
-                truncate_long_sequences=True)
+            if is_bert:
+                word_indexer = PretrainedBertIndexer(
+                    pretrained_model='bert-base-uncased',
+                    truncate_long_sequences=True)
+            else:
+                word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
         self.word_indexers = {'tokens': word_indexer}
 
         self.rel_indexers = {
@@ -505,7 +512,11 @@ class RelationBertReader(McScriptReader):
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
-        max_pieces = self.word_indexers['tokens'].max_pieces
+        if hasattr(self.word_indexers['tokens'], 'max_pieces'):
+            max_pieces = self.word_indexers['tokens'].max_pieces
+        else:
+            max_pieces = 512
+
         bert0 = bert_sliding_window(question, answer0, passage, max_pieces)
         bert1 = bert_sliding_window(question, answer1, passage, max_pieces)
 
@@ -595,7 +606,7 @@ class SimpleBertReader(McScriptReader):
         if word_indexer is None:
             word_indexer = PretrainedBertIndexer(
                 pretrained_model='bert-base-uncased',
-                truncate_long_sequences=True)
+                truncate_long_sequences=False)
         self.word_indexers = {'tokens': word_indexer}
 
     # Converts the text from each field in the input to `Token`s, and then
@@ -605,6 +616,7 @@ class SimpleBertReader(McScriptReader):
     # Then we create the `Instance` fields dict from the data. There's an
     # optional label. It's optional because at prediction time (testing) we
     # won't have the label.
+
     def text_to_instance(self,
                          passage_id: str,
                          question_id: str,
@@ -654,18 +666,14 @@ class SimpleBertReader(McScriptReader):
 
 
 def bert_sliding_window(question: str, answer: str, passage: str,
-                        max_wordpieces: int, stride: Optional[int] = None
-                        ) -> List[str]:
+                        max_wordpieces: int, stride: int = 128) -> List[str]:
     pieces = []
     special_tokens = 4  # [CLS] + 3 [SEP]
     window_size = max_wordpieces - len(question) - len(answer) - special_tokens
 
-    if stride is None:
-        stride = window_size
-
     for i in range(0, len(passage), stride):
         window = passage[i:i + window_size]
-        piece = f'{question}[SEP]{answer}[SEP]{window}'
+        piece = f'{question} [SEP] {answer} [SEP] {window}'
         pieces.append(piece)
 
     return pieces
