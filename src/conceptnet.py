@@ -3,8 +3,9 @@ This module implements the ConceptNet class, to interact with the knowledge
 base and make queries for relations between words and sentences.
 """
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Optional, Sequence
+from typing import DefaultDict, Dict, List, Optional, Sequence, Set, Tuple
 from pathlib import Path
+import re
 
 
 class ConceptNet:
@@ -48,6 +49,23 @@ class ConceptNet:
             return self._relations[word1].get(word2, ConceptNet.NULL_REL)
         return ConceptNet.NULL_REL
 
+    def get_all_text_query_triples(self, text: Sequence[str],
+                                   query: Sequence[str]
+                                   ) -> Set[Tuple[str, str, str]]:
+        triples: Set[Tuple[str, str, str]] = set()
+
+        for text_word in text:
+            for query_word in query:
+                relation = self.get_relation(text_word, query_word)
+                if relation == ConceptNet.NULL_REL:
+                    continue
+                triples.add((text_word, relation, query_word))
+
+        if not triples:
+            triples.add(("No", "Relation", "Found"))
+
+        return triples
+
     def get_text_query_relations(self, text: Sequence[str],
                                  query: Sequence[str]) -> List[str]:
         """
@@ -68,3 +86,10 @@ class ConceptNet:
                     break
 
         return relations
+
+
+def triple_as_sentence(triple: Tuple[str, str, str]) -> str:
+    head, relation, tail = triple
+    parts = re.findall('[A-Z][^A-Z]*', relation)
+    relation = " ".join(parts)
+    return f'{head} {relation} {tail}'

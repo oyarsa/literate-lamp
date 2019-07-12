@@ -21,6 +21,7 @@ from torch.optim import Adamax
 import numpy as np
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
+from allennlp.modules.seq2vec_encoders import BertPooler
 
 from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
@@ -155,7 +156,9 @@ def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
     else:
         raise ValueError('Invalid word embedding type')
 
-    rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM, 'rel_tokens')
+    # rel_embeddings = learned_embeddings(vocab, REL_EMBEDDING_DIM,
+    # 'rel_tokens')
+    rel_embeddings = word_embeddings
 
     if ENCODER_TYPE == 'lstm':
         encoder_fn = lstm_seq2seq
@@ -201,11 +204,14 @@ def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
             feedforward_hidden_dim=512
         )
 
-    relation_encoder = gru_encoder(input_dim=REL_EMBEDDING_DIM,
-                                   output_dim=HIDDEN_DIM,
-                                   num_layers=1,
-                                   bidirectional=BIDIRECTIONAL,
-                                   dropout=dropout)
+    if EMBEDDING_TYPE == 'glove':
+        relation_encoder = gru_encoder(input_dim=REL_EMBEDDING_DIM,
+                                       output_dim=HIDDEN_DIM,
+                                       num_layers=1,
+                                       bidirectional=BIDIRECTIONAL,
+                                       dropout=dropout)
+    else:
+        relation_encoder = BertPooler(pretrained_model=str(BERT_PATH))
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = HierarchicalAttentionNetwork(

@@ -26,7 +26,7 @@ from allennlp.data.tokenizers.word_splitter import (SpacyWordSplitter,
                                                     BertBasicWordSplitter)
 from allennlp.data.token_indexers import PretrainedBertIndexer, TokenIndexer
 
-from conceptnet import ConceptNet
+from conceptnet import ConceptNet, triple_as_sentence
 import util
 
 
@@ -492,8 +492,8 @@ class RelationBertReader(McScriptReader):
                 word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
         self.word_indexers = {'tokens': word_indexer}
 
-        self.rel_indexers = {
-            "rel_tokens": SingleIdTokenIndexer(namespace='rel_tokens')}
+        # self.rel_indexers = {
+        #     "rel_tokens": SingleIdTokenIndexer(namespace='rel_tokens')}
         self.conceptnet = ConceptNet(conceptnet_path=conceptnet_path)
 
     # Converts the text from each field in the input to `Token`s, and then
@@ -536,12 +536,27 @@ class RelationBertReader(McScriptReader):
         answer0_words = toks2strs(answer0_tokens)
         answer1_words = toks2strs(answer1_tokens)
 
-        p_q_relations = strs2toks(self.conceptnet.get_text_query_relations(
-            passage_words, question_words))
-        p_a0_relations = strs2toks(self.conceptnet.get_text_query_relations(
-            passage_words, answer0_words))
-        p_a1_relations = strs2toks(self.conceptnet.get_text_query_relations(
-            passage_words, answer1_words))
+        # p_q_relations = strs2toks(self.conceptnet.get_text_query_relations(
+        #     passage_words, question_words))
+        # p_a0_relations = strs2toks(self.conceptnet.get_text_query_relations(
+        #     passage_words, answer0_words))
+        # p_a1_relations = strs2toks(self.conceptnet.get_text_query_relations(
+        #     passage_words, answer1_words))
+
+        p_q_relations = relation_sentences(
+            self.conceptnet, passage_words, question_words)
+        p_a0_relations = relation_sentences(
+            self.conceptnet, passage_words, answer0_words)
+        p_a1_relations = relation_sentences(
+            self.conceptnet, passage_words, answer1_words)
+
+        p_q_tokens = [self.tokeniser.tokenize(text=b) for b in p_q_relations]
+        p_a0_tokens = [self.tokeniser.tokenize(text=b) for b in p_a0_relations]
+        p_a1_tokens = [self.tokeniser.tokenize(text=b) for b in p_a1_relations]
+
+        p_q_fields = [TextField(b, self.word_indexers) for b in p_q_tokens]
+        p_a0_fields = [TextField(b, self.word_indexers) for b in p_a0_tokens]
+        p_a1_fields = [TextField(b, self.word_indexers) for b in p_a1_tokens]
 
         fields = {
             "passage_id": MetadataField(passage_id),
@@ -552,9 +567,12 @@ class RelationBertReader(McScriptReader):
             "question": TextField(question_tokens, self.word_indexers),
             "answer0": TextField(answer0_tokens, self.word_indexers),
             "answer1": TextField(answer1_tokens, self.word_indexers),
-            "p_q_rel": TextField(p_q_relations, self.rel_indexers),
-            "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
-            "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
+            # "p_q_rel": TextField(p_q_relations, self.rel_indexers),
+            # "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
+            # "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
+            "p_q_rel": ListField(p_q_fields),
+            "p_a0_rel": ListField(p_a0_fields),
+            "p_a1_rel": ListField(p_a1_fields),
         }
 
         if label0 is not None:
@@ -666,10 +684,14 @@ class SimpleBertReader(McScriptReader):
 
 
 def bert_sliding_window(question: str, answer: str, passage: str,
-                        max_wordpieces: int, stride: int = 128) -> List[str]:
+                        max_wordpieces: int, stride: Optional[int] = None,
+                        ) -> List[str]:
     pieces = []
     special_tokens = 4  # [CLS] + 3 [SEP]
     window_size = max_wordpieces - len(question) - len(answer) - special_tokens
+
+    if stride is None:
+        stride = window_size
 
     for i in range(0, len(passage), stride):
         window = passage[i:i + window_size]
@@ -677,3 +699,10 @@ def bert_sliding_window(question: str, answer: str, passage: str,
         pieces.append(piece)
 
     return pieces
+
+
+def relation_sentences(conceptnet: ConceptNet, text: Sequence[str],
+                       query: Sequence[str]) -> List[str]:
+    triples = conceptnet.get_all_text_query_triples(text, query)
+    sentences = [triple_as_sentence(t) for t in triples]
+    return sentences

@@ -1133,8 +1133,8 @@ class HierarchicalAttentionNetwork(Model):
         super().__init__(vocab)
 
         self.word_embeddings = word_embeddings
-        # self.rel_embeddings = rel_embeddings
-        # self.relation_encoder = relation_encoder
+        self.rel_embeddings = rel_embeddings
+        self.relation_encoder = relation_encoder
 
         if encoder_dropout > 0:
             self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
@@ -1227,22 +1227,26 @@ class HierarchicalAttentionNetwork(Model):
             t1_document_hiddens, t1_document_attn)
 
         # Now, the relations
-        # p_q_rel_mask = util.get_text_field_mask(p_q_rel)
-        # p_a0_rel_mask = util.get_text_field_mask(p_a0_rel)
-        # p_a1_rel_mask = util.get_text_field_mask(p_a1_rel)
+        p_q_rel_masks = util.get_text_field_mask(p_q_rel)
+        p_a0_rel_masks = util.get_text_field_mask(p_a0_rel)
+        p_a1_rel_masks = util.get_text_field_mask(p_a1_rel)
 
-        # p_q_rel_emb = self.rel_embeddings(p_q_rel)
-        # p_a0_rel_emb = self.rel_embeddings(p_a0_rel)
-        # p_a1_rel_emb = self.rel_embeddings(p_a1_rel)
+        p_q_rel_embs = self.rel_embeddings(p_q_rel)
+        p_a0_rel_embs = self.rel_embeddings(p_a0_rel)
+        p_a1_rel_embs = self.rel_embeddings(p_a1_rel)
 
-        # p_q_enc = self.relation_encoder(p_q_rel_emb, p_q_rel_mask)
-        # p_a0_enc = self.relation_encoder(p_a0_rel_emb, p_a0_rel_mask)
-        # p_a1_enc = self.relation_encoder(p_a1_rel_emb, p_a1_rel_mask)
+        p_q_encs = self.relation_encoder(p_q_rel_embs, p_q_rel_masks)
+        p_a0_encs = self.relation_encoder(p_a0_rel_embs, p_a0_rel_masks)
+        p_a1_encs = self.relation_encoder(p_a1_rel_embs, p_a1_rel_masks)
 
-        # t0_final = torch.cat((t0_document_encoding, p_q_enc, p_a0_enc),
-        # dim=-1)
-        # t1_final = torch.cat((t1_document_encoding, p_q_enc, p_a1_enc),
-        # dim=-1)
+        p_q_enc = p_q_encs.mean(dim=1)
+        p_a0_enc = p_a0_encs.mean(dim=1)
+        p_a1_enc = p_a1_encs.mean(dim=1)
+
+        t0_final = torch.cat((t0_document_encoding, p_q_enc, p_a0_enc),
+                             dim=-1)
+        t1_final = torch.cat((t1_document_encoding, p_q_enc, p_a1_enc),
+                             dim=-1)
 
         t0_final = t0_document_encoding
         t1_final = t1_document_encoding
