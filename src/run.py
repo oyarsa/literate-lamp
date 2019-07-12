@@ -80,7 +80,7 @@ if CONFIG == 'large':
     # Size of our embeddings
     GLOVE_EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
-    HIDDEN_DIM = 96
+    HIDDEN_DIM = 50
     # Size of minibatch
     BATCH_SIZE = 32
     # Number of epochs to train model
@@ -129,7 +129,7 @@ RANDOM_SEED = 1234
 
 # Model Configuration
 # Use LSTM, GRU or Transformer
-ENCODER_TYPE = 'lstm'
+ENCODER_TYPE = 'gru'
 BIDIRECTIONAL = True
 RNN_LAYERS = 1
 RNN_DROPOUT = 0.5

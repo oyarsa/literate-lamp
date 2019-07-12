@@ -25,6 +25,7 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder, BertPooler
 from allennlp.training.metrics import CategoricalAccuracy
+from allennlp.modules.attention import Attention
 
 # Holds the vocabulary, learned from the whole data. Also knows the mapping
 # from the `TokenIndexer`, mapping the `Token` to an index in the vocabulary
@@ -1142,9 +1143,9 @@ class HierarchicalAttentionNetwork(Model):
             self.encoder_dropout = lambda x: x
 
         self.sentence_encoder = sentence_encoder
-        self.sentence_attn = LinearSelfAttention(
-            input_dim=self.sentence_encoder.get_output_dim(),
-            bias=True
+        self.sentence_attn = BilinearAttention(
+            vector_dim=2 * self.relation_encoder.get_output_dim(),
+            matrix_dim=self.sentence_encoder.get_output_dim()
         )
         self.document_encoder = document_encoder
         self.document_attn = LinearSelfAttention(
@@ -1152,9 +1153,7 @@ class HierarchicalAttentionNetwork(Model):
             bias=True
         )
 
-        # dense_input_dim = (document_encoder.get_output_dim() +
-        #                    2 * relation_encoder.get_output_dim())
-        self.dense = torch.nn.Linear(
+        self.output = torch.nn.Linear(
             in_features=document_encoder.get_output_dim(),
             out_features=1
         )
@@ -1186,6 +1185,25 @@ class HierarchicalAttentionNetwork(Model):
         # Every sample in a batch has to have the same size (as it's a tensor),
         # so smaller entries are padded. The mask is used to counteract this
         # padding.
+        # Now, the relations
+        p_q_rel_masks = util.get_text_field_mask(p_q_rel)
+        p_a0_rel_masks = util.get_text_field_mask(p_a0_rel)
+        p_a1_rel_masks = util.get_text_field_mask(p_a1_rel)
+
+        p_q_rel_embs = self.rel_embeddings(p_q_rel)
+        p_a0_rel_embs = self.rel_embeddings(p_a0_rel)
+        p_a1_rel_embs = self.rel_embeddings(p_a1_rel)
+
+        p_q_encs = self.relation_encoder(p_q_rel_embs, p_q_rel_masks)
+        p_a0_encs = self.relation_encoder(p_a0_rel_embs, p_a0_rel_masks)
+        p_a1_encs = self.relation_encoder(p_a1_rel_embs, p_a1_rel_masks)
+
+        p_q_enc = p_q_encs.mean(dim=1)
+        p_a0_enc = p_a0_encs.mean(dim=1)
+        p_a1_enc = p_a1_encs.mean(dim=1)
+
+        rel_0 = torch.cat((p_q_enc, p_a0_enc), dim=-1)
+        rel_1 = torch.cat((p_q_enc, p_a1_enc), dim=-1)
 
         t0_masks = util.get_text_field_mask(bert0, num_wrapping_dims=1)
         t1_masks = util.get_text_field_mask(bert1, num_wrapping_dims=1)
@@ -1201,10 +1219,10 @@ class HierarchicalAttentionNetwork(Model):
             hierarchical_seq_over_seq(self.sentence_encoder, t1_embs,
                                       t1_masks))
 
-        t0_sentence_attns = self.sentence_attn(
-            t0_sentence_hiddens, t0_sentence_hiddens)
-        t1_sentence_attns = self.sentence_attn(
-            t1_sentence_hiddens, t1_sentence_hiddens)
+        t0_sentence_attns = attention_over_sequence(
+            self.sentence_attn, t0_sentence_hiddens, rel_0)
+        t1_sentence_attns = attention_over_sequence(
+            self.sentence_attn, t1_sentence_hiddens, rel_1)
 
         t0_sentence_encodings = util.weighted_sum(
             t0_sentence_hiddens, t0_sentence_attns)
@@ -1226,33 +1244,12 @@ class HierarchicalAttentionNetwork(Model):
         t1_document_encoding = util.weighted_sum(
             t1_document_hiddens, t1_document_attn)
 
-        # Now, the relations
-        p_q_rel_masks = util.get_text_field_mask(p_q_rel)
-        p_a0_rel_masks = util.get_text_field_mask(p_a0_rel)
-        p_a1_rel_masks = util.get_text_field_mask(p_a1_rel)
-
-        p_q_rel_embs = self.rel_embeddings(p_q_rel)
-        p_a0_rel_embs = self.rel_embeddings(p_a0_rel)
-        p_a1_rel_embs = self.rel_embeddings(p_a1_rel)
-
-        p_q_encs = self.relation_encoder(p_q_rel_embs, p_q_rel_masks)
-        p_a0_encs = self.relation_encoder(p_a0_rel_embs, p_a0_rel_masks)
-        p_a1_encs = self.relation_encoder(p_a1_rel_embs, p_a1_rel_masks)
-
-        p_q_enc = p_q_encs.mean(dim=1)
-        p_a0_enc = p_a0_encs.mean(dim=1)
-        p_a1_enc = p_a1_encs.mean(dim=1)
-
-        t0_final = torch.cat((t0_document_encoding, p_q_enc, p_a0_enc),
-                             dim=-1)
-        t1_final = torch.cat((t1_document_encoding, p_q_enc, p_a1_enc),
-                             dim=-1)
-
         t0_final = t0_document_encoding
         t1_final = t1_document_encoding
+
         # Joining everything and getting the result
-        logit0 = self.dense(t0_final).squeeze(-1)
-        logit1 = self.dense(t1_final).squeeze(-1)
+        logit0 = self.output(t0_final).squeeze(-1)
+        logit1 = self.output(t1_final).squeeze(-1)
 
         logits = torch.stack((logit0, logit1), dim=-1)
         # We also compute the class with highest likelihood (our prediction)
@@ -1274,3 +1271,15 @@ class HierarchicalAttentionNetwork(Model):
     # of different metrics here.
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         return {"accuracy": self.accuracy.get_metric(reset)}
+
+
+def attention_over_sequence(attention: Attention, sequence: torch.Tensor,
+                            vector: torch.Tensor) -> torch.Tensor:
+    num_batch, num_sent, num_tokens, _ = sequence.shape
+    scores = sequence.new_empty(num_batch, num_sent, num_tokens)
+
+    for i in range(num_sent):
+        sequence_item = sequence[:, i, :, :]
+        scores[:, i, :] = attention(vector, sequence_item)
+
+    return scores
