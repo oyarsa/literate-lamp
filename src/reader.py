@@ -550,6 +550,9 @@ class RelationBertReader(McScriptReader):
         p_a1_relations = relation_sentences(
             self.conceptnet, passage_words, answer1_words)
 
+        p_a0_relations += p_q_relations
+        p_a1_relations += p_q_relations
+
         p_q_tokens = [self.tokeniser.tokenize(text=b) for b in p_q_relations]
         p_a0_tokens = [self.tokeniser.tokenize(text=b) for b in p_a0_relations]
         p_a1_tokens = [self.tokeniser.tokenize(text=b) for b in p_a1_relations]

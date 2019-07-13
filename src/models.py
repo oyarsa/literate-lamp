@@ -1144,7 +1144,7 @@ class HierarchicalAttentionNetwork(Model):
 
         self.sentence_encoder = sentence_encoder
         self.sentence_attn = BilinearAttention(
-            vector_dim=2 * self.relation_encoder.get_output_dim(),
+            vector_dim=self.relation_encoder.get_output_dim(),
             matrix_dim=self.sentence_encoder.get_output_dim()
         )
         self.document_encoder = document_encoder
@@ -1186,24 +1186,22 @@ class HierarchicalAttentionNetwork(Model):
         # so smaller entries are padded. The mask is used to counteract this
         # padding.
         # Now, the relations
-        p_q_rel_masks = util.get_text_field_mask(p_q_rel)
+        # p_q_rel_masks = util.get_text_field_mask(p_q_rel)
         p_a0_rel_masks = util.get_text_field_mask(p_a0_rel)
         p_a1_rel_masks = util.get_text_field_mask(p_a1_rel)
 
-        p_q_rel_embs = self.rel_embeddings(p_q_rel)
+        # p_q_rel_embs = self.rel_embeddings(p_q_rel)
         p_a0_rel_embs = self.rel_embeddings(p_a0_rel)
         p_a1_rel_embs = self.rel_embeddings(p_a1_rel)
 
-        p_q_encs = self.relation_encoder(p_q_rel_embs, p_q_rel_masks)
         p_a0_encs = self.relation_encoder(p_a0_rel_embs, p_a0_rel_masks)
         p_a1_encs = self.relation_encoder(p_a1_rel_embs, p_a1_rel_masks)
 
-        p_q_enc = p_q_encs.mean(dim=1)
         p_a0_enc = p_a0_encs.mean(dim=1)
         p_a1_enc = p_a1_encs.mean(dim=1)
 
-        rel_0 = torch.cat((p_q_enc, p_a0_enc), dim=-1)
-        rel_1 = torch.cat((p_q_enc, p_a1_enc), dim=-1)
+        rel_0 = p_a0_enc
+        rel_1 = p_a1_enc
 
         t0_masks = util.get_text_field_mask(bert0, num_wrapping_dims=1)
         t1_masks = util.get_text_field_mask(bert1, num_wrapping_dims=1)
