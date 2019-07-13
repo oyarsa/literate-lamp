@@ -229,14 +229,18 @@ def get_preprocessed_name(split_name: str, model: str, config: str,
     return f'{split_name}.{model}.{config}.{embedding}.pickle'
 
 
-def get_experiment_name(model: str, config: str, embedding: str) -> str:
+def get_experiment_name(model: str, config: str, embedding: str,
+                        name: Optional[str]) -> str:
     """
     Sets up the name for the experiment based on the model type, the
     configuration being used and the current date and time.
     """
     date = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    name = f'{model}.{config}.{embedding}.{date}'
-    return name
+    if name is None:
+        experiment_name = f'{model}.{config}.{embedding}.{date}'
+    else:
+        experiment_name = f'{name}.{model}.{config}.{embedding}.{date}'
+    return experiment_name
 
 
 def is_stopword(word: Union[str, Token]) -> bool:

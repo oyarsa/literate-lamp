@@ -48,20 +48,22 @@ NER_EMBEDDING_DIM = 8
 REL_EMBEDDING_DIM = 10
 POS_EMBEDDING_DIM = 12
 HANDCRAFTED_DIM = 7
-DEFAULT_EMBEDDING_TYPE = 'glove'  # can also be 'glove'
+DEFAULT_EMBEDDING_TYPE = 'glove'  # can also be 'bert'
 EMBEDDING_TYPE = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_EMBEDDING_TYPE
 
 CUDA_DEVICE = int(sys.argv[4]) if len(sys.argv) >= 5 else 0
+MODEL_NAME = sys.argv[5] if len(sys.argv) >= 6 else None
 
 USAGE = """
 USAGE:
-    run.py CONFIG MODEL [EMBEDDING_TYPE] [CUDA_DEVICE]
+    run.py CONFIG MODEL [EMBEDDING_TYPE] [CUDA_DEVICE] [NAME]
 
 ARGS:
     CONFIG: configuration to use. One of: small, large
     MODEL: model to run. One of: baseline, attentive, reader
     EMBEDDING_TYPE: word embeddings for the text. One of: glove, bert.
     CUDA_DEVICE: device to run the training. -1 for CPU, >=0 for GPU.
+    NAME: name for model being trained (used in saving)
 """
 
 DATA_FOLDER = Path('data')
@@ -106,7 +108,8 @@ CONCEPTNET_PATH = EXTERNAL_FOLDER / 'conceptnet.csv'
 
 # Path to save the Model and Vocabulary
 SAVE_FOLDER = Path('experiments')
-SAVE_PATH = SAVE_FOLDER / get_experiment_name(MODEL, CONFIG, EMBEDDING_TYPE)
+SAVE_PATH = SAVE_FOLDER / \
+    get_experiment_name(MODEL, CONFIG, EMBEDDING_TYPE, MODEL_NAME)
 print('Save path', SAVE_PATH)
 
 
