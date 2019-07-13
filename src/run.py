@@ -86,7 +86,7 @@ if CONFIG == 'large':
     # Size of minibatch
     BATCH_SIZE = 32
     # Number of epochs to train model
-    NUM_EPOCHS = 15
+    NUM_EPOCHS = 30
 elif CONFIG == 'small':
     # Path to our dataset
     TRAIN_DATA_PATH = DATA_FOLDER / 'small-train.json'
