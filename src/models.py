@@ -1124,9 +1124,10 @@ class HierarchicalAttentionNetwork(Model):
                  word_embeddings: TextFieldEmbedder,
                  sentence_encoder: Seq2SeqEncoder,
                  document_encoder: Seq2SeqEncoder,
-                 relation_encoder: Seq2VecEncoder,
+                 relation_sentence_encoder: Seq2VecEncoder,
                  rel_embeddings: TextFieldEmbedder,
                  vocab: Vocabulary,
+                 relation_encoder: Optional[Seq2VecEncoder] = None,
                  encoder_dropout: float = 0.0,
                  train_bert: bool = False
                  ) -> None:
@@ -1135,6 +1136,7 @@ class HierarchicalAttentionNetwork(Model):
 
         self.word_embeddings = word_embeddings
         self.rel_embeddings = rel_embeddings
+        self.relation_sentence_encoder = relation_sentence_encoder
         self.relation_encoder = relation_encoder
 
         if encoder_dropout > 0:
@@ -1143,8 +1145,14 @@ class HierarchicalAttentionNetwork(Model):
             self.encoder_dropout = lambda x: x
 
         self.sentence_encoder = sentence_encoder
+
+        if relation_encoder is None:
+            relation_dim = relation_sentence_encoder.get_output_dim()
+        else:
+            relation_dim = relation_encoder.get_output_dim()
+
         self.sentence_attn = BilinearAttention(
-            vector_dim=self.relation_encoder.get_output_dim(),
+            vector_dim=relation_dim,
             matrix_dim=self.sentence_encoder.get_output_dim()
         )
         self.document_encoder = document_encoder
@@ -1194,11 +1202,17 @@ class HierarchicalAttentionNetwork(Model):
         p_a0_rel_embs = self.rel_embeddings(p_a0_rel)
         p_a1_rel_embs = self.rel_embeddings(p_a1_rel)
 
-        p_a0_encs = self.relation_encoder(p_a0_rel_embs, p_a0_rel_masks)
-        p_a1_encs = self.relation_encoder(p_a1_rel_embs, p_a1_rel_masks)
+        p_a0_encs = seq_over_seq(
+            self.relation_sentence_encoder, p_a0_rel_embs, p_a0_rel_masks)
+        p_a1_encs = seq_over_seq(
+            self.relation_sentence_encoder, p_a1_rel_embs, p_a1_rel_masks)
 
-        p_a0_enc = p_a0_encs.mean(dim=1)
-        p_a1_enc = p_a1_encs.mean(dim=1)
+        if self.relation_encoder is None:
+            p_a0_enc = p_a0_encs.mean(dim=1)
+            p_a1_enc = p_a1_encs.mean(dim=1)
+        else:
+            p_a0_enc = self.relation_encoder(p_a0_encs, mask=None)
+            p_a1_enc = self.relation_encoder(p_a1_encs, mask=None)
 
         rel_0 = p_a0_enc
         rel_1 = p_a1_enc

@@ -1,7 +1,7 @@
 """
 Implements some layers that AllenNLP doesn't have.
 """
-from typing import Optional
+from typing import Optional, Tuple
 from pathlib import Path
 
 import torch
@@ -20,7 +20,7 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 # This is the actual neural layer for the embedding. This will be passed into
 # the embedder above.
 from allennlp.modules.token_embedders import Embedding, PretrainedBertEmbedder
-from allennlp.modules.seq2vec_encoders import PytorchSeq2VecWrapper
+from allennlp.modules.seq2vec_encoders import PytorchSeq2VecWrapper, CnnEncoder
 from allennlp.modules.seq2seq_encoders import (
     Seq2SeqEncoder, PytorchSeq2SeqWrapper, StackedSelfAttentionEncoder)
 
@@ -238,9 +238,17 @@ def gru_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
                 bidirectional: bool = False, dropout: float = 0.0
                 ) -> Seq2VecEncoder:
     """
-    Our encoder is going to be an LSTM. We have to wrap it for AllenNLP,
+    Our encoder is going to be an GRU. We have to wrap it for AllenNLP,
     though.
     """
     return PytorchSeq2VecWrapper(torch.nn.GRU(
         input_dim, output_dim, batch_first=True, num_layers=num_layers,
         bidirectional=bidirectional, dropout=dropout))
+
+
+def cnn_encoder(input_dim: int, output_dim: int, num_filters: int,
+                ngram_filter_sizes: Tuple[int, ...] = (2, 3, 4, 5)
+                ) -> Seq2VecEncoder:
+    return CnnEncoder(embedding_dim=input_dim, output_dim=output_dim,
+                      num_filters=num_filters,
+                      ngram_filter_sizes=ngram_filter_sizes)

@@ -32,7 +32,7 @@ from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, get_preprocessed_name)
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
-                    transformer_seq2seq)
+                    transformer_seq2seq, cnn_encoder)
 from reader import (SimpleBertReader, SimpleMcScriptReader, SimpleTrianReader,
                     FullTrianReader, McScriptReader, RelationBertReader)
 
@@ -138,6 +138,9 @@ RNN_LAYERS = 1
 RNN_DROPOUT = 0.5
 EMBEDDDING_DROPOUT = 0.5 if EMBEDDING_TYPE != 'bert' else 0
 
+# What encoder to use to join the relation embeddings into a single vector.
+RELATION_ENCODER = 'cnn'
+
 
 def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
     """
@@ -208,13 +211,20 @@ def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
         )
 
     if EMBEDDING_TYPE == 'glove':
-        relation_encoder = gru_encoder(input_dim=REL_EMBEDDING_DIM,
-                                       output_dim=HIDDEN_DIM,
-                                       num_layers=1,
-                                       bidirectional=BIDIRECTIONAL,
-                                       dropout=dropout)
+        relation_sentence_encoder = gru_encoder(input_dim=REL_EMBEDDING_DIM,
+                                                output_dim=HIDDEN_DIM,
+                                                num_layers=1,
+                                                bidirectional=BIDIRECTIONAL,
+                                                dropout=dropout)
     else:
-        relation_encoder = BertPooler(pretrained_model=str(BERT_PATH))
+        relation_sentence_encoder = BertPooler(pretrained_model=str(BERT_PATH))
+
+    if RELATION_ENCODER == 'cnn':
+        relation_encoder = cnn_encoder(input_dim=embedding_dim,
+                                       output_dim=2*HIDDEN_DIM,
+                                       num_filters=16)
+    else:
+        relation_encoder = None
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = HierarchicalAttentionNetwork(
@@ -222,6 +232,7 @@ def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
         sentence_encoder=sentence_encoder,
         document_encoder=document_encoder,
         relation_encoder=relation_encoder,
+        relation_sentence_encoder=relation_sentence_encoder,
         rel_embeddings=rel_embeddings,
         vocab=vocab,
         encoder_dropout=RNN_DROPOUT
