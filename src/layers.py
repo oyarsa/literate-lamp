@@ -247,7 +247,7 @@ def gru_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
 
 
 def cnn_encoder(input_dim: int, output_dim: int, num_filters: int,
-                ngram_filter_sizes: Tuple[int, ...] = (2, 3, 4, 5)
+                ngram_filter_sizes: Tuple[int, ...] = (2, 3)
                 ) -> Seq2VecEncoder:
     return CnnEncoder(embedding_dim=input_dim, output_dim=output_dim,
                       num_filters=num_filters,
