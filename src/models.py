@@ -1251,9 +1251,6 @@ class HierarchicalAttentionNetwork(Model):
         t1_sentence_attns = self.sentence_attn(
             t1_sentence_hiddens, t1_sentence_hiddens)
 
-        print('encs', t0_sentence_hiddens.shape)
-        print('attn', t0_sentence_attns.shape)
-
         t0_sentence_encodings = util.weighted_sum(
             t0_sentence_hiddens, t0_sentence_attns)
         t1_sentence_encodings = util.weighted_sum(
