@@ -56,6 +56,8 @@ class ConceptNet:
 
         for text_word in text:
             for query_word in query:
+                if text_word == query_word:
+                    continue
                 relation = self.get_relation(text_word, query_word)
                 if relation == ConceptNet.NULL_REL:
                     continue
