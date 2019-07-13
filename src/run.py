@@ -84,7 +84,7 @@ if CONFIG == 'large':
     # Size of minibatch
     BATCH_SIZE = 32
     # Number of epochs to train model
-    NUM_EPOCHS = 50
+    NUM_EPOCHS = 15
 elif CONFIG == 'small':
     # Path to our dataset
     TRAIN_DATA_PATH = DATA_FOLDER / 'small-train.json'
@@ -793,6 +793,8 @@ def run_model() -> None:
     print('\t2:', answer2)
     print('Prediction:', prediction+1)
     print('Correct:', 1 if label1 == 1 else 2)
+
+    print('Save path', SAVE_PATH)
 
     # Test if we can load the saved model
     cuda_device = 0 if is_cuda(model) else -1
