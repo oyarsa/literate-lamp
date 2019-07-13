@@ -38,7 +38,9 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.nn import util
 
 from layers import (SequenceAttention, BilinearAttention, LinearSelfAttention,
-                    bert_embeddings, MultiHeadAttention)
+                    bert_embeddings,
+                    # MultiHeadAttention,
+                    HeterogenousSequenceAttention)
 
 
 @Model.register('baseline-classifier')
@@ -797,11 +799,17 @@ class SimpleTrian(Model):
         a1_p_scores = self.a_p_match(a1_emb, p_emb, p_mask)
 
         # Then the weighted inputs
-        p_q_match = util.weighted_sum(q_emb, p_q_scores)
-        a0_q_match = util.weighted_sum(q_emb, a0_q_scores)
-        a1_q_match = util.weighted_sum(q_emb, a1_q_scores)
-        a0_p_match = util.weighted_sum(p_emb, a0_p_scores)
-        a1_p_match = util.weighted_sum(p_emb, a1_p_scores)
+        # p_q_match = util.weighted_sum(q_emb, p_q_scores)
+        # a0_q_match = util.weighted_sum(q_emb, a0_q_scores)
+        # a1_q_match = util.weighted_sum(q_emb, a1_q_scores)
+        # a0_p_match = util.weighted_sum(p_emb, a0_p_scores)
+        # a1_p_match = util.weighted_sum(p_emb, a1_p_scores)
+
+        p_q_match = p_q_scores.bmm(q_emb)
+        a0_q_match = a0_q_scores.bmm(q_emb)
+        a1_q_match = a1_q_scores.bmm(q_emb)
+        a0_p_match = a0_p_scores.bmm(p_emb)
+        a1_p_match = a1_p_scores.bmm(p_emb)
 
         # We combine the inputs to our encoder
         p_input = torch.cat((p_emb, p_q_match, p_q_rel_emb,
@@ -1160,14 +1168,19 @@ class HierarchicalAttentionNetwork(Model):
             bias=True
         )
 
-        self.sentence_relation_attn = MultiHeadAttention(
-            num_heads=5,
-            query_input_dim=relation_sentence_encoder.get_output_dim(),
-            key_input_dim=sentence_encoder.get_output_dim(),
-            value_input_dim=sentence_encoder.get_output_dim(),
-            attention_dim=300,
-            values_dim=300,
-            output_projection_dim=sentence_encoder.get_output_dim()
+        # self.sentence_relation_attn = MultiHeadAttention(
+        #     num_heads=5,
+        #     query_input_dim=relation_sentence_encoder.get_output_dim(),
+        #     key_input_dim=sentence_encoder.get_output_dim(),
+        #     value_input_dim=sentence_encoder.get_output_dim(),
+        #     attention_dim=300,
+        #     values_dim=300,
+        #     output_projection_dim=sentence_encoder.get_output_dim()
+        # )
+        self.sentence_relation_attn = HeterogenousSequenceAttention(
+            u_input_dim=self.sentence_encoder.get_output_dim(),
+            v_input_dim=self.relation_sentence_encoder.get_output_dim(),
+            projection_dim=sentence_encoder.get_output_dim()
         )
 
         self.document_encoder = document_encoder
@@ -1256,17 +1269,27 @@ class HierarchicalAttentionNetwork(Model):
         t1_sentence_encodings = util.weighted_sum(
             t1_sentence_hiddens, t1_sentence_attns)
 
+        # t0_sentence_encodings = self.sentence_relation_attn(
+        #     queries=p_a0_encs,
+        #     keys=t0_sentence_encodings,
+        #     values=t0_sentence_encodings,
+        #     mask=None
+        # )
+        # t1_sentence_encodings = self.sentence_relation_attn(
+        #     queries=p_a1_encs,
+        #     keys=t1_sentence_encodings,
+        #     values=t1_sentence_encodings,
+        #     mask=None
+        # )
         t0_sentence_encodings = self.sentence_relation_attn(
-            queries=p_a0_encs,
-            keys=t0_sentence_encodings,
-            values=t0_sentence_encodings,
-            mask=None
+            u=t0_sentence_encodings,
+            v=p_a0_encs,
+            v_mask=None
         )
         t1_sentence_encodings = self.sentence_relation_attn(
-            queries=p_a1_encs,
-            keys=t1_sentence_encodings,
-            values=t1_sentence_encodings,
-            mask=None
+            u=t1_sentence_encodings,
+            v=p_a1_encs,
+            v_mask=None
         )
 
         t0_document_hiddens = self.encoder_dropout(self.document_encoder(

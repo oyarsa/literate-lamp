@@ -436,3 +436,67 @@ class MultiHeadAttention(Seq2SeqEncoder):
         # shape (batch_size, timesteps_1, input_size)
         outputs = self._output_projection(outputs)
         return outputs
+
+
+class HeterogenousSequenceAttention(Seq2SeqEncoder):
+    """
+    Implements sequence attention as defined in Yuanfudao
+
+        alpha = softmax(f(Wu)f(W'v))    (1)
+
+    Outputs the scores (alpha), which should be used to compute a weighted sum
+    of v. That means that the other part:
+
+        Att_seq(u, v) = sum_i(alpha_i * v_i)   (2)
+
+    Is not computed here. Should be ran as:
+
+        allennlp.util.weighted_sum(v, alpha)   (3)
+
+    This was done so this class is consistent with how `Attention`-derived
+    classes work in AllenNLP, as they only output the scores.
+
+    Although the equation (1) doesn't mention masks, we do accept the mask for
+    the second vector (v), and compute the softmax using that mask (zero-ing
+    the padded dimensions).
+    """
+
+    def __init__(self,
+                 u_input_dim: int,
+                 v_input_dim: int,
+                 projection_dim: int,
+                 activation: Optional[Activation] = None) -> None:
+        super(HeterogenousSequenceAttention, self).__init__()
+        self._output_dim = projection_dim
+        self._u_input_dim = u_input_dim
+        self._v_input_dim = v_input_dim
+        self._u_projection = torch.nn.Linear(in_features=u_input_dim,
+                                             out_features=projection_dim)
+        self._v_projection = torch.nn.Linear(in_features=v_input_dim,
+                                             out_features=projection_dim)
+        self._activation = activation or Activation.by_name('relu')()
+
+    def get_input_dim(self) -> int:
+        return self._u_input_dim
+
+    def get_output_dim(self) -> int:
+        return self._output_dim
+
+    @overrides
+    def is_bidirectional(self) -> bool:
+        return False
+
+    @overrides
+    def forward(self, u: torch.Tensor, v: torch.Tensor,
+                v_mask: Optional[torch.Tensor]) -> torch.Tensor:
+        u_prime = self._activation(self._u_projection(u))
+        v_prime = self._activation(self._v_projection(v))
+
+        # print('u_prime', u_prime.shape)
+        # print('v_prime', v_prime.shape)
+        scores = u_prime.bmm(v_prime.transpose(1, 2))
+
+        alpha = masked_softmax(scores, v_mask, memory_efficient=True)
+        result = alpha.bmm(v_prime)
+
+        return result
