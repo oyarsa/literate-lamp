@@ -8,6 +8,7 @@ import torch
 from overrides import overrides
 from allennlp.common import Params
 from allennlp.modules.attention import Attention
+from allennlp.nn.util import masked_softmax, weighted_sum
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.nn.activations import Activation
 from allennlp.data.vocabulary import Vocabulary
@@ -252,3 +253,191 @@ def cnn_encoder(input_dim: int, output_dim: int, num_filters: int,
     return CnnEncoder(embedding_dim=input_dim, output_dim=output_dim,
                       num_filters=num_filters,
                       ngram_filter_sizes=ngram_filter_sizes)
+
+
+@Seq2SeqEncoder.register("multi_head_attention")
+class MultiHeadAttention(Seq2SeqEncoder):
+    # pylint: disable=line-too-long
+    """
+    This class implements the key-value scaled dot product attention mechanism
+    detailed in the paper `Attention is all you Need`.
+    The attention mechanism is a weighted sum of a projection V of the inputs,
+    with respect to the scaled, normalised dot product of Q and K, which are
+    also both linear projections of the input. This procedure is repeated for
+    each attention head, using different parameters.
+
+    Parameters
+    ----------
+    num_heads : ``int``, required.
+        The number of attention heads to use.
+    input_dim : ``int``, required.
+        The size of the last dimension of the input tensor.
+    attention_dim ``int``, required.
+        The total dimension of the query and key projections which comprise the
+        dot product attention function. Must be divisible by ``num_heads``.
+    values_dim : ``int``, required.
+        The total dimension which the input is projected to for representing
+        the values, which are combined using the attention. Must be divisible
+        by ``num_heads``.
+    output_projection_dim : ``int``, optional (default = None)
+        The dimensionality of the final output projection. If this is not
+        passed explicitly, the projection has size `input_size`.
+    attention_dropout_prob : ``float``, optional (default = 0.1).
+        The dropout probability applied to the normalised attention
+        distributions.
+    """
+
+    def __init__(self,
+                 num_heads: int,
+                 query_input_dim: int,
+                 key_input_dim: int,
+                 value_input_dim: int,
+                 attention_dim: int,
+                 values_dim: int,
+                 output_projection_dim: int = Optional[None],
+                 attention_dropout_prob: float = 0.1) -> None:
+        super(MultiHeadAttention, self).__init__()
+
+        self._num_heads = num_heads
+        self._query_input_dim = query_input_dim
+        self._key_input_dim = key_input_dim
+        self._value_input_dim = value_input_dim
+        self._output_dim = output_projection_dim or value_input_dim
+        self._attention_dim = attention_dim
+        self._values_dim = values_dim
+
+        if attention_dim % num_heads != 0:
+            raise ValueError(f"Key size ({attention_dim}) must be divisible by"
+                             f" the number of attention heads ({num_heads}).")
+
+        if values_dim % num_heads != 0:
+            raise ValueError(f"Value size ({values_dim}) must be divisible by "
+                             f"the number of attention heads ({num_heads}).")
+
+        self._q_projection = torch.nn.Linear(query_input_dim, attention_dim)
+        self._k_projection = torch.nn.Linear(key_input_dim, attention_dim)
+        self._v_projection = torch.nn.Linear(value_input_dim, values_dim)
+
+        self._scale = (key_input_dim // num_heads) ** 0.5
+        self._output_projection = torch.nn.Linear(values_dim, self._output_dim)
+        self._attention_dropout = torch.nn.Dropout(attention_dropout_prob)
+
+    def get_input_dim(self) -> int:
+        return self._query_input_dim
+
+    def get_output_dim(self) -> int:
+        return self._output_dim
+
+    @overrides
+    def is_bidirectional(self) -> bool:
+        return False
+
+    @overrides
+    def forward(self,  # pylint: disable=arguments-differ
+                keys: torch.Tensor,
+                queries: torch.Tensor,
+                values: torch.Tensor,
+                mask: torch.LongTensor = None) -> torch.FloatTensor:
+        """
+        Parameters
+        ----------
+        keys : ``torch.FloatTensor``, required.
+            A tensor of shape (batch_size, timesteps_1, input_dim)
+        queries : ``torch.FloatTensor``, required.
+            A tensor of shape (batch_size, timesteps_2, input_dim)
+        values : ``torch.FloatTensor``, required.
+            A tensor of shape (batch_size, timesteps_2, input_dim)
+        mask : ``torch.FloatTensor``, optional (default = None).
+            A tensor of shape (batch_size, timesteps_2).
+        Returns
+        -------
+        A tensor of shape (batch_size, timesteps_2, output_projection_dim),
+        where output_projection_dim = input_dim by default.
+        """
+        num_heads = self._num_heads
+
+        _, timesteps_1, _ = queries.shape
+        batch_size, timesteps_2, _ = values.shape
+
+        # print('batch_size', batch_size)
+        # print('num_heads', num_heads)
+        # print('timesteps_1', timesteps_1)
+        # print('timesteps_2', timesteps_2)
+
+        if mask is None:
+            mask = values.new_ones(batch_size, timesteps_2)
+
+        # print('mask', mask.shape)
+
+        # Shape (batch_size, timesteps_1, attention_dim)
+        queries = self._q_projection(queries)
+        # Shape (batch_size, timesteps_1, attention_dim)
+        keys = self._k_projection(keys)
+        # Shape (batch_size, timesteps_2, values_dim)
+        values = self._v_projection(values)
+
+        # Shape (num_heads * batch_size, timesteps_2, values_dim / num_heads)
+        values_per_head = values.view(batch_size, timesteps_2, num_heads,
+                                      int(self._values_dim/num_heads))
+        values_per_head = values_per_head.transpose(1, 2).contiguous()
+        values_per_head = values_per_head.view(
+            batch_size * num_heads, timesteps_2,
+            int(self._values_dim/num_heads))
+
+        # Shape (num_heads * batch_size, timesteps_1, attention_dim/num_heads)
+        queries_per_head = queries.view(batch_size, timesteps_1, num_heads,
+                                        int(self._attention_dim/num_heads))
+        queries_per_head = queries_per_head.transpose(1, 2).contiguous()
+        queries_per_head = queries_per_head.view(
+            batch_size * num_heads, timesteps_1,
+            int(self._attention_dim/num_heads))
+
+        # Shape (num_heads * batch_size, timesteps_2, attention_dim/num_heads)
+        keys_per_head = keys.view(batch_size, timesteps_2, num_heads,
+                                  int(self._attention_dim/num_heads))
+        keys_per_head = keys_per_head.transpose(1, 2).contiguous()
+        keys_per_head = keys_per_head.view(
+            batch_size * num_heads, timesteps_2,
+            int(self._attention_dim/num_heads))
+
+        # print('queries', queries_per_head.shape)
+        # print('keys', keys_per_head.shape)
+
+        # shape (num_heads * batch_size, timesteps_2, timesteps_1)
+        scaled_similarities = torch.bmm(
+            queries_per_head / self._scale, keys_per_head.transpose(1, 2))
+        # print('similarities', scaled_similarities.shape)
+
+        # print('mask repeat', mask.repeat(1, num_heads).shape)
+        # print('mask view', mask.repeat(1, num_heads).view(
+        # batch_size * num_heads, timesteps_2).shape)
+        # shape (num_heads * batch_size, timesteps_2, timesteps_1)
+        # Normalise the distributions, using the same mask for all heads.
+        attention = masked_softmax(scaled_similarities,
+                                   mask.repeat(1, num_heads).view(
+                                       batch_size * num_heads, timesteps_2),
+                                   memory_efficient=True)
+        attention = self._attention_dropout(attention)
+        # print('attention', attention.shape)
+
+        # Take a weighted sum of the values with respect to the attention
+        # distributions for each element in the num_heads * batch_size dim.
+        # shape (num_heads * batch_size, timesteps_2, values_dim/num_heads)
+
+        # print('values', values_per_head.shape)
+        outputs = weighted_sum(values_per_head, attention)
+        # print('outputs', outputs.shape)
+
+        # Reshape back to original shape (batch_size, timesteps_2, values_dim)
+        # shape (batch_size, num_heads, timesteps_2, values_dim/num_heads)
+        outputs = outputs.view(batch_size, num_heads,
+                               timesteps_1, int(self._values_dim / num_heads))
+        # shape (batch_size, timesteps_2, num_heads, values_dim/num_heads)
+        outputs = outputs.transpose(1, 2).contiguous()
+        # shape (batch_size, timesteps_2, values_dim)
+        outputs = outputs.view(batch_size, timesteps_1, self._values_dim)
+
+        # Project back to original input size.
+        # shape (batch_size, timesteps_2, input_size)
+        outputs = self._output_projection(outputs)
+        return outputs

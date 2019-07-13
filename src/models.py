@@ -38,7 +38,7 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.nn import util
 
 from layers import (SequenceAttention, BilinearAttention, LinearSelfAttention,
-                    bert_embeddings)
+                    bert_embeddings, MultiHeadAttention)
 
 
 @Model.register('baseline-classifier')
@@ -1146,15 +1146,30 @@ class HierarchicalAttentionNetwork(Model):
 
         self.sentence_encoder = sentence_encoder
 
-        if relation_encoder is None:
-            relation_dim = relation_sentence_encoder.get_output_dim()
-        else:
-            relation_dim = relation_encoder.get_output_dim()
+        # if relation_encoder is None:
+        #     relation_dim = relation_sentence_encoder.get_output_dim()
+        # else:
+        #     relation_dim = relation_encoder.get_output_dim()
 
-        self.sentence_attn = BilinearAttention(
-            vector_dim=relation_dim,
-            matrix_dim=self.sentence_encoder.get_output_dim()
+        # self.sentence_attn = BilinearAttention(
+        #     vector_dim=relation_dim,
+        #     matrix_dim=self.sentence_encoder.get_output_dim()
+        # )
+        self.sentence_attn = LinearSelfAttention(
+            input_dim=self.sentence_encoder.get_output_dim(),
+            bias=True
         )
+
+        self.sentence_relation_attn = MultiHeadAttention(
+            num_heads=5,
+            query_input_dim=relation_sentence_encoder.get_output_dim(),
+            key_input_dim=sentence_encoder.get_output_dim(),
+            value_input_dim=sentence_encoder.get_output_dim(),
+            attention_dim=300,
+            values_dim=300,
+            output_projection_dim=sentence_encoder.get_output_dim()
+        )
+
         self.document_encoder = document_encoder
         self.document_attn = LinearSelfAttention(
             input_dim=self.document_encoder.get_output_dim(),
@@ -1207,15 +1222,15 @@ class HierarchicalAttentionNetwork(Model):
         p_a1_encs = seq_over_seq(
             self.relation_sentence_encoder, p_a1_rel_embs, p_a1_rel_masks)
 
-        if self.relation_encoder is None:
-            p_a0_enc = p_a0_encs.mean(dim=1)
-            p_a1_enc = p_a1_encs.mean(dim=1)
-        else:
-            p_a0_enc = self.relation_encoder(p_a0_encs, mask=None)
-            p_a1_enc = self.relation_encoder(p_a1_encs, mask=None)
+        # if self.relation_encoder is None:
+        #     p_a0_enc = p_a0_encs.mean(dim=1)
+        #     p_a1_enc = p_a1_encs.mean(dim=1)
+        # else:
+        #     p_a0_enc = self.relation_encoder(p_a0_encs, mask=None)
+        #     p_a1_enc = self.relation_encoder(p_a1_encs, mask=None)
 
-        rel_0 = p_a0_enc
-        rel_1 = p_a1_enc
+        # rel_0 = p_a0_enc
+        # rel_1 = p_a1_enc
 
         t0_masks = util.get_text_field_mask(bert0, num_wrapping_dims=1)
         t1_masks = util.get_text_field_mask(bert1, num_wrapping_dims=1)
@@ -1231,15 +1246,31 @@ class HierarchicalAttentionNetwork(Model):
             hierarchical_seq_over_seq(self.sentence_encoder, t1_embs,
                                       t1_masks))
 
-        t0_sentence_attns = attention_over_sequence(
-            self.sentence_attn, t0_sentence_hiddens, rel_0)
-        t1_sentence_attns = attention_over_sequence(
-            self.sentence_attn, t1_sentence_hiddens, rel_1)
+        t0_sentence_attns = self.sentence_attn(
+            t0_sentence_hiddens, t0_sentence_hiddens)
+        t1_sentence_attns = self.sentence_attn(
+            t1_sentence_hiddens, t1_sentence_hiddens)
+
+        print('encs', t0_sentence_hiddens.shape)
+        print('attn', t0_sentence_attns.shape)
 
         t0_sentence_encodings = util.weighted_sum(
             t0_sentence_hiddens, t0_sentence_attns)
         t1_sentence_encodings = util.weighted_sum(
             t1_sentence_hiddens, t1_sentence_attns)
+
+        t0_sentence_encodings = self.sentence_relation_attn(
+            queries=p_a0_encs,
+            keys=t0_sentence_encodings,
+            values=t0_sentence_encodings,
+            mask=None
+        )
+        t1_sentence_encodings = self.sentence_relation_attn(
+            queries=p_a1_encs,
+            keys=t1_sentence_encodings,
+            values=t1_sentence_encodings,
+            mask=None
+        )
 
         t0_document_hiddens = self.encoder_dropout(self.document_encoder(
             t0_sentence_encodings, mask=None))

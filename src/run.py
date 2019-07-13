@@ -99,7 +99,7 @@ elif CONFIG == 'small':
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 50
     # Size of minibatch
-    BATCH_SIZE = 3
+    BATCH_SIZE = 1
     # Number of epochs to train model
     NUM_EPOCHS = 5
 
