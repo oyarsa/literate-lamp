@@ -492,11 +492,195 @@ class HeterogenousSequenceAttention(Seq2SeqEncoder):
         u_prime = self._activation(self._u_projection(u))
         v_prime = self._activation(self._v_projection(v))
 
-        # print('u_prime', u_prime.shape)
-        # print('v_prime', v_prime.shape)
         scores = u_prime.bmm(v_prime.transpose(1, 2))
 
         alpha = masked_softmax(scores, v_mask, memory_efficient=True)
         result = alpha.bmm(v_prime)
 
         return result
+
+
+@Seq2SeqEncoder.register("multi_head_attention_v2")
+class MultiHeadAttentionV2(Seq2SeqEncoder):
+    # pylint: disable=line-too-long
+    """
+    This class implements the key-value scaled dot product attention mechanism
+    based on the one in the paper `Attention is all you Need`.
+
+    We take two matrices, U and V. U is mapped into three matrices Q_u, K_u and
+    V_u. U is mapped into Q_v and K_v. We compute similarities between Q_u and
+    K_v, and also Q_v and K_u. We then perform matrix multiplication between
+    these similarities. The final output is performed by multiplying this
+    matrix with V_u.
+
+    Parameters
+    ----------
+    num_heads : ``int``, required.
+        The number of attention heads to use.
+    u_input_dim : ``int``, required.
+        The size of the last dimension of the U tensor.
+    v_input_dim : ``int``, required.
+        The size of the last dimension of the V tensor.
+    attention_dim ``int``, required.
+        The total dimension of the Q, K and V projections which comprise the
+        dot product attention function. Must be divisible by ``num_heads``.
+    output_projection_dim : ``int``, optional (default = None)
+        The dimensionality of the final output projection. If this is not
+        passed explicitly, the projection has size `input_size`.
+    attention_dropout_prob : ``float``, optional (default = 0.1).
+        The dropout probability applied to the normalised attention
+        distributions.
+    """
+
+    def __init__(self,
+                 num_heads: int,
+                 u_input_dim: int,
+                 v_input_dim: int,
+                 attention_dim: int,
+                 output_projection_dim: int = Optional[None],
+                 attention_dropout_prob: float = 0.1) -> None:
+        super(MultiHeadAttentionV2, self).__init__()
+
+        self._num_heads = num_heads
+        self._u_input_dim = u_input_dim
+        self._v_input_dim = v_input_dim
+        self._output_dim = output_projection_dim or u_input_dim
+        self._attention_dim = attention_dim
+
+        if attention_dim % num_heads != 0:
+            raise ValueError(f"Attention size ({attention_dim}) must be "
+                             f"divisible by the number of attention heads "
+                             f"({num_heads}).")
+
+        self._u_q_projection = torch.nn.Linear(u_input_dim, attention_dim)
+        self._v_q_projection = torch.nn.Linear(v_input_dim, attention_dim)
+        self._u_k_projection = torch.nn.Linear(u_input_dim, attention_dim)
+        self._v_k_projection = torch.nn.Linear(v_input_dim, attention_dim)
+        self._u_v_projection = torch.nn.Linear(u_input_dim, attention_dim)
+
+        self._scale = (u_input_dim // num_heads) ** 0.5
+        self._output_projection = torch.nn.Linear(attention_dim,
+                                                  self._output_dim)
+        self._attention_dropout = torch.nn.Dropout(attention_dropout_prob)
+
+    def get_input_dim(self) -> int:
+        return self._u_input_dim
+
+    def get_output_dim(self) -> int:
+        return self._output_dim
+
+    @overrides
+    def is_bidirectional(self) -> bool:
+        return False
+
+    def _reshape_heads(self, x: torch.Tensor) -> torch.Tensor:
+        "x : tensor of shape (batch_size, timesteps_1, attention_dim)"
+        batch_size, timesteps, attention_dim = x.shape
+        num_heads = self._num_heads
+        head_size = int(attention_dim / num_heads)
+
+        # Shape (num_heads * batch_size, timesteps, attention_dim / num_heads)
+        x_per_head = x.view(batch_size, timesteps, num_heads, head_size)
+        x_per_head = x_per_head.transpose(1, 2).contiguous()
+        x_per_head = x_per_head.view(batch_size * num_heads, timesteps,
+                                     head_size)
+        return x_per_head
+
+    def _multiply_and_mask(self,
+                           q: torch.Tensor,
+                           k: torch.Tensor,
+                           k_mask: torch.Tensor) -> torch.Tensor:
+        first_dim, timesteps_1, head_size = q.shape
+        _, timesteps_2, _ = k.shape
+        # shape (num_heads * batch_size, timesteps_1, timesteps_2)
+        scaled_similarities = torch.bmm(q / self._scale, k.transpose(1, 2))
+
+        # Normalise the distributions, using the same mask for all heads.
+        # shape (num_heads * batch_size, timesteps_2)
+        k_mask = k_mask.repeat(1, self._num_heads).view(first_dim, timesteps_2)
+        k_mask = k_mask.unsqueeze(1).byte()
+        masked = scaled_similarities.masked_fill((1 - k_mask), 1e-32)
+
+        return masked
+
+    @overrides
+    def forward(self,  # pylint: disable=arguments-differ
+                u: torch.Tensor,
+                v: torch.Tensor,
+                u_mask: torch.LongTensor = None,
+                v_mask: torch.LongTensor = None) -> torch.FloatTensor:
+        """
+        Parameters
+        ----------
+        u : ``torch.FloatTensor``, required.
+            A tensor of shape (batch_size, timesteps_1, input_dim)
+        v : ``torch.FloatTensor``, required.
+            A tensor of shape (batch_size, timesteps_2, input_dim)
+        u_mask : ``torch.FloatTensor``, optional (default = None).
+            A tensor of shape (batch_size, timesteps_1).
+        v_mask : ``torch.FloatTensor``, optional (default = None).
+            A tensor of shape (batch_size, timesteps_2).
+        Returns
+        -------
+        A tensor of shape (batch_size, timesteps_1, output_projection_dim),
+        where output_projection_dim = input_dim by default.
+        """
+        num_heads = self._num_heads
+        head_size = int(self._attention_dim / num_heads)
+
+        _, timesteps_1, _ = u.shape
+        batch_size, timesteps_2, _ = v.shape
+
+        if u_mask is None:
+            u_mask = u.new_ones(batch_size, timesteps_1)
+        if v_mask is None:
+            v_mask = v.new_ones(batch_size, timesteps_2)
+
+        # Shape (batch_size, timesteps_1, attention_dim)
+        q_u = self._u_q_projection(u)
+        k_u = self._u_k_projection(u)
+        # Shape (batch_size, timesteps_2, attention_dim)
+        q_v = self._v_q_projection(v)
+        k_v = self._v_k_projection(v)
+        # Shape (batch_size, timesteps_1, values_dim)
+        v_u = self._u_v_projection(u)
+
+        # v_u_per_head =v_u.view(batch_size, timesteps_1, num_heads, head_size)
+        # v_u_per_head = v_u_per_head.transpose(1, 2).contiguous()
+        # v_u_per_head = v_u_per_head.view(batch_size * num_heads, timesteps_1,
+        #                                  head_size)
+
+        # Shape (num_heads * batch_size, timesteps_1, values_dim / num_heads)
+        q_u_per_head = self._reshape_heads(q_u)
+        # Shape (num_heads * batch_size, timesteps_1, values_dim / num_heads)
+        k_u_per_head = self._reshape_heads(k_u)
+        # Shape (num_heads * batch_size, timesteps_1, values_dim / num_heads)
+        v_u_per_head = self._reshape_heads(v_u)
+
+        # Shape (num_heads * batch_size, timesteps_2, values_dim / num_heads)
+        q_v_per_head = self._reshape_heads(q_v)
+        # Shape (num_heads * batch_size, timesteps_2, values_dim / num_heads)
+        k_v_per_head = self._reshape_heads(k_v)
+
+        # Normalise the distributions, using the same mask for all heads.
+        # shape (num_heads * batch_size, timesteps_1, timesteps_2)
+        sim_1 = self._multiply_and_mask(q_u_per_head, k_v_per_head, v_mask)
+        # shape (num_heads * batch_size, timesteps_2, timesteps_1)
+        sim_2 = self._multiply_and_mask(q_v_per_head, k_u_per_head, u_mask)
+
+        combined_similarities = sim_1.bmm(sim_2)
+        attention = torch.softmax(combined_similarities, dim=-1)
+        outputs = attention.bmm(v_u_per_head)
+
+        # Reshape back to original shape (batch_size, timesteps_1, values_dim)
+        # shape (batch_size, num_heads, timesteps_1, values_dim/num_heads)
+        outputs = outputs.view(batch_size, num_heads, timesteps_1, head_size)
+        # shape (batch_size, timesteps_1, num_heads, values_dim/num_heads)
+        outputs = outputs.transpose(1, 2).contiguous()
+        # shape (batch_size, timesteps_1, values_dim)
+        outputs = outputs.view(batch_size, timesteps_1, self._attention_dim)
+
+        # Project back to original input size.
+        # shape (batch_size, timesteps_1, input_size)
+        outputs = self._output_projection(outputs)
+        return outputs

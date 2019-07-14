@@ -40,7 +40,8 @@ from allennlp.nn import util
 from layers import (SequenceAttention, BilinearAttention, LinearSelfAttention,
                     bert_embeddings,
                     # MultiHeadAttention,
-                    HeterogenousSequenceAttention)
+                    # HeterogenousSequenceAttention,
+                    MultiHeadAttentionV2)
 
 
 @Model.register('baseline-classifier')
@@ -1177,10 +1178,18 @@ class HierarchicalAttentionNetwork(Model):
         #     values_dim=300,
         #     output_projection_dim=sentence_encoder.get_output_dim()
         # )
-        self.sentence_relation_attn = HeterogenousSequenceAttention(
-            u_input_dim=self.sentence_encoder.get_output_dim(),
-            v_input_dim=self.relation_sentence_encoder.get_output_dim(),
-            projection_dim=sentence_encoder.get_output_dim()
+        # self.sentence_relation_attn = HeterogenousSequenceAttention(
+        #     u_input_dim=self.sentence_encoder.get_output_dim(),
+        #     v_input_dim=self.relation_sentence_encoder.get_output_dim(),
+        #     projection_dim=sentence_encoder.get_output_dim()
+        # )
+
+        self.sentence_relation_attn = MultiHeadAttentionV2(
+            num_heads=8,
+            u_input_dim=sentence_encoder.get_output_dim(),
+            v_input_dim=relation_sentence_encoder.get_output_dim(),
+            attention_dim=512,
+            output_projection_dim=sentence_encoder.get_output_dim()
         )
 
         self.document_encoder = document_encoder
@@ -1283,13 +1292,11 @@ class HierarchicalAttentionNetwork(Model):
         # )
         t0_sentence_encodings = self.sentence_relation_attn(
             u=t0_sentence_encodings,
-            v=p_a0_encs,
-            v_mask=None
+            v=p_a0_encs
         )
         t1_sentence_encodings = self.sentence_relation_attn(
             u=t1_sentence_encodings,
-            v=p_a1_encs,
-            v_mask=None
+            v=p_a1_encs
         )
 
         t0_document_hiddens = self.encoder_dropout(self.document_encoder(

@@ -549,6 +549,10 @@ class RelationBertReader(McScriptReader):
             self.conceptnet, passage_words, answer0_words)
         p_a1_relations = relation_sentences(
             self.conceptnet, passage_words, answer1_words)
+        q_a0_relations = relation_sentences(
+            self.conceptnet, question_words, answer0_words)
+        q_a1_relations = relation_sentences(
+            self.conceptnet, question_words, answer1_words)
         p_p_relations = relation_sentences(
             self.conceptnet, passage_words, passage_words)
         q_q_relations = relation_sentences(
@@ -559,15 +563,15 @@ class RelationBertReader(McScriptReader):
             self.conceptnet, answer1_words, answer1_words)
 
         common_relations = p_q_relations + p_p_relations + q_q_relations
-        p_a0_relations += common_relations + a0_a0_relations
-        p_a1_relations += common_relations + a1_a1_relations
+        p_a0_relations += common_relations + q_a0_relations + a0_a0_relations
+        p_a1_relations += common_relations + q_a1_relations + a1_a1_relations
 
         p_a0_rel_set = set(p_a0_relations)
         p_a1_rel_set = set(p_a1_relations)
 
-        p_q_tokens = [self.tokeniser.tokenize(text=b) for b in p_q_relations]
-        p_a0_tokens = [self.tokeniser.tokenize(text=b) for b in p_a0_rel_set]
-        p_a1_tokens = [self.tokeniser.tokenize(text=b) for b in p_a1_rel_set]
+        p_q_tokens = (self.tokeniser.tokenize(text=b) for b in p_q_relations)
+        p_a0_tokens = (self.tokeniser.tokenize(text=b) for b in p_a0_rel_set)
+        p_a1_tokens = (self.tokeniser.tokenize(text=b) for b in p_a1_rel_set)
 
         p_q_fields = [TextField(b, self.word_indexers) for b in p_q_tokens]
         p_a0_fields = [TextField(b, self.word_indexers) for b in p_a0_tokens]
