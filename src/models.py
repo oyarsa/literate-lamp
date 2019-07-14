@@ -1222,7 +1222,6 @@ class HierarchicalAttentionNetwork(Model):
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
-                p_q_rel: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
@@ -1230,12 +1229,9 @@ class HierarchicalAttentionNetwork(Model):
         # Every sample in a batch has to have the same size (as it's a tensor),
         # so smaller entries are padded. The mask is used to counteract this
         # padding.
-        # Now, the relations
-        # p_q_rel_masks = util.get_text_field_mask(p_q_rel)
         p_a0_rel_masks = util.get_text_field_mask(p_a0_rel)
         p_a1_rel_masks = util.get_text_field_mask(p_a1_rel)
 
-        # p_q_rel_embs = self.rel_embeddings(p_q_rel)
         p_a0_rel_embs = self.rel_embeddings(p_a0_rel)
         p_a1_rel_embs = self.rel_embeddings(p_a1_rel)
 

@@ -589,7 +589,6 @@ class RelationBertReader(McScriptReader):
             # "p_q_rel": TextField(p_q_relations, self.rel_indexers),
             # "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
             # "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
-            "p_q_rel": ListField(p_q_fields),
             "p_a0_rel": ListField(p_a0_fields),
             "p_a1_rel": ListField(p_a1_fields),
         }
