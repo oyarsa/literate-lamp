@@ -569,11 +569,9 @@ class RelationBertReader(McScriptReader):
         p_a0_rel_set = set(p_a0_relations)
         p_a1_rel_set = set(p_a1_relations)
 
-        p_q_tokens = (self.tokeniser.tokenize(text=b) for b in p_q_relations)
         p_a0_tokens = (self.tokeniser.tokenize(text=b) for b in p_a0_rel_set)
         p_a1_tokens = (self.tokeniser.tokenize(text=b) for b in p_a1_rel_set)
 
-        p_q_fields = [TextField(b, self.word_indexers) for b in p_q_tokens]
         p_a0_fields = [TextField(b, self.word_indexers) for b in p_a0_tokens]
         p_a1_fields = [TextField(b, self.word_indexers) for b in p_a1_tokens]
 
