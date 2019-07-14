@@ -30,9 +30,7 @@ class ConceptNet:
         with open(conceptnet_path, encoding='utf-8') as infile:
             for line in infile:
                 relation, word1, word2 = line.strip().split('\t')
-                # Relation is reflexive
                 self._relations[word1][word2] = relation
-                self._relations[word2][word1] = relation
 
     def get_relation(self, word1: str, word2: str) -> str:
         """
@@ -56,15 +54,13 @@ class ConceptNet:
 
         for text_word in text:
             for query_word in query:
-                if text_word == query_word:
-                    continue
-                relation = self.get_relation(text_word, query_word)
-                if relation == ConceptNet.NULL_REL:
-                    continue
-                triples.add((text_word, relation, query_word))
+                relation_1 = self.get_relation(text_word, query_word)
+                if relation_1 != ConceptNet.NULL_REL:
+                    triples.add((text_word, relation_1, query_word))
 
-        if not triples:
-            triples.add(("No", "Relation", "Found"))
+                relation_2 = self.get_relation(query_word, text_word)
+                if relation_2 != ConceptNet.NULL_REL:
+                    triples.add((query_word, relation_2, text_word))
 
         return triples
 
