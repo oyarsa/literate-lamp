@@ -26,13 +26,14 @@ from allennlp.modules.seq2vec_encoders import BertPooler
 from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
                     HierarchicalBert, AdvancedAttentionBertClassifier,
-                    HierarchicalAttentionNetwork)
+                    HierarchicalAttentionNetwork, RelationalTransformerModel)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, get_preprocessed_name)
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
-                    transformer_seq2seq, cnn_encoder)
+                    transformer_seq2seq, cnn_encoder,
+                    RelationalTransformerEncoder)
 from reader import (SimpleBertReader, SimpleMcScriptReader, SimpleTrianReader,
                     FullTrianReader, McScriptReader, RelationBertReader)
 
@@ -83,6 +84,7 @@ if CONFIG == 'large':
     GLOVE_EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 50
+    TRANSFORMER_DIM = 512
     # Size of minibatch
     BATCH_SIZE = 32
     # Number of epochs to train model
@@ -98,6 +100,7 @@ elif CONFIG == 'small':
     GLOVE_EMBEDDING_DIM = 50
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 50
+    TRANSFORMER_DIM = 256
     # Size of minibatch
     BATCH_SIZE = 1
     # Number of epochs to train model
@@ -132,7 +135,7 @@ RANDOM_SEED = 1234
 
 # Model Configuration
 # Use LSTM, GRU or Transformer
-ENCODER_TYPE = 'gru'
+ENCODER_TYPE = 'transformer'
 BIDIRECTIONAL = True
 RNN_LAYERS = 1
 RNN_DROPOUT = 0.5
@@ -140,6 +143,128 @@ EMBEDDDING_DROPOUT = 0.5 if EMBEDDING_TYPE != 'bert' else 0
 
 # What encoder to use to join the relation embeddings into a single vector.
 RELATION_ENCODER = 'cnn'
+
+
+def build_relational_transformer(vocab: Vocabulary) -> Model:
+    """
+    Builds the RelationalTransformerModel.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `RelationalTransformerModel` model ready to be trained.
+    """
+    if EMBEDDING_TYPE == 'glove':
+        word_embeddings = glove_embeddings(vocab, GLOVE_PATH,
+                                           GLOVE_EMBEDDING_DIM, training=True)
+    elif EMBEDDING_TYPE == 'bert':
+        word_embeddings = bert_embeddings(pretrained_model=BERT_PATH)
+    else:
+        raise ValueError('Invalid word embedding type')
+
+    rel_embeddings = word_embeddings
+
+    if ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_seq2seq
+    elif ENCODER_TYPE == 'gru':
+        encoder_fn = gru_seq2seq
+    elif ENCODER_TYPE == 'transformer':
+        # Transformer has to be handled differently, but the 2 RNNs can share
+        pass
+    else:
+        raise ValueError('Invalid RNN type')
+
+    embedding_dim = word_embeddings.get_output_dim()
+
+    # To prevent the warning on single-layer, as the dropout is only
+    # between layers of the stacked RNN.
+    dropout = RNN_DROPOUT if RNN_LAYERS > 1 else 0
+
+    if ENCODER_TYPE in ['lstm', 'gru']:
+        sentence_encoder = encoder_fn(input_dim=embedding_dim,
+                                      output_dim=HIDDEN_DIM,
+                                      num_layers=RNN_LAYERS,
+                                      bidirectional=BIDIRECTIONAL,
+                                      dropout=dropout)
+        relation_sentence_encoder = encoder_fn(input_dim=embedding_dim,
+                                               output_dim=HIDDEN_DIM,
+                                               num_layers=RNN_LAYERS,
+                                               bidirectional=BIDIRECTIONAL,
+                                               dropout=dropout)
+        # document_encoder = encoder_fn(
+        #     input_dim=sentence_encoder.get_output_dim(),
+        #     output_dim=HIDDEN_DIM,
+        #     num_layers=1,
+        #     bidirectional=BIDIRECTIONAL,
+        #     dropout=dropout)
+    elif ENCODER_TYPE == 'transformer':
+        sentence_encoder = transformer_seq2seq(
+            input_dim=embedding_dim,
+            model_dim=TRANSFORMER_DIM,
+            num_layers=6,
+            num_attention_heads=4,
+            feedforward_hidden_dim=2*TRANSFORMER_DIM
+        )
+        relation_sentence_encoder = transformer_seq2seq(
+            input_dim=embedding_dim,
+            model_dim=TRANSFORMER_DIM,
+            num_layers=6,
+            num_attention_heads=4,
+            feedforward_hidden_dim=2*TRANSFORMER_DIM
+        )
+        # document_encoder = transformer_seq2seq(
+        #     input_dim=sentence_encoder.get_output_dim(),
+        #     hidden_dim=512,
+        #     num_layers=4,
+        #     num_attention_heads=4,
+        #     feedforward_hidden_dim=512
+        # )
+
+    # if EMBEDDING_TYPE == 'glove':
+    #     relation_sentence_encoder = gru_encoder(input_dim=REL_EMBEDDING_DIM,
+    #                                             output_dim=HIDDEN_DIM,
+    #                                             num_layers=1,
+    #                                             bidirectional=BIDIRECTIONAL,
+    #                                             dropout=dropout)
+    # else:
+    #     relation_sentence_encoder = BertPooler(
+    #           pretrained_model=str(BERT_PATH))
+
+    # if RELATION_ENCODER == 'cnn':
+    #     relation_encoder = cnn_encoder(input_dim=embedding_dim,
+    #                                    output_dim=2*HIDDEN_DIM,
+    #                                    num_filters=16)
+    # else:
+    #     relation_encoder = None
+
+    relational_encoder = RelationalTransformerEncoder(
+        src_input_dim=sentence_encoder.get_output_dim(),
+        kb_input_dim=relation_sentence_encoder.get_output_dim(),
+        model_dim=TRANSFORMER_DIM,
+        feedforward_hidden_dim=2*TRANSFORMER_DIM,
+        num_layers=3,
+        num_attention_heads=8,
+        dropout_prob=0.1,
+        return_kb=False
+    )
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = RelationalTransformerModel(
+        word_embeddings=word_embeddings,
+        sentence_encoder=sentence_encoder,
+        # document_encoder=document_encoder,
+        # relation_encoder=relation_encoder,
+        relational_encoder=relational_encoder,
+        relation_sentence_encoder=relation_sentence_encoder,
+        rel_embeddings=rel_embeddings,
+        vocab=vocab,
+        encoder_dropout=RNN_DROPOUT
+    )
+
+    return model
 
 
 def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
@@ -197,14 +322,14 @@ def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
     elif ENCODER_TYPE == 'transformer':
         sentence_encoder = transformer_seq2seq(
             input_dim=embedding_dim,
-            hidden_dim=512,
+            model_dim=512,
             num_layers=6,
             num_attention_heads=4,
             feedforward_hidden_dim=512
         )
         document_encoder = transformer_seq2seq(
             input_dim=sentence_encoder.get_output_dim(),
-            hidden_dim=512,
+            model_dim=512,
             num_layers=4,
             num_attention_heads=4,
             feedforward_hidden_dim=512
@@ -278,7 +403,7 @@ def build_advanced_attn_bert(vocab: Vocabulary) -> Model:
     elif ENCODER_TYPE == 'transformer':
         encoder = transformer_seq2seq(
             input_dim=hidden_dim,
-            hidden_dim=HIDDEN_DIM,
+            model_dim=HIDDEN_DIM,
             num_layers=4,
             num_attention_heads=4,
             feedforward_hidden_dim=1024
@@ -406,21 +531,21 @@ def build_simple_trian(vocab: Vocabulary) -> Model:
     elif ENCODER_TYPE == 'transformer':
         p_encoder = transformer_seq2seq(
             input_dim=p_input_size,
-            hidden_dim=HIDDEN_DIM,
+            model_dim=HIDDEN_DIM,
             num_layers=4,
             num_attention_heads=4,
             feedforward_hidden_dim=1024
         )
         q_encoder = transformer_seq2seq(
             input_dim=q_input_size,
-            hidden_dim=HIDDEN_DIM,
+            model_dim=HIDDEN_DIM,
             num_layers=4,
             num_attention_heads=4,
             feedforward_hidden_dim=512
         )
         a_encoder = transformer_seq2seq(
             input_dim=a_input_size,
-            hidden_dim=HIDDEN_DIM,
+            model_dim=HIDDEN_DIM,
             num_layers=4,
             num_attention_heads=4,
             feedforward_hidden_dim=512
@@ -631,21 +756,21 @@ def build_attentive(vocab: Vocabulary) -> Model:
     elif ENCODER_TYPE == 'transformer':
         p_encoder = transformer_seq2seq(
             input_dim=p_input_size,
-            hidden_dim=HIDDEN_DIM,
+            model_dim=HIDDEN_DIM,
             num_layers=4,
             num_attention_heads=4,
             feedforward_hidden_dim=1024
         )
         q_encoder = transformer_seq2seq(
             input_dim=q_input_size,
-            hidden_dim=HIDDEN_DIM,
+            model_dim=HIDDEN_DIM,
             num_layers=4,
             num_attention_heads=4,
             feedforward_hidden_dim=512
         )
         a_encoder = transformer_seq2seq(
             input_dim=a_input_size,
-            hidden_dim=HIDDEN_DIM,
+            model_dim=HIDDEN_DIM,
             num_layers=4,
             num_attention_heads=4,
             feedforward_hidden_dim=512
@@ -745,6 +870,9 @@ def run_model() -> None:
         reader_type = 'simple-bert'
     elif MODEL == 'han':
         build_fn = build_hierarchical_attn_net
+        reader_type = 'relation-bert'
+    elif MODEL == 'rtm':
+        build_fn = build_relational_transformer
         reader_type = 'relation-bert'
     else:
         raise ValueError('Invalid model name')

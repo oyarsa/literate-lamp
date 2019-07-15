@@ -1,15 +1,15 @@
 """
 Implements some layers that AllenNLP doesn't have.
 """
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 from pathlib import Path
 
 import torch
 from overrides import overrides
 from allennlp.common import Params
 from allennlp.modules.attention import Attention
-from allennlp.nn.util import masked_softmax, weighted_sum
-from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
+from allennlp.nn.util import (masked_softmax, weighted_sum,
+                              add_positional_features)
 from allennlp.nn.activations import Activation
 from allennlp.data.vocabulary import Vocabulary
 # These create text embeddings from a `TextField` input. Since our text data
@@ -21,9 +21,61 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 # This is the actual neural layer for the embedding. This will be passed into
 # the embedder above.
 from allennlp.modules.token_embedders import Embedding, PretrainedBertEmbedder
-from allennlp.modules.seq2vec_encoders import PytorchSeq2VecWrapper, CnnEncoder
-from allennlp.modules.seq2seq_encoders import (
-    Seq2SeqEncoder, PytorchSeq2SeqWrapper, StackedSelfAttentionEncoder)
+from allennlp.modules.seq2vec_encoders import (PytorchSeq2VecWrapper,
+                                               CnnEncoder,
+                                               Seq2VecEncoder)
+from allennlp.modules.seq2seq_encoders import (Seq2SeqEncoder,
+                                               PytorchSeq2SeqWrapper)
+from allennlp.modules.layer_norm import LayerNorm
+
+from util import clone_module
+
+
+class LinearAttention(Seq2VecEncoder):
+    def __init__(self, input_dim: int, bias: bool = True) -> None:
+        super(LinearAttention, self).__init__()
+        self.input_dim = input_dim
+        self.linear = torch.nn.Linear(in_features=input_dim,
+                                      out_features=1,
+                                      bias=bias)
+
+    def forward(self,
+                inputs: torch.Tensor,
+                mask: Optional[torch.Tensor] = None
+                ) -> torch.Tensor:
+        """
+        Arguments:
+            inputs : batch_size * seq_len * dim
+            mask   : batch_size * seq_len
+                (1 for padding, 0 for true input)
+        Output:
+            attended : batch * dim
+        """
+        # Applying the linear gives as a dim * 1 vector per batch.
+        # Remove the last dimension as it's not useful.
+        scores = self.linear(inputs).squeeze(-1)
+
+        if mask is not None:
+            # Mask the padded input with a very low number before softmax.
+            scores = scores.masked_fill((1 - mask), 1e-32)
+        weights = torch.softmax(scores, dim=-1)
+
+        # To get a 1 * seq_len vector per batch
+        weights = weights.unsqueeze(1)
+        # Weighted average of the sequence
+        output = weights.bmm(inputs)
+        # Now we have a 1 * dim vector per batch. Remove the useless dimension.
+        output = output.squeeze(1)
+
+        return output
+
+    @overrides
+    def get_input_dim(self) -> int:
+        return self.input_dim
+
+    @overrides
+    def get_output_dim(self) -> int:
+        return self.input_dim
 
 
 class LinearSelfAttention(Attention):
@@ -208,19 +260,20 @@ def gru_seq2seq(input_dim: int, output_dim: int, num_layers: int = 1,
 
 
 def transformer_seq2seq(input_dim: int,
-                        hidden_dim: int,
+                        model_dim: int,
                         feedforward_hidden_dim: int = 2048,
                         num_layers: int = 6,
                         projection_dim: int = 64,
                         num_attention_heads: int = 8,
                         dropout: float = 0.1) -> Seq2SeqEncoder:
-    return StackedSelfAttentionEncoder(
+    return TransformerEncoder(
         input_dim=input_dim,
-        hidden_dim=hidden_dim,
+        model_dim=model_dim,
         feedforward_hidden_dim=feedforward_hidden_dim,
         num_layers=num_layers,
-        projection_dim=projection_dim,
-        num_attention_heads=num_attention_heads)
+        num_attention_heads=num_attention_heads,
+        dropout_prob=dropout
+    )
 
 
 def lstm_encoder(input_dim: int, output_dim: int, num_layers: int = 1,
@@ -350,7 +403,7 @@ class MultiHeadAttention(Seq2SeqEncoder):
                 keys: torch.Tensor,
                 queries: torch.Tensor,
                 values: torch.Tensor,
-                mask: torch.LongTensor = None) -> torch.FloatTensor:
+                mask: torch.Tensor = None) -> torch.Tensor:
         """
         Parameters
         ----------
@@ -590,8 +643,7 @@ class MultiHeadAttentionV2(Seq2SeqEncoder):
                            q: torch.Tensor,
                            k: torch.Tensor,
                            k_mask: torch.Tensor) -> torch.Tensor:
-        first_dim, timesteps_1, head_size = q.shape
-        _, timesteps_2, _ = k.shape
+        first_dim, timesteps_2, head_size = k.shape
         # shape (num_heads * batch_size, timesteps_1, timesteps_2)
         scaled_similarities = torch.bmm(q / self._scale, k.transpose(1, 2))
 
@@ -684,3 +736,297 @@ class MultiHeadAttentionV2(Seq2SeqEncoder):
         # shape (batch_size, timesteps_1, input_size)
         outputs = self._output_projection(outputs)
         return outputs
+
+
+class TransformerEncoderBlock(torch.nn.Module):
+    def __init__(self,
+                 model_dim: int,
+                 attention_dim: int,
+                 num_heads: int,
+                 feedforward_dim: int,
+                 dropout: float = 0.1
+                 ) -> None:
+        super(TransformerEncoderBlock, self).__init__()
+
+        self.attn = MultiHeadAttention(num_heads=num_heads,
+                                       query_input_dim=model_dim,
+                                       key_input_dim=model_dim,
+                                       value_input_dim=model_dim,
+                                       attention_dim=attention_dim,
+                                       values_dim=attention_dim,
+                                       output_projection_dim=model_dim,
+                                       attention_dropout_prob=dropout)
+        self.attn_dropout = torch.nn.Dropout(dropout)
+
+        self.ffn = torch.nn.Sequential(
+            torch.nn.Linear(model_dim, feedforward_dim),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(dropout),
+            torch.nn.Linear(feedforward_dim, model_dim),
+            torch.nn.Dropout(dropout)
+        )
+
+        self.norm1 = LayerNorm(model_dim)
+        self.norm2 = LayerNorm(model_dim)
+
+    def forward(self,
+                src: torch.Tensor,
+                src_mask: torch.Tensor,
+                ) -> torch.Tensor:
+        attn = self.attn(src, src, src, src_mask)
+        attn = self.attn_dropout(attn)
+
+        out1 = self.norm1(src + attn)
+        ffn = self.ffn(out1)
+        out2 = self.norm2(out1 + ffn)
+
+        return out2
+
+
+class RelationTransformerEncoderBlock(torch.nn.Module):
+    def __init__(self,
+                 model_dim: int,
+                 attention_dim: int,
+                 num_heads: int,
+                 feedforward_dim: int,
+                 dropout: float = 0.1
+                 ) -> None:
+        super(RelationTransformerEncoderBlock, self).__init__()
+
+        self.attn = MultiHeadAttentionV2(num_heads=num_heads,
+                                         u_input_dim=model_dim,
+                                         v_input_dim=model_dim,
+                                         attention_dim=attention_dim,
+                                         output_projection_dim=model_dim,
+                                         attention_dropout_prob=dropout)
+        self.attn_dropout = torch.nn.Dropout(dropout)
+
+        self.ffn = torch.nn.Sequential(
+            torch.nn.Linear(model_dim, feedforward_dim),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(dropout),
+            torch.nn.Linear(feedforward_dim, model_dim),
+            torch.nn.Dropout(dropout)
+        )
+
+        self.norm1 = LayerNorm(model_dim)
+        self.norm2 = LayerNorm(model_dim)
+
+    def forward(self,
+                src: torch.Tensor,
+                aux: torch.Tensor,
+                src_mask: torch.Tensor,
+                aux_mask: torch.Tensor
+                ) -> torch.Tensor:
+        attn = self.attn(src, aux, src_mask, aux_mask)
+        attn = self.attn_dropout(attn)
+
+        out1 = self.norm1(src + attn)
+        ffn = self.ffn(out1)
+        out2 = self.norm2(out1 + ffn)
+
+        return out2
+
+
+@Seq2SeqEncoder.register("transformer-encoder")
+class TransformerEncoder(Seq2SeqEncoder):
+    # pylint: disable=line-too-long
+    """
+    Implements a stacked self-attention encoder similar to the Transformer
+    architecture in `Attention is all you Need`.
+
+    This encoder combines 3 layers in a 'block':
+
+    1. A 2 layer FeedForward network.
+    2. Multi-headed self attention, which uses 2 learnt linear projections
+       to perform a dot-product similarity between every pair of elements
+       scaled by the square root of the sequence length.
+    3. Layer Normalisation.
+
+    We use the torch.nn.TransformerEncoderLayer block.
+    These are then stacked into ``num_layers`` layers.
+
+    Parameters
+    ----------
+    input_dim : ``int``, required.
+        The input dimension of the encoder.
+    model_dim : ``int``, required.
+        The hidden dimension used for the _input_ to self attention layers
+        and the _output_ from the feedforward layers.
+    feedforward_hidden_dim : ``int``, required.
+        The middle dimension of the FeedForward network. The input and output
+        dimensions are fixed to ensure sizes match up for the self attention
+        layers.
+    num_layers : ``int``, required.
+        The number of stacked TransformerEncoder blocks.
+    num_attention_heads : ``int``, required.
+        The number of attention heads to use per layer.
+    dropout_prob : ``float``, optional, (default = 0.1)
+        The dropout probability between the layers in the block.
+    """
+
+    def __init__(self,
+                 input_dim: int,
+                 model_dim: int,
+                 feedforward_hidden_dim: int,
+                 num_layers: int,
+                 num_attention_heads: int,
+                 dropout_prob: float = 0.1
+                 ) -> None:
+        super(TransformerEncoder, self).__init__()
+
+        self.input_dim = input_dim
+        self.output_dim = model_dim
+
+        self.projection = torch.nn.Linear(input_dim, model_dim)
+
+        encoder_block = TransformerEncoderBlock(
+            model_dim=model_dim,
+            num_heads=num_attention_heads,
+            feedforward_dim=feedforward_hidden_dim,
+            attention_dim=model_dim,
+            dropout=dropout_prob
+        )
+        self.blocks = clone_module(encoder_block, num_layers)
+
+    @overrides
+    def get_input_dim(self) -> int:
+        return self.input_dim
+
+    @overrides
+    def get_output_dim(self) -> int:
+        return self.output_dim
+
+    @overrides
+    def is_bidirectional(self) -> bool:
+        return False
+
+    @overrides
+    def forward(self,
+                inputs: torch.Tensor,
+                mask: Optional[torch.Tensor] = None
+                ) -> torch.Tensor:
+        output = add_positional_features(inputs)
+        output = self.projection(output)
+
+        for block in self.blocks:
+            output = block(output, mask)
+
+        return output
+
+
+@Seq2SeqEncoder.register("rel-transformer-encoder")
+class RelationalTransformerEncoder(Seq2SeqEncoder):
+    # pylint: disable=line-too-long
+    """
+    Implements a stacked self-attention encoder similar to the Transformer
+    architecture in `Attention is all you Need`.
+
+    This encoder combines 3 layers in a 'block':
+
+    1. A 2 layer FeedForward network.
+    2. Multi-headed self attention, which uses 2 learnt linear projections
+       to perform a dot-product similarity between every pair of elements
+       scaled by the square root of the sequence length.
+    3. Layer Normalisation.
+
+    We use the torch.nn.TransformerEncoderLayer block.
+    These are then stacked into ``num_layers`` layers.
+
+    Parameters
+    ----------
+    src_input_dim : ``int``, required.
+        The input dimension for the source matrix.
+    kb_input_dim : ``int``, required.
+        The input dimension for the kb matrix.
+    model_dim : ``int``, required.
+        The hidden dimension used for the _input_ to self attention layers
+        and the _output_ from the feedforward layers.
+    feedforward_hidden_dim : ``int``, required.
+        The middle dimension of the FeedForward network. The input and output
+        dimensions are fixed to ensure sizes match up for the self attention
+        layers.
+    num_layers : ``int``, required.
+        The number of stacked TransformerEncoder blocks.
+    num_attention_heads : ``int``, required.
+        The number of attention heads to use per layer.
+    dropout_prob : ``float``, optional, (default = 0.1)
+        The dropout probability between the layers in the block.
+    return_kb : ``bool``, optional, (default = False)
+        Whether to return the final matrix for the KB as well. By default,
+        we only return the SRC matrix. If True, we return a tuple (SRC, KB).
+    """
+
+    def __init__(self,
+                 src_input_dim: int,
+                 kb_input_dim: int,
+                 model_dim: int,
+                 feedforward_hidden_dim: int,
+                 num_layers: int,
+                 num_attention_heads: int,
+                 dropout_prob: float = 0.1,
+                 return_kb: bool = False
+                 ) -> None:
+        super(RelationalTransformerEncoder, self).__init__()
+
+        self.input_dim = src_input_dim
+        self.output_dim = model_dim
+        self.num_layers = num_layers
+        self.return_kb = return_kb
+
+        self.src_projection = torch.nn.Linear(src_input_dim, model_dim)
+        self.kb_projection = torch.nn.Linear(kb_input_dim, model_dim)
+
+        rel_block = RelationTransformerEncoderBlock(
+            attention_dim=model_dim,
+            model_dim=model_dim,
+            num_heads=num_attention_heads,
+            feedforward_dim=feedforward_hidden_dim,
+            dropout=dropout_prob
+        )
+        self_block = TransformerEncoderBlock(
+            attention_dim=model_dim,
+            model_dim=model_dim,
+            num_heads=num_attention_heads,
+            feedforward_dim=feedforward_hidden_dim,
+            dropout=dropout_prob
+        )
+
+        self.src_rel_blocks = clone_module(rel_block, num_layers)
+        self.src_self_blocks = clone_module(self_block, num_layers)
+        self.kb_rel_blocks = clone_module(rel_block, num_layers)
+        self.kb_self_blocks = clone_module(self_block, num_layers)
+
+    @overrides
+    def get_input_dim(self) -> int:
+        return self.input_dim
+
+    @overrides
+    def get_output_dim(self) -> int:
+        return self.output_dim
+
+    @overrides
+    def is_bidirectional(self) -> bool:
+        return False
+
+    @overrides
+    def forward(self,
+                src: torch.Tensor,
+                kb: torch.Tensor,
+                src_mask: Optional[torch.Tensor] = None,
+                kb_mask: Optional[torch.Tensor] = None,
+                ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        src = add_positional_features(src)
+        src = self.src_projection(src)
+        kb = self.kb_projection(kb)
+
+        for i in range(self.num_layers):
+            src = self.src_self_blocks[i](src, src_mask)
+            kb = self.kb_self_blocks[i](kb, kb_mask)
+
+            src = self.src_rel_blocks[i](src, kb, src_mask, kb_mask)
+            kb = self.kb_rel_blocks[i](kb, src, kb_mask, src_mask)
+
+        if self.return_kb:
+            return src, kb
+        return src

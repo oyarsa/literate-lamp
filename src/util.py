@@ -1,5 +1,6 @@
 "Utility functions for the other modules"
 from typing import Tuple, List, Callable, Optional, Union, Sequence
+import copy
 import pickle
 import datetime
 import string
@@ -274,3 +275,10 @@ def get_term_frequency(word: Union[str, Token]) -> float:
     # So I compute the occurence and N * freq (since freq = occ/N).
     occurrences = wikiwords.N * wikiwords.freq(word)
     return math.log(1 + occurrences)
+
+
+def clone_module(module: torch.nn.Module, num_clones: int
+                 ) -> torch.nn.ModuleList:
+    return torch.nn.ModuleList(
+        [copy.deepcopy(module) for _ in range(num_clones)]
+    )
