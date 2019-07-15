@@ -41,7 +41,7 @@ from layers import (SequenceAttention, BilinearAttention, LinearSelfAttention,
                     bert_embeddings, LinearAttention,
                     # MultiHeadAttention,
                     # HeterogenousSequenceAttention,
-                    MultiHeadAttentionV2,
+                    # MultiHeadAttentionV2,
                     RelationalTransformerEncoder)
 
 
@@ -1149,7 +1149,7 @@ class HierarchicalAttentionNetwork(Model):
 
         self.word_embeddings = word_embeddings
         self.rel_embeddings = rel_embeddings
-        self.relation_sentence_encoder = relation_sentence_encoder
+        # self.relation_sentence_encoder = relation_sentence_encoder
         # self.relation_encoder = relation_encoder
 
         if encoder_dropout > 0:
@@ -1188,13 +1188,13 @@ class HierarchicalAttentionNetwork(Model):
         #     projection_dim=sentence_encoder.get_output_dim()
         # )
 
-        self.sentence_relation_attn = MultiHeadAttentionV2(
-            num_heads=8,
-            u_input_dim=sentence_encoder.get_output_dim(),
-            v_input_dim=relation_sentence_encoder.get_output_dim(),
-            attention_dim=512,
-            output_projection_dim=sentence_encoder.get_output_dim()
-        )
+        # self.sentence_relation_attn = MultiHeadAttentionV2(
+        #     num_heads=8,
+        #     u_input_dim=sentence_encoder.get_output_dim(),
+        #     v_input_dim=relation_sentence_encoder.get_output_dim(),
+        #     attention_dim=512,
+        #     output_projection_dim=sentence_encoder.get_output_dim()
+        # )
 
         self.document_encoder = document_encoder
         self.document_attn = LinearSelfAttention(
@@ -1233,16 +1233,16 @@ class HierarchicalAttentionNetwork(Model):
         # Every sample in a batch has to have the same size (as it's a tensor),
         # so smaller entries are padded. The mask is used to counteract this
         # padding.
-        p_a0_rel_masks = util.get_text_field_mask(p_a0_rel)
-        p_a1_rel_masks = util.get_text_field_mask(p_a1_rel)
+        # p_a0_rel_masks = util.get_text_field_mask(p_a0_rel)
+        # p_a1_rel_masks = util.get_text_field_mask(p_a1_rel)
 
-        p_a0_rel_embs = self.rel_embeddings(p_a0_rel)
-        p_a1_rel_embs = self.rel_embeddings(p_a1_rel)
+        # p_a0_rel_embs = self.rel_embeddings(p_a0_rel)
+        # p_a1_rel_embs = self.rel_embeddings(p_a1_rel)
 
-        p_a0_encs = seq_over_seq(
-            self.relation_sentence_encoder, p_a0_rel_embs, p_a0_rel_masks)
-        p_a1_encs = seq_over_seq(
-            self.relation_sentence_encoder, p_a1_rel_embs, p_a1_rel_masks)
+        # p_a0_encs = seq_over_seq(
+        #     self.relation_sentence_encoder, p_a0_rel_embs, p_a0_rel_masks)
+        # p_a1_encs = seq_over_seq(
+        #     self.relation_sentence_encoder, p_a1_rel_embs, p_a1_rel_masks)
 
         # if self.relation_encoder is None:
         #     p_a0_enc = p_a0_encs.mean(dim=1)
@@ -1290,14 +1290,14 @@ class HierarchicalAttentionNetwork(Model):
         #     values=t1_sentence_encodings,
         #     mask=None
         # )
-        t0_sentence_encodings = self.sentence_relation_attn(
-            u=t0_sentence_encodings,
-            v=p_a0_encs
-        )
-        t1_sentence_encodings = self.sentence_relation_attn(
-            u=t1_sentence_encodings,
-            v=p_a1_encs
-        )
+        # t0_sentence_encodings = self.sentence_relation_attn(
+        #     u=t0_sentence_encodings,
+        #     v=p_a0_encs
+        # )
+        # t1_sentence_encodings = self.sentence_relation_attn(
+        #     u=t1_sentence_encodings,
+        #     v=p_a1_encs
+        # )
 
         t0_document_hiddens = self.encoder_dropout(self.document_encoder(
             t0_sentence_encodings, mask=None))
@@ -1402,7 +1402,8 @@ class RelationalTransformerModel(Model):
 
         self.output = torch.nn.Linear(
             in_features=self.relational_encoder.get_output_dim(),
-            out_features=1
+            out_features=1,
+            bias=False
         )
 
         # Categorical (as this is a classification task) accuracy
@@ -1431,8 +1432,8 @@ class RelationalTransformerModel(Model):
         # Every sample in a batch has to have the same size (as it's a tensor),
         # so smaller entries are padded. The mask is used to counteract this
         # padding.
-        r0_masks = util.get_text_field_mask(p_a0_rel)
-        r1_masks = util.get_text_field_mask(p_a1_rel)
+        r0_masks = util.get_text_field_mask(p_a0_rel, num_wrapping_dims=1)
+        r1_masks = util.get_text_field_mask(p_a1_rel, num_wrapping_dims=1)
 
         r0_embs = self.rel_embeddings(p_a0_rel)
         r1_embs = self.rel_embeddings(p_a1_rel)

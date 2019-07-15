@@ -25,6 +25,7 @@ from allennlp.modules.seq2vec_encoders import (PytorchSeq2VecWrapper,
                                                CnnEncoder,
                                                Seq2VecEncoder)
 from allennlp.modules.seq2seq_encoders import (Seq2SeqEncoder,
+                                               StackedSelfAttentionEncoder,
                                                PytorchSeq2SeqWrapper)
 from allennlp.modules.layer_norm import LayerNorm
 
@@ -32,7 +33,7 @@ from util import clone_module
 
 
 class LinearAttention(Seq2VecEncoder):
-    def __init__(self, input_dim: int, bias: bool = True) -> None:
+    def __init__(self, input_dim: int, bias: bool = False) -> None:
         super(LinearAttention, self).__init__()
         self.input_dim = input_dim
         self.linear = torch.nn.Linear(in_features=input_dim,
@@ -265,15 +266,29 @@ def transformer_seq2seq(input_dim: int,
                         num_layers: int = 6,
                         projection_dim: int = 64,
                         num_attention_heads: int = 8,
+                        ttype: str = 'custom',
                         dropout: float = 0.1) -> Seq2SeqEncoder:
-    return TransformerEncoder(
-        input_dim=input_dim,
-        model_dim=model_dim,
-        feedforward_hidden_dim=feedforward_hidden_dim,
-        num_layers=num_layers,
-        num_attention_heads=num_attention_heads,
-        dropout_prob=dropout
-    )
+    if ttype == 'custom':
+        return TransformerEncoder(
+            input_dim=input_dim,
+            model_dim=model_dim,
+            feedforward_hidden_dim=feedforward_hidden_dim,
+            num_layers=num_layers,
+            num_attention_heads=num_attention_heads,
+            dropout_prob=dropout
+        )
+    elif ttype == 'allen':
+        return StackedSelfAttentionEncoder(
+            input_dim=input_dim,
+            hidden_dim=model_dim,
+            feedforward_hidden_dim=feedforward_hidden_dim,
+            num_layers=num_layers,
+            num_attention_heads=num_attention_heads,
+            projection_dim=model_dim,
+            dropout_prob=dropout
+        )
+    else:
+        raise ValueError(f'Invalid transformer type {ttype}')
 
 
 def lstm_encoder(input_dim: int, output_dim: int, num_layers: int = 1,

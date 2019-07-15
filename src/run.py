@@ -21,7 +21,6 @@ from torch.optim import Adamax
 import numpy as np
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
-from allennlp.modules.seq2vec_encoders import BertPooler
 
 from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
@@ -57,7 +56,7 @@ MODEL_NAME = sys.argv[5] if len(sys.argv) >= 6 else None
 
 USAGE = """
 USAGE:
-    run.py CONFIG MODEL [EMBEDDING_TYPE] [CUDA_DEVICE] [NAME]
+    run.py CONFIG MODEL [EMBEDDING_TYPE] [CUDA_DEVICE] [NAME] [ENCODER] [TTYPE]
 
 ARGS:
     CONFIG: configuration to use. One of: small, large
@@ -65,6 +64,8 @@ ARGS:
     EMBEDDING_TYPE: word embeddings for the text. One of: glove, bert.
     CUDA_DEVICE: device to run the training. -1 for CPU, >=0 for GPU.
     NAME: name for model being trained (used in saving)
+    ENCODER: which encoder to use (lstm, gru, transformer)
+    TYYPE: transformer type (allen or custom)
 """
 
 DATA_FOLDER = Path('data')
@@ -84,9 +85,9 @@ if CONFIG == 'large':
     GLOVE_EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 50
-    TRANSFORMER_DIM = 512
+    TRANSFORMER_DIM = 128
     # Size of minibatch
-    BATCH_SIZE = 32
+    BATCH_SIZE = 24
     # Number of epochs to train model
     NUM_EPOCHS = 30
 elif CONFIG == 'small':
@@ -100,9 +101,9 @@ elif CONFIG == 'small':
     GLOVE_EMBEDDING_DIM = 50
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 50
-    TRANSFORMER_DIM = 256
+    TRANSFORMER_DIM = 128
     # Size of minibatch
-    BATCH_SIZE = 1
+    BATCH_SIZE = 2
     # Number of epochs to train model
     NUM_EPOCHS = 5
 
@@ -135,10 +136,11 @@ RANDOM_SEED = 1234
 
 # Model Configuration
 # Use LSTM, GRU or Transformer
-ENCODER_TYPE = 'transformer'
+ENCODER_TYPE = sys.argv[6] if len(sys.argv) >= 7 else 'transformer'
+WHICH_TRANSFORMER = sys.argv[7] if len(sys.argv) >= 8 else 'allen'
 BIDIRECTIONAL = True
 RNN_LAYERS = 1
-RNN_DROPOUT = 0.5
+RNN_DROPOUT = 0.5 if ENCODER_TYPE != 'transformer' else 0
 EMBEDDDING_DROPOUT = 0.5 if EMBEDDING_TYPE != 'bert' else 0
 
 # What encoder to use to join the relation embeddings into a single vector.
@@ -206,14 +208,16 @@ def build_relational_transformer(vocab: Vocabulary) -> Model:
             model_dim=TRANSFORMER_DIM,
             num_layers=6,
             num_attention_heads=4,
-            feedforward_hidden_dim=2*TRANSFORMER_DIM
+            feedforward_hidden_dim=2*TRANSFORMER_DIM,
+            ttype=WHICH_TRANSFORMER
         )
         relation_sentence_encoder = transformer_seq2seq(
             input_dim=embedding_dim,
             model_dim=TRANSFORMER_DIM,
             num_layers=6,
             num_attention_heads=4,
-            feedforward_hidden_dim=2*TRANSFORMER_DIM
+            feedforward_hidden_dim=2*TRANSFORMER_DIM,
+            ttype=WHICH_TRANSFORMER
         )
         # document_encoder = transformer_seq2seq(
         #     input_dim=sentence_encoder.get_output_dim(),
@@ -325,25 +329,23 @@ def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
             model_dim=512,
             num_layers=6,
             num_attention_heads=4,
-            feedforward_hidden_dim=512
+            feedforward_hidden_dim=512,
+            ttype=WHICH_TRANSFORMER
         )
         document_encoder = transformer_seq2seq(
             input_dim=sentence_encoder.get_output_dim(),
             model_dim=512,
             num_layers=4,
             num_attention_heads=4,
-            feedforward_hidden_dim=512
+            feedforward_hidden_dim=512,
+            ttype=WHICH_TRANSFORMER
         )
 
-    if EMBEDDING_TYPE == 'glove':
-        relation_sentence_encoder = gru_encoder(input_dim=REL_EMBEDDING_DIM,
-                                                output_dim=HIDDEN_DIM,
-                                                num_layers=1,
-                                                bidirectional=BIDIRECTIONAL,
-                                                dropout=dropout)
-    else:
-        relation_sentence_encoder = BertPooler(pretrained_model=str(BERT_PATH))
-
+    relation_sentence_encoder = gru_encoder(input_dim=REL_EMBEDDING_DIM,
+                                            output_dim=HIDDEN_DIM,
+                                            num_layers=1,
+                                            bidirectional=BIDIRECTIONAL,
+                                            dropout=dropout)
     if RELATION_ENCODER == 'cnn':
         relation_encoder = cnn_encoder(input_dim=embedding_dim,
                                        output_dim=2*HIDDEN_DIM,
