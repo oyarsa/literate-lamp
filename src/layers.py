@@ -396,10 +396,11 @@ class MultiHeadAttention(Seq2SeqEncoder):
                              f"the number of attention heads ({num_heads}).")
 
         self._q_projection = torch.nn.Linear(query_input_dim, attention_dim)
-        self._k_projection = torch.nn.Linear(key_input_dim, attention_dim)
-        self._v_projection = torch.nn.Linear(value_input_dim, values_dim)
 
-        self._scale = (key_input_dim // num_heads) ** 0.5
+        assert value_input_dim == key_input_dim
+        self._kv_projection = torch.nn.Linear(key_input_dim, 2*attention_dim)
+
+        self._scale = (attention_dim // num_heads) ** 0.5
         self._output_projection = torch.nn.Linear(values_dim, self._output_dim)
         self._attention_dropout = torch.nn.Dropout(attention_dropout_prob)
 
@@ -445,10 +446,10 @@ class MultiHeadAttention(Seq2SeqEncoder):
 
         # Shape (batch_size, timesteps_1, attention_dim)
         queries = self._q_projection(queries)
-        # Shape (batch_size, timesteps_2, attention_dim)
-        keys = self._k_projection(keys)
+        # Shape (batch_size, timesteps_2, 2*attention_dim)
+        keys_values = self._kv_projection(keys)
         # Shape (batch_size, timesteps_2, values_dim)
-        values = self._v_projection(values)
+        keys, values = torch.chunk(keys_values, 2, dim=-1)
 
         # Shape (num_heads * batch_size, timesteps_2, values_dim / num_heads)
         values_per_head = values.view(batch_size, timesteps_2, num_heads,
@@ -620,13 +621,10 @@ class MultiHeadAttentionV2(Seq2SeqEncoder):
                              f"divisible by the number of attention heads "
                              f"({num_heads}).")
 
-        self._u_q_projection = torch.nn.Linear(u_input_dim, attention_dim)
-        self._v_q_projection = torch.nn.Linear(v_input_dim, attention_dim)
-        self._u_k_projection = torch.nn.Linear(u_input_dim, attention_dim)
-        self._v_k_projection = torch.nn.Linear(v_input_dim, attention_dim)
-        self._u_v_projection = torch.nn.Linear(u_input_dim, attention_dim)
+        self._u_qkv_projection = torch.nn.Linear(u_input_dim, 3*attention_dim)
+        self._v_qkv_projection = torch.nn.Linear(v_input_dim, 3*attention_dim)
 
-        self._scale = (u_input_dim // num_heads) ** 0.5
+        self._scale = (attention_dim // num_heads) ** 0.5
         self._output_projection = torch.nn.Linear(attention_dim,
                                                   self._output_dim)
         self._attention_dropout = torch.nn.Dropout(attention_dropout_prob)
@@ -640,6 +638,24 @@ class MultiHeadAttentionV2(Seq2SeqEncoder):
     @overrides
     def is_bidirectional(self) -> bool:
         return False
+
+    def _reshape_outputs(self,
+                         outputs: torch.FloatTensor
+                         ) -> torch.FloatTensor:
+        num_heads = self._num_heads
+        attention_dim = self._attention_dim
+        first_dim, timesteps, head_size = outputs.shape
+        batch_size = int(first_dim / num_heads)
+
+        # Reshape back to original shape (batch_size, timesteps, values_dim)
+
+        # shape (batch_size, num_heads, timesteps, values_dim/num_heads)
+        outputs = outputs.view(batch_size, num_heads, timesteps, head_size)
+        # shape (batch_size, timesteps, num_heads, values_dim/num_heads)
+        outputs = outputs.transpose(1, 2).contiguous()
+        # shape (batch_size, timesteps, values_dim)
+        outputs = outputs.view(batch_size, timesteps, attention_dim)
+        return outputs
 
     def _reshape_heads(self, x: torch.Tensor) -> torch.Tensor:
         "x : tensor of shape (batch_size, timesteps_1, attention_dim)"
@@ -675,7 +691,8 @@ class MultiHeadAttentionV2(Seq2SeqEncoder):
                 u: torch.Tensor,
                 v: torch.Tensor,
                 u_mask: torch.LongTensor = None,
-                v_mask: torch.LongTensor = None) -> torch.FloatTensor:
+                v_mask: torch.LongTensor = None
+                ) -> Tuple[torch.FloatTensor, torch.FloatTensor]:
         """
         Parameters
         ----------
@@ -692,42 +709,30 @@ class MultiHeadAttentionV2(Seq2SeqEncoder):
         A tensor of shape (batch_size, timesteps_1, output_projection_dim),
         where output_projection_dim = input_dim by default.
         """
-        num_heads = self._num_heads
-        head_size = int(self._attention_dim / num_heads)
-
-        _, timesteps_1, _ = u.shape
-        batch_size, timesteps_2, _ = v.shape
-
         if u_mask is None:
-            u_mask = u.new_ones(batch_size, timesteps_1)
+            u_mask = u.new_ones(u.size(0), u.size(1))
         if v_mask is None:
-            v_mask = v.new_ones(batch_size, timesteps_2)
+            v_mask = v.new_ones(v.size(0), v.size(1))
 
+        # Shape (batch_size, timesteps_1, 3 * attention_dim)
+        qkv_u = self._u_qkv_projection(u)
         # Shape (batch_size, timesteps_1, attention_dim)
-        q_u = self._u_q_projection(u)
-        k_u = self._u_k_projection(u)
-        # Shape (batch_size, timesteps_2, attention_dim)
-        q_v = self._v_q_projection(v)
-        k_v = self._v_k_projection(v)
-        # Shape (batch_size, timesteps_1, values_dim)
-        v_u = self._u_v_projection(u)
+        q_u, k_u, v_u = torch.chunk(qkv_u, 3, dim=-1)
 
-        # v_u_per_head =v_u.view(batch_size, timesteps_1, num_heads, head_size)
-        # v_u_per_head = v_u_per_head.transpose(1, 2).contiguous()
-        # v_u_per_head = v_u_per_head.view(batch_size * num_heads, timesteps_1,
-        #                                  head_size)
+        # Shape (batch_size, timesteps_2, 3 * attention_dim)
+        qkv_v = self._v_qkv_projection(v)
+        # Shape (batch_size, timesteps_2, attention_dim)
+        q_v, k_v, v_v = torch.chunk(qkv_v, 3, dim=-1)
 
         # Shape (num_heads * batch_size, timesteps_1, values_dim / num_heads)
         q_u_per_head = self._reshape_heads(q_u)
-        # Shape (num_heads * batch_size, timesteps_1, values_dim / num_heads)
         k_u_per_head = self._reshape_heads(k_u)
-        # Shape (num_heads * batch_size, timesteps_1, values_dim / num_heads)
         v_u_per_head = self._reshape_heads(v_u)
 
         # Shape (num_heads * batch_size, timesteps_2, values_dim / num_heads)
         q_v_per_head = self._reshape_heads(q_v)
-        # Shape (num_heads * batch_size, timesteps_2, values_dim / num_heads)
         k_v_per_head = self._reshape_heads(k_v)
+        v_v_per_head = self._reshape_heads(v_v)
 
         # Normalise the distributions, using the same mask for all heads.
         # shape (num_heads * batch_size, timesteps_1, timesteps_2)
@@ -735,22 +740,22 @@ class MultiHeadAttentionV2(Seq2SeqEncoder):
         # shape (num_heads * batch_size, timesteps_2, timesteps_1)
         sim_2 = self._multiply_and_mask(q_v_per_head, k_u_per_head, u_mask)
 
-        combined_similarities = sim_1.bmm(sim_2)
-        attention = torch.softmax(combined_similarities, dim=-1)
-        outputs = attention.bmm(v_u_per_head)
+        combined_similarities_u = sim_1.bmm(sim_2)
+        attention_u = torch.softmax(combined_similarities_u, dim=-1)
+        outputs_u = attention_u.bmm(v_u_per_head)
 
-        # Reshape back to original shape (batch_size, timesteps_1, values_dim)
-        # shape (batch_size, num_heads, timesteps_1, values_dim/num_heads)
-        outputs = outputs.view(batch_size, num_heads, timesteps_1, head_size)
-        # shape (batch_size, timesteps_1, num_heads, values_dim/num_heads)
-        outputs = outputs.transpose(1, 2).contiguous()
-        # shape (batch_size, timesteps_1, values_dim)
-        outputs = outputs.view(batch_size, timesteps_1, self._attention_dim)
+        combined_similarities_v = sim_2.bmm(sim_1)
+        attention_v = torch.softmax(combined_similarities_v, dim=-1)
+        outputs_v = attention_v.bmm(v_v_per_head)
+
+        outputs_u = self._reshape_outputs(outputs_u)
+        outputs_v = self._reshape_outputs(outputs_v)
 
         # Project back to original input size.
         # shape (batch_size, timesteps_1, input_size)
-        outputs = self._output_projection(outputs)
-        return outputs
+        outputs_u = self._output_projection(outputs_u)
+        outputs_v = self._output_projection(outputs_v)
+        return outputs_u, outputs_v
 
 
 class TransformerEncoderBlock(torch.nn.Module):
@@ -827,20 +832,26 @@ class RelationTransformerEncoderBlock(torch.nn.Module):
         self.norm1 = LayerNorm(model_dim)
         self.norm2 = LayerNorm(model_dim)
 
+    def _second_stage(self,
+                      x: torch.Tensor,
+                      attn: torch.Tensor
+                      ) -> torch.Tensor:
+        attn = self.attn_dropout(attn)
+        out1 = self.norm1(x + attn)
+        ffn = self.ffn(out1)
+        out2 = self.norm2(out1 + ffn)
+        return out2
+
     def forward(self,
                 src: torch.Tensor,
                 aux: torch.Tensor,
                 src_mask: torch.Tensor,
                 aux_mask: torch.Tensor
-                ) -> torch.Tensor:
-        attn = self.attn(src, aux, src_mask, aux_mask)
-        attn = self.attn_dropout(attn)
-
-        out1 = self.norm1(src + attn)
-        ffn = self.ffn(out1)
-        out2 = self.norm2(out1 + ffn)
-
-        return out2
+                ) -> Tuple[torch.Tensor, torch.Tensor]:
+        attn_src, attn_aux = self.attn(src, aux, src_mask, aux_mask)
+        src = self._second_stage(src, attn_src)
+        aux = self._second_stage(aux, attn_aux)
+        return src, aux
 
 
 @Seq2SeqEncoder.register("transformer-encoder")
@@ -1007,10 +1018,10 @@ class RelationalTransformerEncoder(Seq2SeqEncoder):
             dropout=dropout_prob
         )
 
-        self.src_rel_blocks = clone_module(rel_block, num_layers)
         self.src_self_blocks = clone_module(self_block, num_layers)
-        self.kb_rel_blocks = clone_module(rel_block, num_layers)
         self.kb_self_blocks = clone_module(self_block, num_layers)
+
+        self.rel_blocks = clone_module(rel_block, num_layers)
 
     @overrides
     def get_input_dim(self) -> int:
@@ -1039,8 +1050,7 @@ class RelationalTransformerEncoder(Seq2SeqEncoder):
             src = self.src_self_blocks[i](src, src_mask)
             kb = self.kb_self_blocks[i](kb, kb_mask)
 
-            src = self.src_rel_blocks[i](src, kb, src_mask, kb_mask)
-            kb = self.kb_rel_blocks[i](kb, src, kb_mask, src_mask)
+            src, kb = self.rel_blocks[i](kb, src, kb_mask, src_mask)
 
         if self.return_kb:
             return src, kb
