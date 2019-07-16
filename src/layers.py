@@ -915,6 +915,13 @@ class TransformerEncoder(Seq2SeqEncoder):
         )
         self.blocks = clone_module(encoder_block, num_layers)
 
+        self._reset_parameters()
+
+    def _reset_parameters(self) -> None:
+        for p in self.parameters():
+            if p.dim() > 1:
+                torch.nn.init.xavier_uniform_(p)
+
     @overrides
     def get_input_dim(self) -> int:
         return self.input_dim
@@ -1022,6 +1029,13 @@ class RelationalTransformerEncoder(Seq2SeqEncoder):
         self.kb_self_blocks = clone_module(self_block, num_layers)
 
         self.rel_blocks = clone_module(rel_block, num_layers)
+
+        self._reset_parameters()
+
+    def _reset_parameters(self) -> None:
+        for p in self.parameters():
+            if p.dim() > 1:
+                torch.nn.init.xavier_uniform_(p)
 
     @overrides
     def get_input_dim(self) -> int:
