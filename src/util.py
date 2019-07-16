@@ -140,7 +140,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 num_epochs: int = 1,
                 optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
                 grad_norm_clip: float = 10.0,
-                cuda_device: int = 0) -> Model:
+                cuda_device: Union[int, List[int]] = 0) -> Model:
     "Train and save our baseline model."
 
     # Create a vocabulary from our whole dataset. (for GloVe embeddings)
@@ -151,9 +151,14 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     visualise_model(model)
 
     # Next let's check if we have access to a GPU, and use if we want to.
-    if torch.cuda.is_available() and cuda_device >= 0:
+    if torch.cuda.is_available():
+        if isinstance(cuda_device, int):
+            device = cuda_device
+        elif isinstance(cuda_device, list):
+            device = cuda_device[0]
         # Since we do, we move our model to the GPU.
-        model = model.cuda(cuda_device)
+        if device >= 0:
+            model = model.cuda(device)
     else:
         # In this case we don't, so we specify -1 to fall back to the CPU.
         # (Where the model already resides.)
@@ -282,3 +287,10 @@ def clone_module(module: torch.nn.Module, num_clones: int
     return torch.nn.ModuleList(
         [copy.deepcopy(module) for _ in range(num_clones)]
     )
+
+
+def parse_cuda(cuda_str: str) -> Union[int, List[int]]:
+    if ',' in cuda_str:
+        return [int(gpu) for gpu in cuda_str.split(',')]
+    else:
+        return int(cuda_str)

@@ -62,6 +62,8 @@ class ConceptNet:
                 if relation_2 != ConceptNet.NULL_REL:
                     triples.add((query_word, relation_2, text_word))
 
+        if not triples:
+            triples.add(('No', 'Relation', 'Found'))
         return triples
 
     def get_text_query_relations(self, text: Sequence[str],

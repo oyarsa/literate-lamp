@@ -775,7 +775,7 @@ class TransformerEncoderBlock(torch.nn.Module):
 
         self.ffn = torch.nn.Sequential(
             torch.nn.Linear(model_dim, feedforward_dim),
-            torch.nn.ReLU(),
+            torch.nn.ReLU(inplace=True),
             torch.nn.Dropout(dropout),
             torch.nn.Linear(feedforward_dim, model_dim),
             torch.nn.Dropout(dropout)
@@ -818,7 +818,7 @@ class RelationTransformerEncoderBlock(torch.nn.Module):
 
         self.ffn = torch.nn.Sequential(
             torch.nn.Linear(model_dim, feedforward_dim),
-            torch.nn.ReLU(),
+            torch.nn.ReLU(inplace=True),
             torch.nn.Dropout(dropout),
             torch.nn.Linear(feedforward_dim, model_dim),
             torch.nn.Dropout(dropout)

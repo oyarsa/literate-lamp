@@ -28,7 +28,7 @@ from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
                     HierarchicalAttentionNetwork, RelationalTransformerModel)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
-                  load_data, get_preprocessed_name)
+                  load_data, get_preprocessed_name, parse_cuda)
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
                     transformer_seq2seq, cnn_encoder,
@@ -51,7 +51,7 @@ HANDCRAFTED_DIM = 7
 DEFAULT_EMBEDDING_TYPE = 'glove'  # can also be 'bert'
 EMBEDDING_TYPE = sys.argv[3] if len(sys.argv) >= 4 else DEFAULT_EMBEDDING_TYPE
 
-CUDA_DEVICE = int(sys.argv[4]) if len(sys.argv) >= 5 else 0
+CUDA_DEVICE = parse_cuda(sys.argv[4]) if len(sys.argv) >= 5 else 0
 MODEL_NAME = sys.argv[5] if len(sys.argv) >= 6 else None
 
 USAGE = """
@@ -85,7 +85,7 @@ if CONFIG == 'large':
     GLOVE_EMBEDDING_DIM = 300
     # Size of our hidden layers (for each encoder)
     HIDDEN_DIM = 50
-    TRANSFORMER_DIM = 128
+    TRANSFORMER_DIM = 512
     # Size of minibatch
     BATCH_SIZE = 24
     # Number of epochs to train model
@@ -208,7 +208,7 @@ def build_relational_transformer(vocab: Vocabulary) -> Model:
             model_dim=TRANSFORMER_DIM,
             num_layers=6,
             num_attention_heads=4,
-            feedforward_hidden_dim=2*TRANSFORMER_DIM,
+            feedforward_hidden_dim=TRANSFORMER_DIM,
             ttype=WHICH_TRANSFORMER
         )
         relation_sentence_encoder = transformer_seq2seq(
@@ -216,7 +216,7 @@ def build_relational_transformer(vocab: Vocabulary) -> Model:
             model_dim=TRANSFORMER_DIM,
             num_layers=6,
             num_attention_heads=4,
-            feedforward_hidden_dim=2*TRANSFORMER_DIM,
+            feedforward_hidden_dim=TRANSFORMER_DIM,
             ttype=WHICH_TRANSFORMER
         )
         # document_encoder = transformer_seq2seq(
@@ -248,7 +248,7 @@ def build_relational_transformer(vocab: Vocabulary) -> Model:
         src_input_dim=sentence_encoder.get_output_dim(),
         kb_input_dim=relation_sentence_encoder.get_output_dim(),
         model_dim=TRANSFORMER_DIM,
-        feedforward_hidden_dim=2*TRANSFORMER_DIM,
+        feedforward_hidden_dim=TRANSFORMER_DIM,
         num_layers=3,
         num_attention_heads=8,
         dropout_prob=0.1,
@@ -326,18 +326,18 @@ def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
     elif ENCODER_TYPE == 'transformer':
         sentence_encoder = transformer_seq2seq(
             input_dim=embedding_dim,
-            model_dim=512,
+            model_dim=TRANSFORMER_DIM,
             num_layers=6,
             num_attention_heads=4,
-            feedforward_hidden_dim=512,
+            feedforward_hidden_dim=TRANSFORMER_DIM,
             ttype=WHICH_TRANSFORMER
         )
         document_encoder = transformer_seq2seq(
             input_dim=sentence_encoder.get_output_dim(),
-            model_dim=512,
+            model_dim=TRANSFORMER_DIM,
             num_layers=4,
             num_attention_heads=4,
-            feedforward_hidden_dim=512,
+            feedforward_hidden_dim=TRANSFORMER_DIM,
             ttype=WHICH_TRANSFORMER
         )
 

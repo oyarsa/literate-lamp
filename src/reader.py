@@ -553,21 +553,23 @@ class RelationBertReader(McScriptReader):
             self.conceptnet, question_words, answer0_words)
         q_a1_relations = relation_sentences(
             self.conceptnet, question_words, answer1_words)
-        p_p_relations = relation_sentences(
-            self.conceptnet, passage_words, passage_words)
-        q_q_relations = relation_sentences(
-            self.conceptnet, question_words, question_words)
-        a0_a0_relations = relation_sentences(
-            self.conceptnet, answer0_words, answer0_words)
-        a1_a1_relations = relation_sentences(
-            self.conceptnet, answer1_words, answer1_words)
+        # p_p_relations = relation_sentences(
+        #     self.conceptnet, passage_words, passage_words)
+        # q_q_relations = relation_sentences(
+        #     self.conceptnet, question_words, question_words)
+        # a0_a0_relations = relation_sentences(
+        #     self.conceptnet, answer0_words, answer0_words)
+        # a1_a1_relations = relation_sentences(
+        #     self.conceptnet, answer1_words, answer1_words)
 
-        common_relations = p_q_relations + p_p_relations + q_q_relations
-        p_a0_relations += common_relations + q_a0_relations + a0_a0_relations
-        p_a1_relations += common_relations + q_a1_relations + a1_a1_relations
+        # common_relations = p_q_relations + p_p_relations + q_q_relations
+        # p_a0_relations += common_relations + q_a0_relations + a0_a0_relations
+        # p_a1_relations += common_relations + q_a1_relations + a1_a1_relations
+        # p_a0_rel_set = set(p_a0_relations)
+        # p_a1_rel_set = set(p_a1_relations)
 
-        p_a0_rel_set = set(p_a0_relations)
-        p_a1_rel_set = set(p_a1_relations)
+        p_a0_rel_set = set(p_a0_relations + p_q_relations + q_a0_relations)
+        p_a1_rel_set = set(p_a1_relations + p_q_relations + q_a1_relations)
 
         p_a0_tokens = (self.tokeniser.tokenize(text=b) for b in p_a0_rel_set)
         p_a1_tokens = (self.tokeniser.tokenize(text=b) for b in p_a1_rel_set)
@@ -584,9 +586,6 @@ class RelationBertReader(McScriptReader):
             "question": TextField(question_tokens, self.word_indexers),
             "answer0": TextField(answer0_tokens, self.word_indexers),
             "answer1": TextField(answer1_tokens, self.word_indexers),
-            # "p_q_rel": TextField(p_q_relations, self.rel_indexers),
-            # "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
-            # "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
             "p_a0_rel": ListField(p_a0_fields),
             "p_a1_rel": ListField(p_a1_fields),
         }
