@@ -26,7 +26,7 @@ from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
                     HierarchicalBert, AdvancedAttentionBertClassifier,
                     HierarchicalAttentionNetwork, RelationalTransformerModel,
-                    RelationalHan)
+                    RelationalHan, Dcmn)
 from predictor import McScriptPredictor
 from util import (example_input, is_cuda, train_model, get_experiment_name,
                   load_data, get_preprocessed_name, parse_cuda)
@@ -138,7 +138,7 @@ RANDOM_SEED = 1234
 
 # Model Configuration
 # Use LSTM, GRU or Transformer
-ENCODER_TYPE = sys.argv[6] if len(sys.argv) >= 7 else 'transformer'
+ENCODER_TYPE = sys.argv[6] if len(sys.argv) >= 7 else 'lstm'
 WHICH_TRANSFORMER = sys.argv[7] if len(sys.argv) >= 8 else 'allen'
 BIDIRECTIONAL = True
 RNN_LAYERS = 1
@@ -147,6 +147,35 @@ EMBEDDDING_DROPOUT = 0.5 if EMBEDDING_TYPE != 'bert' else 0
 
 # What encoder to use to join the relation embeddings into a single vector.
 RELATION_ENCODER = 'cnn'
+
+
+def build_dcmn(vocab: Vocabulary) -> Model:
+    """
+    Builds the DCMN.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `DCMN` model ready to be trained.
+    """
+    if EMBEDDING_TYPE == 'glove':
+        word_embeddings = glove_embeddings(vocab, GLOVE_PATH,
+                                           GLOVE_EMBEDDING_DIM, training=True)
+    elif EMBEDDING_TYPE == 'bert':
+        word_embeddings = bert_embeddings(pretrained_model=BERT_PATH)
+    else:
+        raise ValueError('Invalid word embedding type')
+
+    model = Dcmn(
+        word_embeddings=word_embeddings,
+        vocab=vocab,
+        embedding_dropout=RNN_DROPOUT
+    )
+
+    return model
 
 
 def build_rel_han(vocab: Vocabulary) -> Model:
@@ -933,6 +962,9 @@ def run_model() -> None:
     elif MODEL == 'relhan':
         build_fn = build_rel_han
         reader_type = 'relation-bert'
+    elif MODEL == 'dcmn':
+        build_fn = build_dcmn
+        reader_type = 'simple'
     else:
         raise ValueError('Invalid model name')
 

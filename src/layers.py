@@ -32,6 +32,54 @@ from allennlp.modules.layer_norm import LayerNorm
 from util import clone_module
 
 
+class BilinearMatrixAttention(Attention):
+    """
+    Implements bilinear attention.
+
+        alpha = softmax(x'Wy)    (1)
+
+    Outputs the scores (alpha), which should be used to compute a weighted sum
+    of v. That means that the other part:
+
+        Att(u, v) = sum_i(alpha_i * v_i)   (2)
+
+    Is not computed here. Should be ran as:
+
+        allennlp.util.weighted_sum(v, alpha)   (3)
+
+    This was done so this class is consistent with how `Attention`-derived
+    classes work in AllenNLP, as they only output the scores.
+
+    Although the equation (1) doesn't mention masks, we do accept the mask for
+    the second vector (v), and compute the softmax using that mask (zero-ing
+    the padded dimensions).
+    """
+
+    def __init__(self,
+                 matrix1_dim: int,
+                 matrix2_dim: int,
+                 normalise: bool = True) -> None:
+        super().__init__(normalise)
+        self._weights = torch.nn.Linear(in_features=matrix2_dim,
+                                        out_features=matrix1_dim)
+
+    @overrides
+    def _forward_internal(self, matrix1: torch.Tensor, matrix2: torch.Tensor
+                          ) -> torch.Tensor:
+        """
+        Args:
+            matrix1 : Tensor of shape (batch_size, seq_len1, hdim1)
+            matrix2 : Tensor of shape (batch_size, seq_len2, hdim2)
+        Output:
+            alpha : Tensor of shape (batch_size, seq_len1, seq_len2)
+        """
+        # Shape : (batch_size, seq_len_2, hdim1)
+        Wy = self._weights(matrix2)
+        # Shape : (batch_size, seq_len_1, seq_len_2)
+        alpha = matrix1.bmm(Wy.transpose(-2, -1))
+        return alpha
+
+
 class LinearAttention(Seq2VecEncoder):
     def __init__(self, input_dim: int, bias: bool = False) -> None:
         super(LinearAttention, self).__init__()
