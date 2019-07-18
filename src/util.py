@@ -1,5 +1,6 @@
 "Utility functions for the other modules"
-from typing import Tuple, List, Callable, Optional, Union, Sequence
+from typing import (Tuple, List, Callable, Optional, Union, Sequence, Dict,
+                    Any, Iterable)
 import copy
 import pickle
 import datetime
@@ -38,6 +39,39 @@ import wikiwords
 
 STOPWORDS = set(stopwords.words('english'))
 PUNCTUATION = set(string.punctuation)
+
+
+class DotDict(Dict[str, Any]):
+    """dot.notation access to dictionary attributes"""
+
+    def __init__(self,
+                 *args: Iterable[Tuple[str, Any]],
+                 **kwargs: Dict[Any, Any]) -> None:
+        super(DotDict, self).__init__(*args, **kwargs)
+        for arg in args:
+            for k, v in arg:
+                self[k] = v
+
+        if kwargs:
+            for k, v in kwargs.items():
+                self[k] = v
+
+    def __getattr__(self, attr: str) -> Any:
+        return self.get(attr)
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        self.__setitem__(key, value)
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        super(DotDict, self).__setitem__(key, value)
+        self.__dict__.update({key: value})
+
+    def __delattr__(self, key: str) -> None:
+        self.__delitem__(key)
+
+    def __delitem__(self, key: str) -> None:
+        super(DotDict, self).__delitem__(key)
+        del self.__dict__[key]
 
 
 def visualise_model(model: Model) -> None:
