@@ -23,7 +23,7 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 
 import args
-from models import (BaselineClassifier, AttentiveClassifier, AttentiveReader,
+from models import (BaselineClassifier, Trian, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
                     HierarchicalBert, AdvancedAttentionBertClassifier,
                     HierarchicalAttentionNetwork, RelationalTransformerModel,
@@ -35,8 +35,9 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     transformer_seq2seq,
                     # cnn_encoder,
                     RelationalTransformerEncoder)
-from reader import (SimpleBertReader, SimpleMcScriptReader, SimpleTrianReader,
-                    FullTrianReader, McScriptReader, RelationBertReader)
+from readers import (SimpleBertReader, SimpleMcScriptReader,
+                     SimpleTrianReader, FullTrianReader,
+                     McScriptReader, RelationBertReader)
 
 
 ARGS = args.get_args()
@@ -451,7 +452,7 @@ def build_simple_trian(vocab: Vocabulary) -> Model:
 
     Returns
     -------
-    A `AttentiveClassifier` model ready to be trained.
+    A `Trian` model ready to be trained.
     """
     word_embeddings = get_word_embeddings(vocab)
     rel_embeddings = learned_embeddings(vocab, ARGS.REL_EMBEDDING_DIM,
@@ -634,7 +635,7 @@ def build_attentive_reader(vocab: Vocabulary) -> Model:
 
     Returns
     -------
-    A `AttentiveClassifier` model ready to be trained.
+    A `AttentiveReader` model ready to be trained.
     """
     embeddings = get_word_embeddings(vocab)
 
@@ -653,9 +654,9 @@ def build_attentive_reader(vocab: Vocabulary) -> Model:
     return model
 
 
-def build_attentive(vocab: Vocabulary) -> Model:
+def build_trian(vocab: Vocabulary) -> Model:
     """
-    Builds the Attentive classifier using Glove embeddings and RNN encoders.
+    Builds the TriAN classifier using Glove embeddings and RNN encoders.
 
     Parameters
     ---------
@@ -663,7 +664,7 @@ def build_attentive(vocab: Vocabulary) -> Model:
 
     Returns
     -------
-    A `AttentiveClassifier` model ready to be trained.
+    A `Trian` model ready to be trained.
     """
     word_embeddings = get_word_embeddings(vocab)
     pos_embeddings = learned_embeddings(vocab, ARGS.POS_EMBEDDING_DIM,
@@ -737,7 +738,7 @@ def build_attentive(vocab: Vocabulary) -> Model:
         )
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = AttentiveClassifier(
+    model = Trian(
         word_embeddings=word_embeddings,
         rel_embeddings=rel_embeddings,
         pos_embeddings=pos_embeddings,
@@ -815,7 +816,7 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model],
     # Model -> Build function, reader type
     models = {
         'baseline': (build_baseline, 'simple'),
-        'attentive': (build_attentive, 'full-trian'),
+        'attentive': (build_trian, 'full-trian'),
         'reader': (build_attentive_reader, 'simple'),
         'simple-bert': (build_simple_bert, 'simple-bert'),
         'advanced-bert': (build_advanced_bert, 'simple-bert'),
