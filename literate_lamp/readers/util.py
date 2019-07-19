@@ -1,3 +1,4 @@
+"Utilities shared by the readers."
 from typing import List, Sequence, Optional
 
 import numpy as np

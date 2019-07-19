@@ -1,3 +1,4 @@
+"Model that uses the RelationalTransformer to encoded Text/Relation."
 from typing import Dict, Optional
 
 import torch

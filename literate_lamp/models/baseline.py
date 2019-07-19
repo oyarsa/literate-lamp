@@ -1,3 +1,4 @@
+"Baseline method. No commonsense, no sophisticated architecture."
 from typing import Dict, Optional
 
 import torch

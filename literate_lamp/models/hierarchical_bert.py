@@ -1,3 +1,4 @@
+"Model that builds a representation from the BERT windows."
 from typing import Dict, Optional
 from pathlib import Path
 

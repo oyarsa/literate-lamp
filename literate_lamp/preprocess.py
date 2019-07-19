@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+"Preprocesses the ConceptNet input relations file to extract the triples."
 import sys
 from typing import Tuple, TextIO
 from pathlib import Path
 
 
 def clean_word(string: str) -> Tuple[str, str]:
+    "Extracts language and word from the ConceptNet code for the relation."
     pieces = string.split('/')
     language = pieces[2]
     word = pieces[3]
@@ -12,6 +14,7 @@ def clean_word(string: str) -> Tuple[str, str]:
 
 
 def process_file(input_file: TextIO, output_file: TextIO) -> None:
+    "Processes the ConceptNet input file into another file."
     for line in input_file:
         fields = line.split('\t')
         relation = fields[1]

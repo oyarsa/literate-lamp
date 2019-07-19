@@ -1,3 +1,4 @@
+"Dual Co-Matching Network. From https://arxiv.org/pdf/1901.09381.pdf"
 from typing import Dict, Optional
 import copy
 

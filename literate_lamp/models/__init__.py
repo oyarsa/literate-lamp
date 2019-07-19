@@ -1,3 +1,4 @@
+"Classification models for the McScript dataset."
 from models.advanced_attention_bert import AdvancedAttentionBertClassifier
 from models.advanced_bert import AdvancedBertClassifier
 from models.attentive_reader import AttentiveReader

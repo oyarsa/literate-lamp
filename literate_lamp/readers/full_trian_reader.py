@@ -1,3 +1,8 @@
+"""
+Module from the FullTrianReader. That is, the reader that processes all the
+input for the Trian model, such as ConceptNet relations, TF features,
+overlap features.
+"""
 from typing import Optional
 from pathlib import Path
 
@@ -11,8 +16,8 @@ from allennlp.data.tokenizers import WordTokenizer
 from allennlp.data.fields import (TextField, LabelField, MetadataField,
                                   ArrayField)
 
-from readers.mc_script_reader import McScriptReader
 from conceptnet import ConceptNet
+from readers.mc_script_reader import McScriptReader
 from readers.util import (strs2toks, toks2strs,
                           compute_handcrafted_features)
 

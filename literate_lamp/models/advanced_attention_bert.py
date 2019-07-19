@@ -1,3 +1,4 @@
+"Implements the AdvancedAttentionBertClassifier class."
 from typing import Dict, Optional
 from pathlib import Path
 

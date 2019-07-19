@@ -1,3 +1,4 @@
+"Just the standard basic BERT for classification."
 from typing import Dict, Optional
 from pathlib import Path
 

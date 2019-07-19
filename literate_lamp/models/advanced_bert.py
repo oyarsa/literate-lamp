@@ -1,3 +1,4 @@
+"Implements the AdvancedBertClassifier class."
 from typing import Dict, Optional
 from pathlib import Path
 

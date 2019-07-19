@@ -1,3 +1,7 @@
+"""
+This is Trian without the overlapping, handcrafted, POS and NER features.
+Just text encoding and relation embeddings.
+"""
 from typing import Dict, Optional
 
 import torch

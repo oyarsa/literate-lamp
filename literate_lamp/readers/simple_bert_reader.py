@@ -1,3 +1,4 @@
+"Reader that builds the BERT strings for models that don't use relations."
 from typing import Optional
 
 from allennlp.data import Instance

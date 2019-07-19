@@ -1,3 +1,7 @@
+"""
+Uses the HAN architecture and then combines the output with a relation matrix
+obtained from ConceptNet.
+"""
 from typing import Dict, Optional
 
 import torch

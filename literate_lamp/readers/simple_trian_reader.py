@@ -1,3 +1,4 @@
+"Reader for the SimpleTrian. Reads the input and the relations, nothing else."
 from typing import Optional
 from pathlib import Path
 
@@ -9,8 +10,8 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data.tokenizers import WordTokenizer
 from allennlp.data.fields import TextField, LabelField, MetadataField
 
-from readers.mc_script_reader import McScriptReader
 from conceptnet import ConceptNet
+from readers.mc_script_reader import McScriptReader
 from readers.util import strs2toks, toks2strs
 
 

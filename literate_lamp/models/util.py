@@ -1,3 +1,4 @@
+"Utilities shared by the models."
 from typing import Optional
 
 import torch

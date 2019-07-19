@@ -49,12 +49,12 @@ class DotDict(Dict[str, Any]):
                  **kwargs: Dict[Any, Any]) -> None:
         super(DotDict, self).__init__(*args, **kwargs)
         for arg in args:
-            for k, v in arg:
-                self[k] = v
+            for key, value in arg:
+                self[key] = value
 
         if kwargs:
-            for k, v in kwargs.items():
-                self[k] = v
+            for key, value in kwargs.items():
+                self[key] = value
 
     def __getattr__(self, attr: str) -> Any:
         return self.get(attr)
@@ -253,7 +253,6 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
 
     # To save the model, we need to save the vocabulary and the model weights.
     # Saving weights (model state)
-    # TODO: Use `Path` here instead of strings.
     if save_path is not None:
         with open(save_path / 'model.th', 'wb') as model_file:
             torch.save(model.state_dict(), model_file)
@@ -266,6 +265,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
 
 def get_preprocessed_name(split_name: str, model: str, config: str,
                           embedding: str) -> str:
+    "Obtains the full name for the pickle file for this configuration."
     return f'{split_name}.{model}.{config}.{embedding}.pickle'
 
 
@@ -318,13 +318,17 @@ def get_term_frequency(word: Union[str, Token]) -> float:
 
 def clone_module(module: torch.nn.Module, num_clones: int
                  ) -> torch.nn.ModuleList:
+    "Generates a ModuleList of `num_clone` clones of the module."
     return torch.nn.ModuleList(
         [copy.deepcopy(module) for _ in range(num_clones)]
     )
 
 
 def parse_cuda(cuda_str: str) -> Union[int, List[int]]:
+    """
+    Parses a string containing either a single number of a comma-separated
+    list of numbers. These should be from -1 (for CPU) up to number_gpus-1.
+    """
     if ',' in cuda_str:
         return [int(gpu) for gpu in cuda_str.split(',')]
-    else:
-        return int(cuda_str)
+    return int(cuda_str)

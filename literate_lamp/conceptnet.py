@@ -50,6 +50,10 @@ class ConceptNet:
     def get_all_text_query_triples(self, text: Sequence[str],
                                    query: Sequence[str]
                                    ) -> Set[Tuple[str, str, str]]:
+        """
+        Queries relations between all the words in text and query, returning
+        all the matching triples in a set (that is, removing duplicates).
+        """
         triples: Set[Tuple[str, str, str]] = set()
 
         for text_word in text:
@@ -89,6 +93,13 @@ class ConceptNet:
 
 
 def triple_as_sentence(triple: Tuple[str, str, str]) -> str:
+    """
+    Represents a triple as a sentence. If the relation is composed of more than
+    a word (e.g. UsedFor), they are separated.
+    Example:
+
+        (Car, UsedFor, Driving) -> "Car Used For Driving"
+    """
     head, relation, tail = triple
     parts = re.findall('[A-Z][^A-Z]*', relation)
     relation = " ".join(parts)

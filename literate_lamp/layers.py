@@ -12,14 +12,7 @@ from allennlp.nn.util import (masked_softmax, weighted_sum,
                               add_positional_features)
 from allennlp.nn.activations import Activation
 from allennlp.data.vocabulary import Vocabulary
-# These create text embeddings from a `TextField` input. Since our text data
-# is represented using `TextField`s, this makes sense.
-# Again, `TextFieldEmbedder` is the abstract class, `BasicTextFieldEmbedder`
-# is the implementation (as we're just using simple embeddings, no fancy
-# ELMo or BERT so far).
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-# This is the actual neural layer for the embedding. This will be passed into
-# the embedder above.
 from allennlp.modules.token_embedders import Embedding, PretrainedBertEmbedder
 from allennlp.modules.seq2vec_encoders import (PytorchSeq2VecWrapper,
                                                CnnEncoder,

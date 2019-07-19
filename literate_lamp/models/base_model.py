@@ -1,4 +1,4 @@
-"Deep Learning models for Commonsense Question Answering"
+"Base model for the classifiers. Responsible for handling the metrics."
 from typing import Dict, Optional
 from pathlib import Path
 import copy

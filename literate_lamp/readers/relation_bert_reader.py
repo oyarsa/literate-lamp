@@ -1,3 +1,4 @@
+"Reader that builds BERT strings in conjuction with querying ConceptNet."
 from typing import Optional
 from pathlib import Path
 
@@ -10,10 +11,9 @@ from allennlp.data.tokenizers import WordTokenizer
 from allennlp.data.fields import (TextField, LabelField, MetadataField,
                                   ListField)
 
-from readers.mc_script_reader import McScriptReader
 from conceptnet import ConceptNet
-from readers.util import (toks2strs, bert_sliding_window,
-                   relation_sentences)
+from readers.mc_script_reader import McScriptReader
+from readers.util import toks2strs, bert_sliding_window, relation_sentences
 
 
 class RelationBertReader(McScriptReader):

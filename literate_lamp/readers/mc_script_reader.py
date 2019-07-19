@@ -1,4 +1,7 @@
-"Reads data from file and extracts features used in the models"
+"""
+Implements the data extraction part. The generation of features is left to
+the derived classes.
+"""
 from typing import Iterator
 import json
 

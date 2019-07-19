@@ -1,3 +1,10 @@
+"""
+This module implements a reader that takes the pre-processed Json files as
+input, as well as specific readers that process that input in particular ways.
+
+Different models will generally need slightly different inputs, and this is
+where they're processed.
+"""
 from readers.mc_script_reader import McScriptReader
 from readers.full_trian_reader import FullTrianReader
 from readers.simple_mc_script_reader import SimpleMcScriptReader

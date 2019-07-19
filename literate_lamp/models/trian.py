@@ -1,3 +1,6 @@
+"""
+This is the full TriAN.
+"""
 from typing import Dict, Optional
 
 import torch

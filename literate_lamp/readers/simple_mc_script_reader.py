@@ -1,3 +1,4 @@
+"Our most basic reader. Just reads the text and indexes it, nothing else."
 from typing import Optional
 
 from allennlp.data import Instance

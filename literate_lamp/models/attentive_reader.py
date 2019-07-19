@@ -1,3 +1,4 @@
+"Implements the AttentiveReader class."
 from typing import Dict, Optional
 
 import torch
