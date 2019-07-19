@@ -37,6 +37,7 @@ class BaseReader(DatasetReader):
             for question in questions:
                 question_id = question['@id']
                 question_text = question['@text']
+                question_type = question['@type']
 
                 answers = ["", ""]
                 labels = ["", ""]
@@ -53,6 +54,7 @@ class BaseReader(DatasetReader):
                 assert "" not in answers, "Answers have to be non-empty"
                 assert "" not in labels, "Labels have to be non-empty"
 
-                yield self.text_to_instance(passage_id, question_id, passage,
+                yield self.text_to_instance(passage_id, question_id,
+                                            question_type, passage,
                                             question_text, answers[0],
                                             answers[1], labels[0])

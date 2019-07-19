@@ -88,12 +88,19 @@ class FullTrianReader(BaseReader):
     def text_to_instance(self,
                          passage_id: str,
                          question_id: str,
+                         question_type: str,
                          passage: str,
                          question: str,
                          answer0: str,
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
+        metadata = {
+            'passage_id': passage_id,
+            'question_id': question_id,
+            'question_type': question_type,
+        }
+
         passage_tokens = self.word_tokeniser.tokenize(text=passage)
         question_tokens = self.word_tokeniser.tokenize(text=question)
         answer0_tokens = self.word_tokeniser.tokenize(text=answer0)
@@ -124,8 +131,7 @@ class FullTrianReader(BaseReader):
         )
 
         fields = {
-            "passage_id": MetadataField(passage_id),
-            "question_id": MetadataField(question_id),
+            "metadata": MetadataField(metadata),
             "passage": TextField(passage_wordpieces, self.word_indexers),
             "passage_pos": TextField(passage_tokens, self.pos_indexers),
             "passage_ner": TextField(passage_tokens, self.ner_indexers),

@@ -105,8 +105,7 @@ class Dcmn(BaseModel):
     # available at training time, used to calculate the loss.
 
     def forward(self,
-                passage_id: Dict[str, torch.Tensor],
-                question_id: Dict[str, torch.Tensor],
+                metadata: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],

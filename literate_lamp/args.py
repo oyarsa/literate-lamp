@@ -84,7 +84,7 @@ ARGS:
         # Size of minibatch
         args.BATCH_SIZE = 2
         # Number of epochs to train model
-        args.NUM_EPOCHS = 5
+        args.NUM_EPOCHS = 1
 
     args.BERT_PATH = external_folder / 'bert-base-uncased.tar.gz'
     args.CONCEPTNET_PATH = external_folder / 'conceptnet.csv'

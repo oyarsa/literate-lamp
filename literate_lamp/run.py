@@ -11,15 +11,19 @@ concatenated and fed into a feed-forward layer that output class probabilities.
 This script builds the model, trains it, generates predictions and saves it.
 Then it checks if the saving went correctly.
 """
-from typing import Dict, Callable, Tuple
+from typing import Dict, Callable, Tuple, List
 from pathlib import Path
+from collections import defaultdict
 import pickle
 
 import torch
 from torch.optim import Adamax
 import numpy as np
+from allennlp.training.util import evaluate as allen_eval
 from allennlp.models import Model
+from allennlp.data.iterators import BucketIterator
 from allennlp.data.vocabulary import Vocabulary
+from allennlp.data.instance import Instance
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 
 import args
@@ -37,7 +41,7 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     RelationalTransformerEncoder)
 from readers import (SimpleBertReader, SimpleMcScriptReader,
                      SimpleTrianReader, FullTrianReader,
-                     McScriptReader, RelationBertReader)
+                     BaseReader, RelationBertReader)
 
 
 ARGS = args.get_args()
@@ -844,7 +848,7 @@ def build_trian(vocab: Vocabulary) -> Model:
 
 
 def test_load(build_model_fn: Callable[[Vocabulary], Model],
-              reader: McScriptReader,
+              reader: BaseReader,
               save_path: Path,
               original_prediction: Dict[str, torch.Tensor],
               cuda_device: int) -> None:
@@ -870,6 +874,7 @@ def test_load(build_model_fn: Callable[[Vocabulary], Model],
     prediction = predictor.predict(
         passage_id="",
         question_id="",
+        question_type="",
         passage=passage,
         question=question,
         answer0=answer0,
@@ -880,7 +885,7 @@ def test_load(build_model_fn: Callable[[Vocabulary], Model],
     print('Success.')
 
 
-def create_reader(reader_type: str) -> McScriptReader:
+def create_reader(reader_type: str) -> BaseReader:
     "Returns the appropriate Reder instance from the type and configuration."
     is_bert = ARGS.EMBEDDING_TYPE == 'bert'
     if reader_type == 'simple':
@@ -899,13 +904,12 @@ def create_reader(reader_type: str) -> McScriptReader:
     raise ValueError(f'Reader type {reader_type} is invalid')
 
 
-def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model],
-                                  McScriptReader]:
+def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], BaseReader]:
     "Gets the build function and reader for the model"
     # Model -> Build function, reader type
     models = {
         'baseline': (build_baseline, 'simple'),
-        'attentive': (build_trian, 'full-trian'),
+        'trian': (build_trian, 'full-trian'),
         'reader': (build_attentive_reader, 'simple'),
         'simple-bert': (build_simple_bert, 'simple-bert'),
         'advanced-bert': (build_advanced_bert, 'simple-bert'),
@@ -925,27 +929,70 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model],
     raise ValueError(f'Invalid model name: {ARGS.MODEL}')
 
 
-def make_prediction(model: Model, reader: McScriptReader) -> torch.Tensor:
+def make_prediction(model: Model,
+                    reader: BaseReader,
+                    verbose: bool = False
+                    ) -> torch.Tensor:
     "Create a predictor to run our model and get predictions."
     model.eval()
     predictor = McScriptPredictor(model, reader)
 
-    print()
-    print('#'*5, 'EXAMPLE', '#'*5)
+    if verbose:
+        print()
+        print('#'*5, 'EXAMPLE', '#'*5)
+
     passage, question, answer1, label1 = example_input(0)
     _, _, answer2, _ = example_input(1)
-    result = predictor.predict("", "", passage, question, answer1, answer2)
+    result = predictor.predict("", "", "", passage, question, answer1, answer2)
     prediction = np.argmax(result['prob'])
 
-    print('Passage:\n', '\t', passage, sep='')
-    print('Question:\n', '\t', question, sep='')
-    print('Answers:')
-    print('\t1:', answer1)
-    print('\t2:', answer2)
-    print('Prediction:', prediction+1)
-    print('Correct:', 1 if label1 == 1 else 2)
+    if verbose:
+        print('Passage:\n', '\t', passage, sep='')
+        print('Question:\n', '\t', question, sep='')
+        print('Answers:')
+        print('\t1:', answer1)
+        print('\t2:', answer2)
+        print('Prediction:', prediction+1)
+        print('Correct:', 1 if label1 == 1 else 2)
 
     return result
+
+
+def split_list(data: List[Instance]) -> Dict[str, List[Instance]]:
+    output: Dict[str, List[Instance]] = defaultdict(list)
+
+    for sample in data:
+        qtype = sample['metadata']['question_type']
+        output[qtype].append(sample)
+
+    return output
+
+
+def evaluate(model: Model, test_data: List[Instance]) -> None:
+    vocab = Vocabulary.from_instances(test_data)
+    iterator = BucketIterator(batch_size=ARGS.BATCH_SIZE, sorting_keys=[
+        ("passage", "num_tokens"),
+        ("question", "num_tokens"),
+        ("answer0", "num_tokens"),
+        ("answer1", "num_tokens")
+    ])
+    # Our data should be indexed using the vocabulary we learned.
+    iterator.index_with(vocab)
+
+    data_types = split_list(test_data)
+    results: Dict[str, Tuple[int, float]] = {}
+
+    print()
+    print('#'*5, 'PER TYPE EVALUATION', '#'*5)
+    for qtype, data in data_types.items():
+        num_items = len(data)
+        print(f'Type: {qtype} ({num_items})')
+
+        metrics = allen_eval(model, data, iterator, ARGS.CUDA_DEVICE, "")
+        print()
+
+        accuracy = metrics['accuracy']
+        results[qtype] = (num_items, accuracy)
 
 
 def run_model() -> None:
@@ -978,7 +1025,8 @@ def run_model() -> None:
                         optimiser_fn=optimiser,
                         cuda_device=ARGS.CUDA_DEVICE)
 
-    result = make_prediction(model, reader)
+    evaluate(model, test_dataset)
+    result = make_prediction(model, reader, verbose=False)
 
     print('Save path', ARGS.SAVE_PATH)
 

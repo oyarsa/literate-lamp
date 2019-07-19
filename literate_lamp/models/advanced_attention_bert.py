@@ -58,8 +58,7 @@ class AdvancedAttentionBertClassifier(BaseModel):
     # be passed to this. We also have the optional `label`, which is only
     # available at training time, used to calculate the loss.
     def forward(self,
-                passage_id: Dict[str, torch.Tensor],
-                question_id: Dict[str, torch.Tensor],
+                metadata: Dict[str, torch.Tensor],
                 bert0: Dict[str, torch.Tensor],
                 bert1: Dict[str, torch.Tensor],
                 passage: Dict[str, torch.Tensor],

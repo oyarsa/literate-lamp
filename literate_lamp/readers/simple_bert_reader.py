@@ -62,12 +62,19 @@ class SimpleBertReader(BaseReader):
     def text_to_instance(self,
                          passage_id: str,
                          question_id: str,
+                         question_type: str,
                          passage: str,
                          question: str,
                          answer0: str,
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
+        metadata = {
+            'passage_id': passage_id,
+            'question_id': question_id,
+            'question_type': question_type,
+        }
+
         max_pieces = self.word_indexers['tokens'].max_pieces
         bert0 = bert_sliding_window(question, answer0, passage, max_pieces)
         bert1 = bert_sliding_window(question, answer1, passage, max_pieces)
@@ -84,8 +91,7 @@ class SimpleBertReader(BaseReader):
         answer1_tokens = self.tokeniser.tokenize(text=answer1)
 
         fields = {
-            "passage_id": MetadataField(passage_id),
-            "question_id": MetadataField(question_id),
+            "metadata": MetadataField(metadata),
             "bert0": ListField(bert0_fields),
             "bert1": ListField(bert1_fields),
             "passage": TextField(passage_tokens, self.word_indexers),

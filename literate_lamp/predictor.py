@@ -16,8 +16,14 @@ class McScriptPredictor(Predictor):
     on it using the model.
     """
 
-    def predict(self, passage_id: str, question_id: str, passage: str,
-                question: str, answer0: str, answer1: str) -> JsonDict:
+    def predict(self,
+                passage_id: str,
+                question_id: str,
+                question_type: str,
+                passage: str,
+                question: str,
+                answer0: str,
+                answer1: str) -> JsonDict:
         """
         Takes the sample data and creates a prediction JSON from it.
         This will then be used to create an `Instance` that will be passed to
@@ -26,6 +32,7 @@ class McScriptPredictor(Predictor):
         return self.predict_json({
             "passage_id": passage_id,
             "question_id": question_id,
+            "question_type": question_type,
             "passage": passage,
             "question": question,
             "answer0": answer0,
@@ -36,13 +43,16 @@ class McScriptPredictor(Predictor):
     def _json_to_instance(self, json_dict: JsonDict) -> Instance:
         passage_id = json_dict['passage_id']
         question_id = json_dict['question_id']
+        question_type = json_dict['question_type']
         passage = json_dict['passage']
         question = json_dict['question']
         answer0 = json_dict['answer0']
         answer1 = json_dict['answer1']
 
         return self._dataset_reader.text_to_instance(
-            passage_id, question_id, passage, question, answer0, answer1)
+            passage_id, question_id, question_type, passage,
+            question, answer0, answer1
+        )
 
 
 def score_questions(model: Model,

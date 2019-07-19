@@ -77,12 +77,18 @@ class RelationBertReader(BaseReader):
     def text_to_instance(self,
                          passage_id: str,
                          question_id: str,
+                         question_type: str,
                          passage: str,
                          question: str,
                          answer0: str,
                          answer1: str,
                          label0: Optional[str] = None
                          ) -> Instance:
+        metadata = {
+            'passage_id': passage_id,
+            'question_id': question_id,
+            'question_type': question_type,
+        }
         if hasattr(self.word_indexers['tokens'], 'max_pieces'):
             max_pieces = self.word_indexers['tokens'].max_pieces
         else:
@@ -107,13 +113,6 @@ class RelationBertReader(BaseReader):
         answer0_words = toks2strs(answer0_tokens)
         answer1_words = toks2strs(answer1_tokens)
 
-        # p_q_relations = strs2toks(self.conceptnet.get_text_query_relations(
-        #     passage_words, question_words))
-        # p_a0_relations = strs2toks(self.conceptnet.get_text_query_relations(
-        #     passage_words, answer0_words))
-        # p_a1_relations = strs2toks(self.conceptnet.get_text_query_relations(
-        #     passage_words, answer1_words))
-
         p_q_relations = relation_sentences(
             self.conceptnet, passage_words, question_words)
         p_a0_relations = relation_sentences(
@@ -124,20 +123,6 @@ class RelationBertReader(BaseReader):
             self.conceptnet, question_words, answer0_words)
         q_a1_relations = relation_sentences(
             self.conceptnet, question_words, answer1_words)
-        # p_p_relations = relation_sentences(
-        #     self.conceptnet, passage_words, passage_words)
-        # q_q_relations = relation_sentences(
-        #     self.conceptnet, question_words, question_words)
-        # a0_a0_relations = relation_sentences(
-        #     self.conceptnet, answer0_words, answer0_words)
-        # a1_a1_relations = relation_sentences(
-        #     self.conceptnet, answer1_words, answer1_words)
-
-        # common_relations = p_q_relations + p_p_relations + q_q_relations
-        # p_a0_relations += common_relations + q_a0_relations + a0_a0_relations
-        # p_a1_relations += common_relations + q_a1_relations + a1_a1_relations
-        # p_a0_rel_set = set(p_a0_relations)
-        # p_a1_rel_set = set(p_a1_relations)
 
         p_a0_rel_set = set(p_a0_relations + p_q_relations + q_a0_relations)
         p_a1_rel_set = set(p_a1_relations + p_q_relations + q_a1_relations)
@@ -149,8 +134,7 @@ class RelationBertReader(BaseReader):
         p_a1_fields = [TextField(b, self.word_indexers) for b in p_a1_tokens]
 
         fields = {
-            "passage_id": MetadataField(passage_id),
-            "question_id": MetadataField(question_id),
+            "metadata": MetadataField(metadata),
             "bert0": ListField(bert0_fields),
             "bert1": ListField(bert1_fields),
             "passage": TextField(passage_tokens, self.word_indexers),
