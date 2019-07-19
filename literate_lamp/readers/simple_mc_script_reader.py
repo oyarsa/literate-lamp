@@ -9,10 +9,10 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data.tokenizers import WordTokenizer
 from allennlp.data.fields import TextField, LabelField, MetadataField
 
-from readers.mc_script_reader import McScriptReader
+from readers.base_reader import BaseReader
 
 
-class SimpleMcScriptReader(McScriptReader):
+class SimpleMcScriptReader(BaseReader):
     """
      DatasetReader for Question Answering data, from a JSON converted from the
      original XML files (using xml2json).

@@ -27,7 +27,7 @@ from models import (BaselineClassifier, Trian, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
                     HierarchicalBert, AdvancedAttentionBertClassifier,
                     HierarchicalAttentionNetwork, RelationalTransformerModel,
-                    RelationalHan, Dcmn)
+                    RelationalHan, Dcmn, ZeroTrian)
 from predictor import McScriptPredictor
 from util import example_input, is_cuda, train_model, load_data
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
@@ -442,6 +442,95 @@ def build_hierarchical_bert(vocab: Vocabulary) -> Model:
     return model
 
 
+def build_zero_trian(vocab: Vocabulary) -> Model:
+    """
+    Builds the ZeroTriAN classifier without the extra features (NER, POS, HC)
+    nor the relations..
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `ZeroTrian` model ready to be trained.
+    """
+    word_embeddings = get_word_embeddings(vocab)
+
+    if ARGS.ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_seq2seq
+    elif ARGS.ENCODER_TYPE == 'gru':
+        encoder_fn = gru_seq2seq
+    elif ARGS.ENCODER_TYPE == 'transformer':
+        # Transformer has to be handled differently, but the two RNNs can share
+        pass
+    else:
+        raise ValueError('Invalid RNN type')
+
+    embedding_dim = word_embeddings.get_output_dim()
+
+    # p_emb + p_q_weighted + p_q_rel + 2*p_a_rel
+    p_input_size = 2*embedding_dim
+    # q_emb
+    q_input_size = embedding_dim
+    # a_emb + a_q_match + a_p_match
+    a_input_size = 3 * embedding_dim
+
+    # To prevent the warning on single-layer, as the dropout is only
+    # between layers of the stacked RNN.
+    dropout = ARGS.RNN_DROPOUT if ARGS.RNN_LAYERS > 1 else 0
+
+    if ARGS.ENCODER_TYPE in ['lstm', 'gru']:
+        p_encoder = encoder_fn(input_dim=p_input_size,
+                               output_dim=ARGS.HIDDEN_DIM,
+                               num_layers=ARGS.RNN_LAYERS,
+                               bidirectional=ARGS.BIDIRECTIONAL,
+                               dropout=dropout)
+        q_encoder = encoder_fn(input_dim=q_input_size,
+                               output_dim=ARGS.HIDDEN_DIM,
+                               num_layers=1,
+                               bidirectional=ARGS.BIDIRECTIONAL)
+        a_encoder = encoder_fn(input_dim=a_input_size,
+                               output_dim=ARGS.HIDDEN_DIM,
+                               num_layers=1,
+                               bidirectional=ARGS.BIDIRECTIONAL)
+    elif ARGS.ENCODER_TYPE == 'transformer':
+        p_encoder = transformer_seq2seq(
+            input_dim=p_input_size,
+            model_dim=ARGS.HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=1024
+        )
+        q_encoder = transformer_seq2seq(
+            input_dim=q_input_size,
+            model_dim=ARGS.HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=512
+        )
+        a_encoder = transformer_seq2seq(
+            input_dim=a_input_size,
+            model_dim=ARGS.HIDDEN_DIM,
+            num_layers=4,
+            num_attention_heads=4,
+            feedforward_hidden_dim=512
+        )
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = ZeroTrian(
+        word_embeddings=word_embeddings,
+        p_encoder=p_encoder,
+        q_encoder=q_encoder,
+        a_encoder=a_encoder,
+        vocab=vocab,
+        embedding_dropout=0,
+        encoder_dropout=ARGS.RNN_DROPOUT
+    )
+
+    return model
+
+
 def build_simple_trian(vocab: Vocabulary) -> Model:
     """
     Builds the TriAN classifier without the extra features (NER, POS, HC).
@@ -827,6 +916,7 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model],
         'rtm': (build_relational_transformer, 'relation-bert'),
         'relhan': (build_rel_han, 'relation-bert'),
         'dcmn': (build_dcmn, 'simple'),
+        'zero-trian': (build_zero_trian, 'simple'),
     }
 
     if ARGS.MODEL in models:

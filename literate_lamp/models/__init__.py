@@ -11,3 +11,4 @@ from models.relational_transformer_model import RelationalTransformerModel
 from models.simple_bert import SimpleBertClassifier
 from models.simple_trian import SimpleTrian
 from models.trian import Trian
+from models.zero_trian import ZeroTrian

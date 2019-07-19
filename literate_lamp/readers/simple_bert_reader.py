@@ -8,11 +8,11 @@ from allennlp.data.tokenizers import WordTokenizer
 from allennlp.data.fields import (TextField, LabelField, MetadataField,
                                   ListField)
 
-from readers.mc_script_reader import McScriptReader
+from readers.base_reader import BaseReader
 from readers.util import bert_sliding_window
 
 
-class SimpleBertReader(McScriptReader):
+class SimpleBertReader(BaseReader):
     """
     DatasetReader for Question Answering data, from a JSON converted from the
     original XML files (using xml2json).

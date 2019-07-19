@@ -12,11 +12,11 @@ from allennlp.data.fields import (TextField, LabelField, MetadataField,
                                   ListField)
 
 from conceptnet import ConceptNet
-from readers.mc_script_reader import McScriptReader
+from readers.base_reader import BaseReader
 from readers.util import toks2strs, bert_sliding_window, relation_sentences
 
 
-class RelationBertReader(McScriptReader):
+class RelationBertReader(BaseReader):
     """
     DatasetReader for Question Answering data, from a JSON converted from the
     original XML files (using xml2json).

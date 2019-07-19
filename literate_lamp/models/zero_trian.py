@@ -1,5 +1,7 @@
 """
-This is the full TriAN.
+This is Trian without the overlapping, handcrafted, POS, NER and relation
+features. Just text encoding. The version with text + relation is SimpleTrian,
+and the full one is Trian.
 """
 from typing import Dict, Optional
 
@@ -13,7 +15,7 @@ from models.base_model import BaseModel
 from layers import LinearSelfAttention, BilinearAttention, SequenceAttention
 
 
-class Trian(BaseModel):
+class ZeroTrian(BaseModel):
     """
     Refer to `BaselineClassifier` for details on how this works.
 
@@ -35,9 +37,6 @@ class Trian(BaseModel):
 
     def __init__(self,
                  word_embeddings: TextFieldEmbedder,
-                 pos_embeddings: TextFieldEmbedder,
-                 ner_embeddings: TextFieldEmbedder,
-                 rel_embeddings: TextFieldEmbedder,
                  p_encoder: Seq2SeqEncoder,
                  q_encoder: Seq2SeqEncoder,
                  a_encoder: Seq2SeqEncoder,
@@ -48,9 +47,6 @@ class Trian(BaseModel):
         super().__init__(vocab)
 
         self.word_embeddings = word_embeddings
-        self.pos_embeddings = pos_embeddings
-        self.ner_embeddings = ner_embeddings
-        self.rel_embeddings = rel_embeddings
 
         if embedding_dropout > 0:
             self.embedding_dropout = torch.nn.Dropout(p=embedding_dropout)
@@ -97,7 +93,6 @@ class Trian(BaseModel):
     # are the fields from the `Instance` we created, as that's what's going to
     # be passed to this. We also have the optional `label`, which is only
     # available at training time, used to calculate the loss.
-
     def forward(self,
                 passage_id: Dict[str, torch.Tensor],
                 question_id: Dict[str, torch.Tensor],
@@ -105,13 +100,6 @@ class Trian(BaseModel):
                 question: Dict[str, torch.Tensor],
                 answer0: Dict[str, torch.Tensor],
                 answer1: Dict[str, torch.Tensor],
-                passage_pos: Dict[str, torch.Tensor],
-                passage_ner: Dict[str, torch.Tensor],
-                question_pos: Dict[str, torch.Tensor],
-                p_q_rel: Dict[str, torch.Tensor],
-                p_a0_rel: Dict[str, torch.Tensor],
-                p_a1_rel: Dict[str, torch.Tensor],
-                hc_feat: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
@@ -128,15 +116,6 @@ class Trian(BaseModel):
         q_emb = self.embedding_dropout(self.word_embeddings(question))
         a0_emb = self.embedding_dropout(self.word_embeddings(answer0))
         a1_emb = self.embedding_dropout(self.word_embeddings(answer1))
-        # And the POS tags
-        p_pos_emb = self.embedding_dropout(self.pos_embeddings(passage_pos))
-        q_pos_emb = self.embedding_dropout(self.pos_embeddings(question_pos))
-        # And the NER
-        p_ner_emb = self.embedding_dropout(self.ner_embeddings(passage_ner))
-        # And the relations
-        p_q_rel_emb = self.embedding_dropout(self.rel_embeddings(p_q_rel))
-        p_a0_rel_emb = self.embedding_dropout(self.rel_embeddings(p_a0_rel))
-        p_a1_rel_emb = self.embedding_dropout(self.rel_embeddings(p_a1_rel))
 
         # We compute the Sequence Attention
         # First the scores
@@ -146,19 +125,17 @@ class Trian(BaseModel):
         a0_p_scores = self.a_p_match(a0_emb, p_emb, p_mask)
         a1_p_scores = self.a_p_match(a1_emb, p_emb, p_mask)
 
-        # Then the weighted inputs
-        p_q_match = util.weighted_sum(q_emb, p_q_scores)
-        a0_q_match = util.weighted_sum(q_emb, a0_q_scores)
-        a1_q_match = util.weighted_sum(q_emb, a1_q_scores)
-        a0_p_match = util.weighted_sum(p_emb, a0_p_scores)
-        a1_p_match = util.weighted_sum(p_emb, a1_p_scores)
+        p_q_match = p_q_scores.bmm(q_emb)
+        a0_q_match = a0_q_scores.bmm(q_emb)
+        a1_q_match = a1_q_scores.bmm(q_emb)
+        a0_p_match = a0_p_scores.bmm(p_emb)
+        a1_p_match = a1_p_scores.bmm(p_emb)
 
         # We combine the inputs to our encoder
-        p_input = torch.cat((p_emb, p_q_match, p_pos_emb, p_ner_emb, hc_feat,
-                             p_q_rel_emb, p_a0_rel_emb, p_a1_rel_emb), dim=2)
+        p_input = torch.cat((p_emb, p_q_match), dim=2)
         a0_input = torch.cat((a0_emb, a0_p_match, a0_q_match), dim=2)
         a1_input = torch.cat((a1_emb, a1_p_match, a1_q_match), dim=2)
-        q_input = torch.cat((q_emb, q_pos_emb), dim=2)
+        q_input = q_emb
 
         # Then we use those (along with the masks) as inputs for
         # our encoders

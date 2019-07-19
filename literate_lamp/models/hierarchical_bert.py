@@ -5,11 +5,11 @@ from pathlib import Path
 import torch
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.data.vocabulary import Vocabulary
+from allennlp.nn import util
 
-import util
 from models.base_model import BaseModel
-from layers import bert_embeddings
 from models.util import seq_over_seq
+from layers import bert_embeddings
 
 
 class HierarchicalBert(BaseModel):

@@ -5,11 +5,11 @@ import torch
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.data.vocabulary import Vocabulary
+from allennlp.nn import util
 
-import util
 from models.base_model import BaseModel
-from layers import RelationalTransformerEncoder, LinearAttention
 from models.util import hierarchical_seq_over_seq, seq_over_seq
+from layers import RelationalTransformerEncoder, LinearAttention
 
 
 class RelationalTransformerModel(BaseModel):

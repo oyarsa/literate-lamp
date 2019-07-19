@@ -6,8 +6,8 @@ from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.data.vocabulary import Vocabulary
+from allennlp.nn import util
 
-import util
 from models.base_model import BaseModel
 from layers import BilinearAttention
 

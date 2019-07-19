@@ -17,12 +17,12 @@ from allennlp.data.fields import (TextField, LabelField, MetadataField,
                                   ArrayField)
 
 from conceptnet import ConceptNet
-from readers.mc_script_reader import McScriptReader
+from readers.base_reader import BaseReader
 from readers.util import (strs2toks, toks2strs,
                           compute_handcrafted_features)
 
 
-class FullTrianReader(McScriptReader):
+class FullTrianReader(BaseReader):
     """
      DatasetReader for Question Answering data, from a JSON converted from the
      original XML files (using xml2json).

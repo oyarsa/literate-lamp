@@ -5,9 +5,9 @@ import torch
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.data.vocabulary import Vocabulary
+from allennlp.nn import util
 
 from models.base_model import BaseModel
-import util
 
 
 class BaselineClassifier(BaseModel):

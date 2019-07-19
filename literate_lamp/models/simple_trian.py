@@ -8,8 +8,8 @@ import torch
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.data.vocabulary import Vocabulary
+from allennlp.nn import util
 
-import util
 from models.base_model import BaseModel
 from layers import LinearSelfAttention, BilinearAttention, SequenceAttention
 

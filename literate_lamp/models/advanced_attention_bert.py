@@ -6,8 +6,8 @@ import torch
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.modules.seq2vec_encoders import BertPooler
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
+from allennlp.nn import util
 
-import util
 from models.base_model import BaseModel
 from layers import bert_embeddings, LinearSelfAttention
 

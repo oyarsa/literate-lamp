@@ -9,7 +9,7 @@ from allennlp.data import Instance
 from allennlp.data.dataset_readers import DatasetReader
 
 
-class McScriptReader(DatasetReader):
+class BaseReader(DatasetReader):
     """Base class for the readers in this module.
     As they all read from the same type of file, the `_read` function is
     shared. However, they provide different features for different modules,
