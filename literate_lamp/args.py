@@ -69,6 +69,8 @@ ARGS:
         args.BATCH_SIZE = 24
         # Number of epochs to train model
         args.NUM_EPOCHS = 30
+        # Size of largest sequence (for XLNet)
+        args.max_seq_length = 950
     elif config == 'small':
         # Path to our dataset
         args.TRAIN_DATA_PATH = data_folder / 'small-train.json'
@@ -85,9 +87,15 @@ ARGS:
         args.BATCH_SIZE = 2
         # Number of epochs to train model
         args.NUM_EPOCHS = 1
+        # Size of largest sequence (for XLNet)
+        args.max_seq_length = 340
 
     args.BERT_PATH = external_folder / 'bert-base-uncased.tar.gz'
     args.CONCEPTNET_PATH = external_folder / 'conceptnet.csv'
+    args.xlnet_vocab_path = data_folder / 'xlnet-base-cased-spiece.model'
+    args.xlnet_config_path = data_folder / 'xlnet-base-cased-config.json'
+    args.xlnet_model_path = external_folder / \
+        'xlnet-base-cased-pytorch_model.bin'
 
     # Path to save the Model and Vocabulary
     args.SAVE_FOLDER = Path('experiments')

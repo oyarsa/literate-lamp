@@ -79,6 +79,10 @@ def bert_sliding_window(question: str, answer: str, passage: str,
     return pieces
 
 
+def xlnet_input_string(question: str, answer: str, passage: str) -> str:
+    return f'{question} [SEP] {answer} [SEP] {passage}'
+
+
 def relation_sentences(conceptnet: ConceptNet, text: Sequence[str],
                        query: Sequence[str]) -> List[str]:
     triples = conceptnet.get_all_text_query_triples(text, query)

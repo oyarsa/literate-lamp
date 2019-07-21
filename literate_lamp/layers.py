@@ -23,6 +23,7 @@ from allennlp.modules.seq2seq_encoders import (Seq2SeqEncoder,
 from allennlp.modules.layer_norm import LayerNorm
 
 from util import clone_module
+from modules import PretrainedXLNetEmbedder
 
 
 class BilinearMatrixAttention(Attention):
@@ -260,6 +261,23 @@ def bert_embeddings(pretrained_model: Path, training: bool = False,
     word_embeddings = BasicTextFieldEmbedder(
         token_embedders={'tokens': bert},
         embedder_to_indexer_map={'tokens': ['tokens', 'tokens-offsets']},
+        allow_unmatched_keys=True)
+    return word_embeddings
+
+
+def xlnet_embeddings(config_path: Path,
+                     model_path: Path,
+                     training: bool = False,
+                     top_layer_only: bool = True,
+                     ) -> BasicTextFieldEmbedder:
+    "Pre-trained embeddings using BERT"
+    xlnet = PretrainedXLNetEmbedder(
+        config_path=config_path,
+        model_path=model_path
+    )
+    word_embeddings = BasicTextFieldEmbedder(
+        token_embedders={'tokens': xlnet},
+        embedder_to_indexer_map={'tokens': ['tokens',  'cls-index']},
         allow_unmatched_keys=True)
     return word_embeddings
 

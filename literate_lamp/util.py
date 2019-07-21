@@ -57,7 +57,7 @@ class DotDict(Dict[str, Any]):
                 self[key] = value
 
     def __getattr__(self, attr: str) -> Any:
-        return self.get(attr)
+        return self.__getitem__(attr)
 
     def __setattr__(self, key: str, value: Any) -> None:
         self.__setitem__(key, value)

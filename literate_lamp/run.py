@@ -31,7 +31,7 @@ from models import (BaselineClassifier, Trian, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
                     HierarchicalBert, AdvancedAttentionBertClassifier,
                     HierarchicalAttentionNetwork, RelationalTransformerModel,
-                    RelationalHan, Dcmn, ZeroTrian)
+                    RelationalHan, Dcmn, ZeroTrian, SimpleXLNetClassifier)
 from predictor import McScriptPredictor
 from util import example_input, is_cuda, train_model, load_data
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
@@ -41,7 +41,8 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     RelationalTransformerEncoder)
 from readers import (SimpleBertReader, SimpleMcScriptReader,
                      SimpleTrianReader, FullTrianReader,
-                     BaseReader, RelationBertReader)
+                     BaseReader, RelationBertReader, SimpleXLNetReader)
+from modules import PretrainedXLNetEmbedder
 
 
 ARGS = args.get_args()
@@ -54,8 +55,18 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
                                 ARGS.GLOVE_EMBEDDING_DIM, training=True)
     if ARGS.EMBEDDING_TYPE == 'bert':
         return bert_embeddings(pretrained_model=ARGS.BERT_PATH)
+    if ARGS.EMBEDDING_TYPE == 'xlnet':
+        return PretrainedXLNetEmbedder()
     raise ValueError(
         f'Invalid word embedding type: {ARGS.EMBEDDING_TYPE}')
+
+
+def build_simple_xlnet(vocabulary: Vocabulary) -> Model:
+    return SimpleXLNetClassifier(
+        vocab=vocabulary,
+        config_path=ARGS.xlnet_config_path,
+        model_path=ARGS.xlnet_model_path
+    )
 
 
 def build_dcmn(vocabulary: Vocabulary) -> Model:
@@ -901,6 +912,11 @@ def create_reader(reader_type: str) -> BaseReader:
     if reader_type == 'relation-bert':
         return RelationBertReader(is_bert=is_bert,
                                   conceptnet_path=ARGS.CONCEPTNET_PATH)
+    if reader_type == 'simple-xl':
+        return SimpleXLNetReader(
+            vocab_file=ARGS.xlnet_vocab_path,
+            max_seq_length=ARGS.max_seq_length
+        )
     raise ValueError(f'Reader type {reader_type} is invalid')
 
 
@@ -921,6 +937,7 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], BaseReader]:
         'relhan': (build_rel_han, 'relation-bert'),
         'dcmn': (build_dcmn, 'simple'),
         'zero-trian': (build_zero_trian, 'simple'),
+        'simple-xl': (build_simple_xlnet, 'simple-xl'),
     }
 
     if ARGS.MODEL in models:

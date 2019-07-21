@@ -9,5 +9,6 @@ from readers.base_reader import BaseReader
 from readers.full_trian_reader import FullTrianReader
 from readers.simple_mc_script_reader import SimpleMcScriptReader
 from readers.simple_bert_reader import SimpleBertReader
+from readers.simple_xlnet_reader import SimpleXLNetReader
 from readers.simple_trian_reader import SimpleTrianReader
 from readers.relation_bert_reader import RelationBertReader
