@@ -12,3 +12,4 @@ from readers.simple_bert_reader import SimpleBertReader
 from readers.simple_xlnet_reader import SimpleXLNetReader
 from readers.simple_trian_reader import SimpleTrianReader
 from readers.relation_bert_reader import RelationBertReader
+from readers.relation_xlnet_reader import RelationXLNetReader

@@ -32,7 +32,7 @@ from models import (BaselineClassifier, Trian, AttentiveReader,
                     HierarchicalBert, AdvancedAttentionBertClassifier,
                     HierarchicalAttentionNetwork, RelationalTransformerModel,
                     RelationalHan, Dcmn, ZeroTrian, SimpleXLNetClassifier,
-                    AdvancedXLNetClassifier)
+                    AdvancedXLNetClassifier, RelationalXL)
 from predictor import McScriptPredictor
 from util import example_input, is_cuda, train_model, load_data
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
@@ -41,7 +41,8 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     RelationalTransformerEncoder)
 from readers import (SimpleBertReader, SimpleMcScriptReader,
                      SimpleTrianReader, FullTrianReader,
-                     BaseReader, RelationBertReader, SimpleXLNetReader)
+                     BaseReader, RelationBertReader, SimpleXLNetReader,
+                     RelationXLNetReader)
 
 
 ARGS = args.get_args()
@@ -59,6 +60,58 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
                                 model_path=ARGS.xlnet_model_path)
     raise ValueError(
         f'Invalid word embedding type: {ARGS.EMBEDDING_TYPE}')
+
+
+def build_relational_xl(vocabulary: Vocabulary) -> Model:
+    """
+    Builds the RelationalXL.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `RelationalXL` model ready to be trained.
+    """
+    word_embeddings = get_word_embeddings(vocabulary)
+    embedding_dim = word_embeddings.get_output_dim()
+
+    if ARGS.ENCODER_TYPE == 'lstm':
+        seq_fn = lstm_seq2seq
+        encoder_fn = lstm_encoder
+    elif ARGS.ENCODER_TYPE == 'gru':
+        seq_fn = gru_seq2seq
+        encoder_fn = gru_encoder
+    else:
+        raise ValueError('Invalid RNN type')
+
+    # To prevent the warning on single-layer, as the dropout is only
+    # between layers of the stacked RNN.
+    dropout = ARGS.RNN_DROPOUT if ARGS.RNN_LAYERS > 1 else 0
+
+    if ARGS.ENCODER_TYPE in ['lstm', 'gru']:
+        relation_encoder = encoder_fn(input_dim=embedding_dim,
+                                      output_dim=ARGS.HIDDEN_DIM,
+                                      num_layers=ARGS.RNN_LAYERS,
+                                      bidirectional=ARGS.BIDIRECTIONAL,
+                                      dropout=dropout)
+        text_encoder = seq_fn(input_dim=embedding_dim,
+                              output_dim=ARGS.HIDDEN_DIM,
+                              num_layers=ARGS.RNN_LAYERS,
+                              bidirectional=ARGS.BIDIRECTIONAL,
+                              dropout=dropout)
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = RelationalXL(
+        word_embeddings=word_embeddings,
+        text_encoder=text_encoder,
+        relation_encoder=relation_encoder,
+        vocab=vocabulary,
+        encoder_dropout=0.5
+    )
+
+    return model
 
 
 def build_advanced_xlnet(vocab: Vocabulary) -> Model:
@@ -963,6 +1016,12 @@ def create_reader(reader_type: str) -> BaseReader:
             vocab_file=ARGS.xlnet_vocab_path,
             max_seq_length=ARGS.max_seq_length
         )
+    if reader_type == 'relation-xl':
+        return RelationXLNetReader(
+            vocab_file=ARGS.xlnet_vocab_path,
+            max_seq_length=ARGS.max_seq_length,
+            conceptnet_path=ARGS.CONCEPTNET_PATH
+        )
     raise ValueError(f'Reader type {reader_type} is invalid')
 
 
@@ -985,6 +1044,7 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], BaseReader]:
         'zero-trian': (build_zero_trian, 'simple'),
         'simple-xl': (build_simple_xlnet, 'simple-xl'),
         'advanced-xl': (build_advanced_xlnet, 'simple-xl'),
+        'relation-xl': (build_relational_xl, 'relation-xl'),
     }
 
     if ARGS.MODEL in models:

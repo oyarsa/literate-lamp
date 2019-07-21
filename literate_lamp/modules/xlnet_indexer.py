@@ -71,8 +71,6 @@ class XLNetIndexer(TokenIndexer[int]):
         self.cls_token_id = self.tokeniser.convert_tokens_to_ids(cls_token)
         self.sep_token_id = self.tokeniser.convert_tokens_to_ids(sep_token)
 
-        print('maxseq', self.max_seq_length)
-
     @overrides
     def count_vocab_items(self,
                           token: Token,

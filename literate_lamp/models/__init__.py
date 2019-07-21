@@ -10,6 +10,7 @@ from models.hierarchical_attention_network import HierarchicalAttentionNetwork
 from models.hierarchical_bert import HierarchicalBert
 from models.relational_han import RelationalHan
 from models.relational_transformer_model import RelationalTransformerModel
+from models.relational_xlnet import RelationalXL
 from models.simple_bert import SimpleBertClassifier
 from models.simple_xlnet import SimpleXLNetClassifier
 from models.simple_trian import SimpleTrian

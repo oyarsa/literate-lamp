@@ -92,7 +92,7 @@ class XLNetEmbedder(TokenEmbedder):
             token_type_ids=util.combine_initial_dims(token_type_ids),
             attention_mask=util.combine_initial_dims(input_mask)
         )
-        return output
+        return util.uncombine_initial_dims(output, input_ids.shape)
 
 
 class PretrainedXLNetEmbedder(XLNetEmbedder):
