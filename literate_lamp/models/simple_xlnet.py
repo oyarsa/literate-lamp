@@ -20,13 +20,15 @@ class SimpleXLNetClassifier(BaseModel):
     def __init__(self,
                  vocab: Vocabulary,
                  config_path: Path,
-                 model_path: Path
+                 model_path: Path,
+                 train_xlnet: bool = False
                  ) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
         self.word_embeddings = xlnet_embeddings(
             config_path=config_path,
-            model_path=model_path
+            model_path=model_path,
+            training=train_xlnet
         )
 
         self.pooler = XLNetPooler(self.word_embeddings.get_output_dim())

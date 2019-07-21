@@ -54,10 +54,12 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
         return glove_embeddings(vocabulary, ARGS.GLOVE_PATH,
                                 ARGS.GLOVE_EMBEDDING_DIM, training=True)
     if ARGS.EMBEDDING_TYPE == 'bert':
-        return bert_embeddings(pretrained_model=ARGS.BERT_PATH)
+        return bert_embeddings(pretrained_model=ARGS.BERT_PATH,
+                               training=ARGS.finetune_embeddings)
     if ARGS.EMBEDDING_TYPE == 'xlnet':
         return xlnet_embeddings(config_path=ARGS.xlnet_config_path,
-                                model_path=ARGS.xlnet_model_path)
+                                model_path=ARGS.xlnet_model_path,
+                                training=ARGS.finetune_embeddings)
     raise ValueError(
         f'Invalid word embedding type: {ARGS.EMBEDDING_TYPE}')
 
@@ -150,7 +152,8 @@ def build_advanced_xlnet(vocab: Vocabulary) -> Model:
         model_path=ARGS.xlnet_model_path,
         encoder=encoder,
         vocab=vocab,
-        encoder_dropout=0.5
+        encoder_dropout=0.5,
+        train_xlnet=ARGS.finetune_embeddings
     )
 
     return model
@@ -160,7 +163,8 @@ def build_simple_xlnet(vocabulary: Vocabulary) -> Model:
     return SimpleXLNetClassifier(
         vocab=vocabulary,
         config_path=ARGS.xlnet_config_path,
-        model_path=ARGS.xlnet_model_path
+        model_path=ARGS.xlnet_model_path,
+        train_xlnet=ARGS.finetune_embeddings
     )
 
 

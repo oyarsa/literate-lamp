@@ -13,9 +13,6 @@ from modules.xlnet_word_splitter import PretrainedXLNetTokenizer
 
 logger = logging.getLogger(__name__)
 
-# This is the default list of tokens that should not be lowercased.
-_NEVER_LOWERCASE = ['[UNK]', '[SEP]', '[PAD]', '[CLS]', '[MASK]']
-
 
 class XLNetIndexer(TokenIndexer[int]):
     """
@@ -35,11 +32,6 @@ class XLNetIndexer(TokenIndexer[int]):
         The XLNet embedder uses positional embeddings and so has a
         corresponding maximum length for its input ids. Currently any inputs
         longer than this will be truncated.
-    do_lowercase : ``bool``, optional (default=``False``)
-        Should we lowercase the provided tokens before getting the indices?
-        You would need to do this if you are using an -uncased BERT model
-        but your DatasetReader is not lowercasing tokens (which might be the
-        case if you're also using other embeddings based on cased tokens).
     end_tokens : ``str``, optional (default=``[CLS]``)
         These are appended to the tokens provided to ``tokens_to_indices``.
     sep_token : ``str``, optional (default=``[SEP]``)
@@ -52,7 +44,6 @@ class XLNetIndexer(TokenIndexer[int]):
                  namespace: str = "tokens",
                  max_seq_length: int = 512,
                  vocab_file: str = 'xlnet-base-cased',
-                 do_lowercase: bool = False,
                  sep_token: str = '<sep>',
                  cls_token: str = '<cls>',
                  pad_token: Union[int, str] = 0,
@@ -62,7 +53,6 @@ class XLNetIndexer(TokenIndexer[int]):
         self.biggest = 0
         self.namespace = namespace
         self.max_seq_length = max_seq_length
-        self.do_lowercase = do_lowercase
         self.tokeniser = PretrainedXLNetTokenizer.load(vocab_file)
         self.sep_token = sep_token
         self.cls_token = cls_token

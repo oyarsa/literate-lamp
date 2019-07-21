@@ -24,12 +24,14 @@ class AdvancedXLNetClassifier(BaseModel):
                  config_path: Path,
                  model_path: Path,
                  encoder_dropout: float = 0.5,
+                 train_xlnet: bool = False
                  ) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
         self.word_embeddings = xlnet_embeddings(
             config_path=config_path,
-            model_path=model_path
+            model_path=model_path,
+            training=train_xlnet
         )
 
         self.encoder = encoder

@@ -133,7 +133,7 @@ ARGS:
     args.RNN_DROPOUT = 0.5 if args.ENCODER_TYPE != 'transformer' else 0
     args.EMBEDDDING_DROPOUT = 0.5 if args.EMBEDDING_TYPE != 'bert' else 0
 
-    # What encoder to use to join the relation embeddings into a single vector.
-    args.RELATION_ENCODER = 'cnn'
+    # Whether to fine tune the embeddings (specifically BERT and XLNet)
+    args.finetune_embeddings = False
 
     return args

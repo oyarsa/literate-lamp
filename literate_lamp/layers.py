@@ -274,7 +274,8 @@ def xlnet_embeddings(config_path: Path,
     "Pre-trained embeddings using BERT"
     xlnet = PretrainedXLNetEmbedder(
         config_path=config_path,
-        model_path=model_path
+        model_path=model_path,
+        requires_grad=training
     )
     word_embeddings = BasicTextFieldEmbedder(
         token_embedders={'tokens': xlnet},
