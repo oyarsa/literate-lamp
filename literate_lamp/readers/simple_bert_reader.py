@@ -18,24 +18,18 @@ class SimpleBertReader(BaseReader):
     original XML files (using xml2json).
 
     Each `Instance` will have these fields:
-        - `passage_id`: the id of the text
-        - `question_id`: the id of question
+        - `metadata`: text id, question id and question type
         - `bert0`: input text for first answer
         - `bert1`: input text for second answer
-        - `passage`: the main text from which the question will ask about
-        - `question`: the question text
-        - `answer0`: the first candidate answer
-        - `answer1`: the second candidate answer
         - `label`: 0 if answer0 is the correct one, 1 if answer1 is correct
 
     For `bert0` and `bert1`, the input text is split into windows, as the
     passage text is likely to be bigger than BERT's maximum size.
-
-    Even though the models won't anything besides `bert0` and `bert1`, the
-    fields are going to be used for sorting the input to minimise padding.
-    This is done in the training function.  It isn't necessary, but changing
-    that behaviour would involve too much work.
     """
+    keys = [
+        ("bert0", "list_num_tokens"),
+        ("bert1", "list_num_tokens")
+    ]
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
@@ -85,19 +79,10 @@ class SimpleBertReader(BaseReader):
         bert0_fields = [TextField(b, self.word_indexers) for b in bert0_tokens]
         bert1_fields = [TextField(b, self.word_indexers) for b in bert1_tokens]
 
-        passage_tokens = self.tokeniser.tokenize(text=passage[:max_pieces])
-        question_tokens = self.tokeniser.tokenize(text=question)
-        answer0_tokens = self.tokeniser.tokenize(text=answer0)
-        answer1_tokens = self.tokeniser.tokenize(text=answer1)
-
         fields = {
             "metadata": MetadataField(metadata),
             "bert0": ListField(bert0_fields),
             "bert1": ListField(bert1_fields),
-            "passage": TextField(passage_tokens, self.word_indexers),
-            "question": TextField(question_tokens, self.word_indexers),
-            "answer0": TextField(answer0_tokens, self.word_indexers),
-            "answer1": TextField(answer1_tokens, self.word_indexers),
         }
 
         if label0 is not None:

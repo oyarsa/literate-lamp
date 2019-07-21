@@ -36,6 +36,10 @@ class SimpleXLNetReader(BaseReader):
     This is done in the training function.  It isn't necessary, but changing
     that behaviour would involve too much work.
     """
+    keys = [
+        ("string0", "tokens_length"),
+        ("string1", "tokens_length")
+    ]
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
@@ -78,26 +82,16 @@ class SimpleXLNetReader(BaseReader):
             'question_type': question_type,
         }
 
-        max_pieces = self.word_indexers['tokens'].max_seq_length
         string0 = xlnet_input_string(question, answer0, passage)
         string1 = xlnet_input_string(question, answer1, passage)
 
         tokens0 = self.tokeniser.tokenize(text=string0)
         tokens1 = self.tokeniser.tokenize(text=string1)
 
-        passage_tokens = self.tokeniser.tokenize(text=passage[:max_pieces])
-        question_tokens = self.tokeniser.tokenize(text=question)
-        answer0_tokens = self.tokeniser.tokenize(text=answer0)
-        answer1_tokens = self.tokeniser.tokenize(text=answer1)
-
         fields = {
             "metadata": MetadataField(metadata),
             "string0": TextField(tokens0, self.word_indexers),
             "string1": TextField(tokens1, self.word_indexers),
-            "passage": TextField(passage_tokens, self.word_indexers),
-            "question": TextField(question_tokens, self.word_indexers),
-            "answer0": TextField(answer0_tokens, self.word_indexers),
-            "answer1": TextField(answer1_tokens, self.word_indexers),
         }
 
         if label0 is not None:

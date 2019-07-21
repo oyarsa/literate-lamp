@@ -903,7 +903,7 @@ def build_trian(vocab: Vocabulary) -> Model:
 def test_load(build_model_fn: Callable[[Vocabulary], Model],
               reader: BaseReader,
               save_path: Path,
-              original_prediction: Dict[str, torch.Tensor],
+              original_prediction: torch.Tensor,
               cuda_device: int) -> None:
     "Test if we can load the model and if its prediction matches the original."
     print('\n>>>>Testing if the model saves and loads correctly')
@@ -1032,14 +1032,13 @@ def split_list(data: List[Instance]) -> Dict[str, List[Instance]]:
     return output
 
 
-def evaluate(model: Model, test_data: List[Instance]) -> None:
+def evaluate(model: Model,
+             reader: BaseReader,
+             test_data: List[Instance]
+             ) -> None:
     vocab = Vocabulary.from_instances(test_data)
-    iterator = BucketIterator(batch_size=ARGS.BATCH_SIZE, sorting_keys=[
-        ("passage", "num_tokens"),
-        ("question", "num_tokens"),
-        ("answer0", "num_tokens"),
-        ("answer1", "num_tokens")
-    ])
+    iterator = BucketIterator(batch_size=ARGS.BATCH_SIZE,
+                              sorting_keys=reader.keys)
     # Our data should be indexed using the vocabulary we learned.
     iterator.index_with(vocab)
 
@@ -1087,9 +1086,10 @@ def run_model() -> None:
                         num_epochs=ARGS.NUM_EPOCHS,
                         batch_size=ARGS.BATCH_SIZE,
                         optimiser_fn=optimiser,
-                        cuda_device=ARGS.CUDA_DEVICE)
+                        cuda_device=ARGS.CUDA_DEVICE,
+                        sorting_keys=reader.keys)
 
-    evaluate(model, test_dataset)
+    evaluate(model, test_dataset, reader)
     result = make_prediction(model, reader, verbose=False)
 
     print('Save path', ARGS.SAVE_PATH)

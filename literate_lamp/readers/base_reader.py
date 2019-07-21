@@ -2,7 +2,7 @@
 Implements the data extraction part. The generation of features is left to
 the derived classes.
 """
-from typing import Iterator
+from typing import Iterator, List, Tuple
 import json
 
 from allennlp.data import Instance
@@ -15,6 +15,7 @@ class BaseReader(DatasetReader):
     shared. However, they provide different features for different modules,
     so they create different `Instance`s
     """
+    keys: List[Tuple[str, str]] = []
 
     def _read(self, file_path: str) -> Iterator[Instance]:
         "Reads a file from `file_path` and returns a list of `Instances`."

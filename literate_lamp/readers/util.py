@@ -87,7 +87,7 @@ def bert_sliding_window(question: str, answer: str, passage: str,
 
 
 def xlnet_input_string(question: str, answer: str, passage: str) -> str:
-    return f'{passage} [SEP] {question} {answer}'
+    return f'{passage} <sep> {question} {answer}'
 
 
 def relation_sentences(conceptnet: ConceptNet, text: Sequence[str],
@@ -104,6 +104,8 @@ def get_tokenizer(embedding_type: str, xlnet_vocab_file: Path) -> WordSplitter:
         splitter = SpacyWordSplitter()
     elif embedding_type == 'xlnet':
         splitter = XLNetWordSplitter(vocab_file=str(xlnet_vocab_file))
+    else:
+        raise ValueError(f'Embedding type {embedding_type} not available.')
     return WordTokenizer(word_splitter=splitter)
 
 

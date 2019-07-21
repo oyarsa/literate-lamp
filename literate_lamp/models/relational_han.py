@@ -78,7 +78,6 @@ class RelationalHan(BaseModel):
 
     def _forward_internal(self,
                           bert: Dict[str, torch.Tensor],
-                          answer: Dict[str, torch.Tensor],
                           relations: Dict[str, torch.Tensor]
                           ) -> torch.Tensor:
         t_masks = util.get_text_field_mask(bert, num_wrapping_dims=1)
@@ -108,16 +107,12 @@ class RelationalHan(BaseModel):
                 metadata: Dict[str, torch.Tensor],
                 bert0: Dict[str, torch.Tensor],
                 bert1: Dict[str, torch.Tensor],
-                passage: Dict[str, torch.Tensor],
-                question: Dict[str, torch.Tensor],
-                answer0: Dict[str, torch.Tensor],
-                answer1: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
-        logit0 = self._forward_internal(bert0, answer0, p_a0_rel)
-        logit1 = self._forward_internal(bert1, answer1, p_a1_rel)
+        logit0 = self._forward_internal(bert0, p_a0_rel)
+        logit1 = self._forward_internal(bert1, p_a1_rel)
         logits = torch.stack((logit0, logit1), dim=-1)
 
         prob = torch.softmax(logits, dim=-1)

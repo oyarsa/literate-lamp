@@ -28,6 +28,12 @@ class SimpleTrianReader(BaseReader):
          - `p_a1_rel`: relations between passage and answer 1
          - `label`: 0 if answer0 is the correct one, 1 if answer1 is correct
      """
+    keys = [
+        ("passage", "num_tokens"),
+        ("question", "num_tokens"),
+        ("answer0", "num_tokens"),
+        ("answer1", "num_tokens")
+    ]
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,

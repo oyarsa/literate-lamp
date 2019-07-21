@@ -24,8 +24,14 @@ class SimpleMcScriptReader(BaseReader):
          - `answer1`: the second candidate answer
          - `label`: 0 if answer0 is the correct one, 1 if answer1 is correct
      """
-
+    keys = [
+        ("passage", "num_tokens"),
+        ("question", "num_tokens"),
+        ("answer0", "num_tokens"),
+        ("answer1", "num_tokens")
+    ]
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
+
     def __init__(self,
                  embedding_type: str = 'glove',
                  max_seq_length: int = 512,

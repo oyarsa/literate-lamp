@@ -174,6 +174,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 num_epochs: int = 1,
                 optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
                 grad_norm_clip: float = 10.0,
+                sorting_keys: Optional[List[Tuple[str, str]]] = None,
                 cuda_device: Union[int, List[int]] = 0) -> Model:
     "Train and save our baseline model."
 
@@ -216,11 +217,15 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # Our trainer needs an iterator to go through our data. This creates
     # batches, sorting them by the number of tokens in each text field, so we
     # have samples with similar number of tokens to minimise padding.
-    iterator = BucketIterator(batch_size=batch_size, sorting_keys=[
-        ("passage", "num_tokens"),
-        ("question", "num_tokens"),
-        ("answer0", "num_tokens"),
-        ("answer1", "num_tokens")])
+    if sorting_keys is None:
+        sorting_keys = [
+            ("passage", "num_tokens"),
+            ("question", "num_tokens"),
+            ("answer0", "num_tokens"),
+            ("answer1", "num_tokens")
+        ]
+
+    iterator = BucketIterator(batch_size=batch_size, sorting_keys=sorting_keys)
     # Our data should be indexed using the vocabulary we learned.
     iterator.index_with(vocab)
 

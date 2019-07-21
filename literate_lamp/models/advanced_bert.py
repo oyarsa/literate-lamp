@@ -59,10 +59,6 @@ class AdvancedBertClassifier(BaseModel):
                 metadata: Dict[str, torch.Tensor],
                 bert0: Dict[str, torch.Tensor],
                 bert1: Dict[str, torch.Tensor],
-                passage: Dict[str, torch.Tensor],
-                question: Dict[str, torch.Tensor],
-                answer0: Dict[str, torch.Tensor],
-                answer1: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
         # Every sample in a batch has to have the same size (as it's a tensor),

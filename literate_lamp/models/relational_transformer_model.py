@@ -68,10 +68,6 @@ class RelationalTransformerModel(BaseModel):
                 metadata: Dict[str, torch.Tensor],
                 bert0: Dict[str, torch.Tensor],
                 bert1: Dict[str, torch.Tensor],
-                passage: Dict[str, torch.Tensor],
-                question: Dict[str, torch.Tensor],
-                answer0: Dict[str, torch.Tensor],
-                answer1: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
                 label: Optional[torch.Tensor] = None

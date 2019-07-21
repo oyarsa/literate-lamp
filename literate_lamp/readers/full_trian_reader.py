@@ -43,6 +43,12 @@ class FullTrianReader(BaseReader):
         - `p_a1_rel`: ConceptNet relations between passage and answer 1
         - `hc_feat`: handcrafted features (co-occurrences, term frequency)
      """
+    keys = [
+        ("passage", "num_tokens"),
+        ("question", "num_tokens"),
+        ("answer0", "num_tokens"),
+        ("answer1", "num_tokens")
+    ]
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,

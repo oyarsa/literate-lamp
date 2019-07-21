@@ -53,8 +53,8 @@ class XLNetIndexer(TokenIndexer[int]):
                  max_seq_length: int = 512,
                  vocab_file: str = 'xlnet-base-cased',
                  do_lowercase: bool = False,
-                 sep_token: str = '[SEP]',
-                 cls_token: str = '[CLS]',
+                 sep_token: str = '<sep>',
+                 cls_token: str = '<cls>',
                  pad_token: Union[int, str] = 0,
                  token_min_padding_length: int = 0) -> None:
         super().__init__(token_min_padding_length)
@@ -70,6 +70,8 @@ class XLNetIndexer(TokenIndexer[int]):
 
         self.cls_token_id = self.tokeniser.convert_tokens_to_ids(cls_token)
         self.sep_token_id = self.tokeniser.convert_tokens_to_ids(sep_token)
+
+        print('maxseq', self.max_seq_length)
 
     @overrides
     def count_vocab_items(self,
@@ -104,13 +106,13 @@ class XLNetIndexer(TokenIndexer[int]):
             if tid == self.sep_token_id:
                 current_segment = 1
 
-        cls_index = len(tokens) - 1
         input_ids.append(self.sep_token_id)
         # Every SEP is part of the preceding segment
         segment_ids.append(current_segment)
 
         input_ids.append(self.cls_token_id)
         segment_ids.append(0)  # CLS is part of first segment
+        cls_index = len(input_ids) - 1
 
         mask = [1] * len(input_ids)
 
