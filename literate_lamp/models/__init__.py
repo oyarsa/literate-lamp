@@ -2,6 +2,7 @@
 from models.base_model import BaseModel
 from models.advanced_attention_bert import AdvancedAttentionBertClassifier
 from models.advanced_bert import AdvancedBertClassifier
+from models.advanced_xlnet import AdvancedXLNetClassifier
 from models.attentive_reader import AttentiveReader
 from models.baseline import BaselineClassifier
 from models.dcmn import Dcmn

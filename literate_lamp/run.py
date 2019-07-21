@@ -31,7 +31,8 @@ from models import (BaselineClassifier, Trian, AttentiveReader,
                     SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
                     HierarchicalBert, AdvancedAttentionBertClassifier,
                     HierarchicalAttentionNetwork, RelationalTransformerModel,
-                    RelationalHan, Dcmn, ZeroTrian, SimpleXLNetClassifier)
+                    RelationalHan, Dcmn, ZeroTrian, SimpleXLNetClassifier,
+                    AdvancedXLNetClassifier)
 from predictor import McScriptPredictor
 from util import example_input, is_cuda, train_model, load_data
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
@@ -41,7 +42,6 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
 from readers import (SimpleBertReader, SimpleMcScriptReader,
                      SimpleTrianReader, FullTrianReader,
                      BaseReader, RelationBertReader, SimpleXLNetReader)
-from modules import PretrainedXLNetEmbedder
 
 
 ARGS = args.get_args()
@@ -59,6 +59,48 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
                                 model_path=ARGS.xlnet_model_path)
     raise ValueError(
         f'Invalid word embedding type: {ARGS.EMBEDDING_TYPE}')
+
+
+def build_advanced_xlnet(vocab: Vocabulary) -> Model:
+    """
+    Builds the AdvancedXLNetClassifier.
+
+    Parameters
+    ---------
+    vocab : Vocabulary built from the problem dataset.
+
+    Returns
+    -------
+    A `AdvancedXLNetClassifier` model ready to be trained.
+    """
+    if ARGS.ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_seq2seq
+    elif ARGS.ENCODER_TYPE == 'gru':
+        encoder_fn = gru_seq2seq
+    else:
+        raise ValueError('Invalid RNN type')
+
+    # To prevent the warning on single-layer, as the dropout is only
+    # between layers of the stacked RNN.
+    dropout = ARGS.RNN_DROPOUT if ARGS.RNN_LAYERS > 1 else 0
+
+    if ARGS.ENCODER_TYPE in ['lstm', 'gru']:
+        encoder = encoder_fn(input_dim=768,
+                             output_dim=ARGS.HIDDEN_DIM,
+                             num_layers=ARGS.RNN_LAYERS,
+                             bidirectional=ARGS.BIDIRECTIONAL,
+                             dropout=dropout)
+
+    # Instantiate modele with our embedding, encoder and vocabulary
+    model = AdvancedXLNetClassifier(
+        config_path=ARGS.xlnet_config_path,
+        model_path=ARGS.xlnet_model_path,
+        encoder=encoder,
+        vocab=vocab,
+        encoder_dropout=0.5
+    )
+
+    return model
 
 
 def build_simple_xlnet(vocabulary: Vocabulary) -> Model:
@@ -942,6 +984,7 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], BaseReader]:
         'dcmn': (build_dcmn, 'simple'),
         'zero-trian': (build_zero_trian, 'simple'),
         'simple-xl': (build_simple_xlnet, 'simple-xl'),
+        'advanced-xl': (build_advanced_xlnet, 'simple-xl'),
     }
 
     if ARGS.MODEL in models:
