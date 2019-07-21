@@ -87,7 +87,7 @@ def bert_sliding_window(question: str, answer: str, passage: str,
 
 
 def xlnet_input_string(question: str, answer: str, passage: str) -> str:
-    return f'{question} [SEP] {answer} [SEP] {passage}'
+    return f'{passage} [SEP] {question} {answer}'
 
 
 def relation_sentences(conceptnet: ConceptNet, text: Sequence[str],
