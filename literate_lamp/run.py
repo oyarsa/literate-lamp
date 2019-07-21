@@ -36,8 +36,7 @@ from predictor import McScriptPredictor
 from util import example_input, is_cuda, train_model, load_data
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
-                    transformer_seq2seq,
-                    # cnn_encoder,
+                    transformer_seq2seq, xlnet_embeddings,
                     RelationalTransformerEncoder)
 from readers import (SimpleBertReader, SimpleMcScriptReader,
                      SimpleTrianReader, FullTrianReader,
@@ -56,7 +55,8 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
     if ARGS.EMBEDDING_TYPE == 'bert':
         return bert_embeddings(pretrained_model=ARGS.BERT_PATH)
     if ARGS.EMBEDDING_TYPE == 'xlnet':
-        return PretrainedXLNetEmbedder()
+        return xlnet_embeddings(config_path=ARGS.xlnet_config_path,
+                                model_path=ARGS.xlnet_model_path)
     raise ValueError(
         f'Invalid word embedding type: {ARGS.EMBEDDING_TYPE}')
 
@@ -560,7 +560,7 @@ def build_simple_trian(vocab: Vocabulary) -> Model:
     """
     word_embeddings = get_word_embeddings(vocab)
     rel_embeddings = learned_embeddings(vocab, ARGS.REL_EMBEDDING_DIM,
-                                        'rel_tokens')
+                                        'tokens')
 
     if ARGS.ENCODER_TYPE == 'lstm':
         encoder_fn = lstm_seq2seq
@@ -900,14 +900,18 @@ def create_reader(reader_type: str) -> BaseReader:
     "Returns the appropriate Reder instance from the type and configuration."
     is_bert = ARGS.EMBEDDING_TYPE == 'bert'
     if reader_type == 'simple':
-        return SimpleMcScriptReader(is_bert=is_bert)
+        return SimpleMcScriptReader(embedding_type=ARGS.EMBEDDING_TYPE,
+                                    max_seq_length=ARGS.max_seq_length,
+                                    xlnet_vocab_file=ARGS.xlnet_vocab_path)
     if reader_type == 'full-trian':
         return FullTrianReader(is_bert=is_bert,
                                conceptnet_path=ARGS.CONCEPTNET_PATH)
     if reader_type == 'simple-bert':
         return SimpleBertReader()
     if reader_type == 'simple-trian':
-        return SimpleTrianReader(is_bert=is_bert,
+        return SimpleTrianReader(embedding_type=ARGS.EMBEDDING_TYPE,
+                                 max_seq_length=ARGS.max_seq_length,
+                                 xlnet_vocab_file=ARGS.xlnet_vocab_path,
                                  conceptnet_path=ARGS.CONCEPTNET_PATH)
     if reader_type == 'relation-bert':
         return RelationBertReader(is_bert=is_bert,

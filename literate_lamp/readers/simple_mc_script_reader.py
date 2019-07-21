@@ -1,15 +1,13 @@
 "Our most basic reader. Just reads the text and indexes it, nothing else."
 from typing import Optional
+from pathlib import Path
 
 from allennlp.data import Instance
-from allennlp.data.tokenizers.word_splitter import (SpacyWordSplitter,
-                                                    BertBasicWordSplitter)
-from allennlp.data.token_indexers import PretrainedBertIndexer, TokenIndexer
-from allennlp.data.token_indexers import SingleIdTokenIndexer
-from allennlp.data.tokenizers import WordTokenizer
+from allennlp.data.token_indexers import TokenIndexer
 from allennlp.data.fields import TextField, LabelField, MetadataField
 
 from readers.base_reader import BaseReader
+from readers.util import get_tokenizer, get_indexer
 
 
 class SimpleMcScriptReader(BaseReader):
@@ -29,23 +27,19 @@ class SimpleMcScriptReader(BaseReader):
 
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
-                 word_indexer: Optional[TokenIndexer] = None,
-                 is_bert: bool = False):
+                 embedding_type: str = 'glove',
+                 max_seq_length: int = 512,
+                 xlnet_vocab_file: Optional[Path] = None,
+                 word_indexer: Optional[TokenIndexer] = None) -> None:
         super().__init__(lazy=False)
 
-        if is_bert:
-            splitter = BertBasicWordSplitter()
-        else:
-            splitter = SpacyWordSplitter()
-        self.tokeniser = WordTokenizer(word_splitter=splitter)
+        self.tokeniser = get_tokenizer(embedding_type=embedding_type,
+                                       xlnet_vocab_file=xlnet_vocab_file)
 
         if word_indexer is None:
-            if is_bert:
-                word_indexer = PretrainedBertIndexer(
-                    pretrained_model='bert-base-uncased',
-                    truncate_long_sequences=False)
-            else:
-                word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
+            word_indexer = get_indexer(embedding_type=embedding_type,
+                                       max_seq_length=max_seq_length,
+                                       xlnet_vocab_file=xlnet_vocab_file)
         self.word_indexers = {'tokens': word_indexer}
 
     # Converts the text from each field in the input to `Token`s, and then

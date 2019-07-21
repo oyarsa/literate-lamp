@@ -88,7 +88,7 @@ ARGS:
         # Number of epochs to train model
         args.NUM_EPOCHS = 1
         # Size of largest sequence (for XLNet)
-        args.max_seq_length = 340
+        args.max_seq_length = 350
 
     args.BERT_PATH = external_folder / 'bert-base-uncased.tar.gz'
     args.CONCEPTNET_PATH = external_folder / 'conceptnet.csv'

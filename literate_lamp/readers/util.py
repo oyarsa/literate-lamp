@@ -1,11 +1,18 @@
 "Utilities shared by the readers."
 from typing import List, Sequence, Optional
+from pathlib import Path
 
 import numpy as np
-from allennlp.data.tokenizers import Token
+from allennlp.data.tokenizers import Token, WordTokenizer
+from allennlp.data.tokenizers.word_splitter import (SpacyWordSplitter,
+                                                    BertBasicWordSplitter,
+                                                    WordSplitter)
+from allennlp.data.token_indexers import PretrainedBertIndexer, TokenIndexer
+from allennlp.data.token_indexers import SingleIdTokenIndexer
 
 from conceptnet import ConceptNet, triple_as_sentence
 from util import is_stopword, is_punctuation, get_term_frequency
+from modules import XLNetWordSplitter, XLNetIndexer
 
 
 def strs2toks(strings: Sequence[str]) -> List[Token]:
@@ -88,3 +95,29 @@ def relation_sentences(conceptnet: ConceptNet, text: Sequence[str],
     triples = conceptnet.get_all_text_query_triples(text, query)
     sentences = [triple_as_sentence(t) for t in triples]
     return sentences
+
+
+def get_tokenizer(embedding_type: str, xlnet_vocab_file: Path) -> WordSplitter:
+    if embedding_type == 'bert':
+        splitter = BertBasicWordSplitter()
+    elif embedding_type == 'glove':
+        splitter = SpacyWordSplitter()
+    elif embedding_type == 'xlnet':
+        splitter = XLNetWordSplitter(vocab_file=str(xlnet_vocab_file))
+    return WordTokenizer(word_splitter=splitter)
+
+
+def get_indexer(embedding_type: str,
+                xlnet_vocab_file: Path,
+                max_seq_length: int) -> TokenIndexer:
+    if embedding_type == 'bert':
+        return PretrainedBertIndexer(
+            pretrained_model='bert-base-uncased',
+            truncate_long_sequences=False)
+    if embedding_type == 'glove':
+        return SingleIdTokenIndexer(lowercase_tokens=True)
+    if embedding_type == 'xlnet':
+        return XLNetIndexer(
+            max_seq_length=max_seq_length,
+            vocab_file=str(xlnet_vocab_file)
+        )

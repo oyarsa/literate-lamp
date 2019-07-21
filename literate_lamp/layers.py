@@ -245,7 +245,8 @@ def learned_embeddings(vocab: Vocabulary, dimension: int,
     "Returns an Embedding layer to be learned, i.e., not pre-trained."
     embedding = Embedding(num_embeddings=vocab.get_vocab_size(namespace),
                           embedding_dim=dimension)
-    embeddings = BasicTextFieldEmbedder({namespace: embedding})
+    embeddings = BasicTextFieldEmbedder({namespace: embedding},
+                                        allow_unmatched_keys=True)
     return embeddings
 
 

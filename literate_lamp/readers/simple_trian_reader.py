@@ -3,16 +3,12 @@ from typing import Optional
 from pathlib import Path
 
 from allennlp.data import Instance
-from allennlp.data.tokenizers.word_splitter import (SpacyWordSplitter,
-                                                    BertBasicWordSplitter)
-from allennlp.data.token_indexers import PretrainedBertIndexer, TokenIndexer
-from allennlp.data.token_indexers import SingleIdTokenIndexer
-from allennlp.data.tokenizers import WordTokenizer
+from allennlp.data.token_indexers import TokenIndexer
 from allennlp.data.fields import TextField, LabelField, MetadataField
 
 from conceptnet import ConceptNet
 from readers.base_reader import BaseReader
-from readers.util import strs2toks, toks2strs
+from readers.util import strs2toks, toks2strs, get_tokenizer, get_indexer
 
 
 class SimpleTrianReader(BaseReader):
@@ -36,25 +32,18 @@ class SimpleTrianReader(BaseReader):
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
                  word_indexer: Optional[TokenIndexer] = None,
-                 is_bert: bool = False,
+                 xlnet_vocab_file: Optional[Path] = None,
+                 max_seq_length: int = 512,
+                 embedding_type: str = 'glove',
                  conceptnet_path: Optional[Path] = None):
         super().__init__(lazy=False)
-        self.rel_indexers = {
-            "rel_tokens": SingleIdTokenIndexer(namespace='rel_tokens')}
-
-        if is_bert:
-            splitter = BertBasicWordSplitter()
-        else:
-            splitter = SpacyWordSplitter()
-        self.tokeniser = WordTokenizer(word_splitter=splitter)
+        self.tokeniser = get_tokenizer(embedding_type=embedding_type,
+                                       xlnet_vocab_file=xlnet_vocab_file)
 
         if word_indexer is None:
-            if is_bert:
-                word_indexer = PretrainedBertIndexer(
-                    pretrained_model='bert-base-uncased',
-                    truncate_long_sequences=False)
-            else:
-                word_indexer = SingleIdTokenIndexer(lowercase_tokens=True)
+            word_indexer = get_indexer(embedding_type=embedding_type,
+                                       max_seq_length=max_seq_length,
+                                       xlnet_vocab_file=xlnet_vocab_file)
         self.word_indexers = {'tokens': word_indexer}
 
         self.conceptnet = ConceptNet(conceptnet_path=conceptnet_path)
@@ -105,9 +94,9 @@ class SimpleTrianReader(BaseReader):
             "question": TextField(question_tokens, self.word_indexers),
             "answer0": TextField(answer0_tokens, self.word_indexers),
             "answer1": TextField(answer1_tokens, self.word_indexers),
-            "p_q_rel": TextField(p_q_relations, self.rel_indexers),
-            "p_a0_rel": TextField(p_a0_relations, self.rel_indexers),
-            "p_a1_rel": TextField(p_a1_relations, self.rel_indexers),
+            "p_q_rel": TextField(p_q_relations, self.word_indexers),
+            "p_a0_rel": TextField(p_a0_relations, self.word_indexers),
+            "p_a1_rel": TextField(p_a1_relations, self.word_indexers),
         }
 
         if label0 is not None:
