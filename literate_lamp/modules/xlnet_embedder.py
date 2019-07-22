@@ -55,10 +55,11 @@ class XLNetEmbedder(TokenEmbedder):
         the scalar mix.
     """
 
-    def __init__(self, xlnet_model: XLNetModel) -> None:
+    def __init__(self, xlnet_model: XLNetModel, window_size: int) -> None:
         super().__init__()
         self.xlnet_model = xlnet_model
         self.output_dim = cast(int, xlnet_model.config.hidden_size)
+        self.window_size = window_size
 
     def get_output_dim(self) -> int:
         return self.output_dim
@@ -85,14 +86,28 @@ class XLNetEmbedder(TokenEmbedder):
 
         input_mask = (input_ids != 0).long()
 
+        split_input_ids = input_ids.split(self.window_size, dim=-1)
+        split_token_type_ids = token_type_ids.split(self.window_size, dim=-1)
+        split_input_mask = input_mask.split(self.window_size, dim=-1)
+
+        outputs = []
+        memory = None
+
         # input_ids may have extra dimensions, so we reshape down to 2-d
         # before calling the XLBet model and then reshape back at the end.
-        output, _ = self.xlnet_model(
-            input_ids=util.combine_initial_dims(input_ids),
-            token_type_ids=util.combine_initial_dims(token_type_ids),
-            attention_mask=util.combine_initial_dims(input_mask)
-        )
-        return util.uncombine_initial_dims(output, input_ids.shape)
+        for input_ids, token_type_ids, input_mask in zip(split_input_ids,
+                                                         split_token_type_ids,
+                                                         split_input_mask):
+            output, memory = self.xlnet_model(
+                input_ids=util.combine_initial_dims(input_ids),
+                token_type_ids=util.combine_initial_dims(token_type_ids),
+                attention_mask=util.combine_initial_dims(input_mask),
+                mems=memory
+            )
+            output = util.uncombine_initial_dims(output, input_ids.shape)
+            outputs.append(output)
+
+        return torch.cat(outputs, dim=-2)
 
 
 class PretrainedXLNetEmbedder(XLNetEmbedder):
@@ -114,6 +129,7 @@ class PretrainedXLNetEmbedder(XLNetEmbedder):
     def __init__(self,
                  config_path: Path,
                  model_path: Path,
+                 window_size: int = 512,
                  requires_grad: bool = False
                  ) -> None:
         model = PretrainedXLNetModel.load(config_path=config_path,
@@ -122,4 +138,4 @@ class PretrainedXLNetEmbedder(XLNetEmbedder):
         for param in model.parameters():
             param.requires_grad = requires_grad
 
-        super().__init__(xlnet_model=model)
+        super().__init__(xlnet_model=model, window_size=window_size)

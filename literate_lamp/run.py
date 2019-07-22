@@ -50,7 +50,8 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
     if ARGS.EMBEDDING_TYPE == 'xlnet':
         return xlnet_embeddings(config_path=ARGS.xlnet_config_path,
                                 model_path=ARGS.xlnet_model_path,
-                                training=ARGS.finetune_embeddings)
+                                training=ARGS.finetune_embeddings,
+                                window_size=ARGS.xlnet_window_size)
     raise ValueError(
         f'Invalid word embedding type: {ARGS.EMBEDDING_TYPE}')
 
@@ -1154,7 +1155,7 @@ def run_model() -> None:
                         cuda_device=ARGS.CUDA_DEVICE,
                         sorting_keys=reader.keys)
 
-    evaluate(model, test_dataset, reader)
+    evaluate(model, reader, test_dataset)
     result = make_prediction(model, reader, verbose=False)
 
     print('Save path', ARGS.SAVE_PATH)

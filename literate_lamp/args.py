@@ -71,6 +71,7 @@ ARGS:
         args.NUM_EPOCHS = 30
         # Size of largest sequence (for XLNet)
         args.max_seq_length = 1100
+        args.xlnet_window_size = 512
     elif config == 'small':
         # Path to our dataset
         args.TRAIN_DATA_PATH = data_folder / 'small-train.json'
@@ -89,6 +90,7 @@ ARGS:
         args.NUM_EPOCHS = 1
         # Size of largest sequence (for XLNet)
         args.max_seq_length = 870
+        args.xlnet_window_size = 128
 
     args.BERT_PATH = external_folder / 'bert-base-uncased.tar.gz'
     args.CONCEPTNET_PATH = external_folder / 'conceptnet.csv'

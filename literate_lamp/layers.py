@@ -268,6 +268,7 @@ def bert_embeddings(pretrained_model: Path, training: bool = False,
 
 def xlnet_embeddings(config_path: Path,
                      model_path: Path,
+                     window_size: int = 512,
                      training: bool = False,
                      top_layer_only: bool = True,
                      ) -> BasicTextFieldEmbedder:
@@ -275,6 +276,7 @@ def xlnet_embeddings(config_path: Path,
     xlnet = PretrainedXLNetEmbedder(
         config_path=config_path,
         model_path=model_path,
+        window_size=window_size,
         requires_grad=training
     )
     word_embeddings = BasicTextFieldEmbedder(
