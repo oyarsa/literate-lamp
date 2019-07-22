@@ -27,23 +27,14 @@ from allennlp.data.instance import Instance
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 
 import args
-from models import (BaselineClassifier, Trian, AttentiveReader,
-                    SimpleBertClassifier, AdvancedBertClassifier, SimpleTrian,
-                    HierarchicalBert, AdvancedAttentionBertClassifier,
-                    HierarchicalAttentionNetwork, RelationalTransformerModel,
-                    RelationalHan, Dcmn, ZeroTrian, SimpleXLNetClassifier,
-                    AdvancedXLNetClassifier, RelationalXL)
+import models
+import readers
 from predictor import McScriptPredictor
 from util import example_input, is_cuda, train_model, load_data
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
                     transformer_seq2seq, xlnet_embeddings,
                     RelationalTransformerEncoder)
-from readers import (SimpleBertReader, SimpleMcScriptReader,
-                     SimpleTrianReader, FullTrianReader,
-                     BaseReader, RelationBertReader, SimpleXLNetReader,
-                     RelationXLNetReader)
-
 
 ARGS = args.get_args()
 
@@ -105,7 +96,7 @@ def build_relational_xl(vocabulary: Vocabulary) -> Model:
                               dropout=dropout)
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = RelationalXL(
+    model = models.RelationalXL(
         word_embeddings=word_embeddings,
         text_encoder=text_encoder,
         relation_encoder=relation_encoder,
@@ -147,7 +138,7 @@ def build_advanced_xlnet(vocab: Vocabulary) -> Model:
                              dropout=dropout)
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = AdvancedXLNetClassifier(
+    model = models.AdvancedXLNetClassifier(
         config_path=ARGS.xlnet_config_path,
         model_path=ARGS.xlnet_model_path,
         encoder=encoder,
@@ -160,7 +151,7 @@ def build_advanced_xlnet(vocab: Vocabulary) -> Model:
 
 
 def build_simple_xlnet(vocabulary: Vocabulary) -> Model:
-    return SimpleXLNetClassifier(
+    return models.SimpleXLNetClassifier(
         vocab=vocabulary,
         config_path=ARGS.xlnet_config_path,
         model_path=ARGS.xlnet_model_path,
@@ -182,7 +173,7 @@ def build_dcmn(vocabulary: Vocabulary) -> Model:
     """
     word_embeddings = get_word_embeddings(vocabulary)
 
-    model = Dcmn(
+    model = models.Dcmn(
         word_embeddings=word_embeddings,
         vocab=vocabulary,
         embedding_dropout=ARGS.RNN_DROPOUT
@@ -277,7 +268,7 @@ def build_rel_han(vocab: Vocabulary) -> Model:
     )
 
     # Instantiate model with our embedding, encoder and vocabulary
-    model = RelationalHan(
+    model = models.RelationalHan(
         relation_encoder=relation_encoder,
         document_relation_encoder=document_relation_encoder,
         word_embeddings=word_embeddings,
@@ -363,11 +354,9 @@ def build_relational_transformer(vocab: Vocabulary) -> Model:
     )
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = RelationalTransformerModel(
+    model = models.RelationalTransformerModel(
         word_embeddings=word_embeddings,
         sentence_encoder=sentence_encoder,
-        # document_encoder=document_encoder,
-        # relation_encoder=relation_encoder,
         relational_encoder=relational_encoder,
         relation_sentence_encoder=relation_sentence_encoder,
         rel_embeddings=rel_embeddings,
@@ -439,7 +428,7 @@ def build_hierarchical_attn_net(vocab: Vocabulary) -> Model:
         )
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = HierarchicalAttentionNetwork(
+    model = models.HierarchicalAttentionNetwork(
         word_embeddings=word_embeddings,
         sentence_encoder=sentence_encoder,
         document_encoder=document_encoder,
@@ -494,7 +483,7 @@ def build_advanced_attn_bert(vocab: Vocabulary) -> Model:
         )
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = AdvancedAttentionBertClassifier(
+    model = models.AdvancedAttentionBertClassifier(
         bert_path=ARGS.BERT_PATH,
         encoder=encoder,
         vocab=vocab,
@@ -545,7 +534,7 @@ def build_hierarchical_bert(vocab: Vocabulary) -> Model:
             dropout=dropout)
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = HierarchicalBert(
+    model = models.HierarchicalBert(
         bert_path=ARGS.BERT_PATH,
         sentence_encoder=sentence_encoder,
         document_encoder=document_encoder,
@@ -632,7 +621,7 @@ def build_zero_trian(vocab: Vocabulary) -> Model:
         )
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = ZeroTrian(
+    model = models.ZeroTrian(
         word_embeddings=word_embeddings,
         p_encoder=p_encoder,
         q_encoder=q_encoder,
@@ -722,7 +711,7 @@ def build_simple_trian(vocab: Vocabulary) -> Model:
         )
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = SimpleTrian(
+    model = models.SimpleTrian(
         word_embeddings=word_embeddings,
         rel_embeddings=rel_embeddings,
         p_encoder=p_encoder,
@@ -772,7 +761,7 @@ def build_advanced_bert(vocab: Vocabulary) -> Model:
                              dropout=dropout)
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = AdvancedBertClassifier(
+    model = models.AdvancedBertClassifier(
         bert_path=ARGS.BERT_PATH,
         encoder=encoder,
         rel_embeddings=rel_embeddings,
@@ -796,7 +785,7 @@ def build_simple_bert(vocab: Vocabulary) -> Model:
     -------
     A `SimpleBertClassifier` model ready to be trained.
     """
-    model = SimpleBertClassifier(bert_path=ARGS.BERT_PATH, vocab=vocab)
+    model = models.SimpleBertClassifier(bert_path=ARGS.BERT_PATH, vocab=vocab)
     return model
 
 
@@ -824,7 +813,7 @@ def build_baseline(vocab: Vocabulary) -> Model:
                          num_layers=ARGS.RNN_LAYERS,
                          bidirectional=ARGS.BIDIRECTIONAL)
 
-    model = BaselineClassifier(embeddings, encoder, vocab)
+    model = models.BaselineClassifier(embeddings, encoder, vocab)
     return model
 
 
@@ -851,7 +840,7 @@ def build_attentive_reader(vocab: Vocabulary) -> Model:
     a_encoder = gru_encoder(embedding_dim, ARGS.HIDDEN_DIM, num_layers=1,
                             bidirectional=ARGS.BIDIRECTIONAL)
 
-    model = AttentiveReader(
+    model = models.AttentiveReader(
         embeddings, p_encoder, q_encoder, a_encoder, vocab
     )
     return model
@@ -941,7 +930,7 @@ def build_trian(vocab: Vocabulary) -> Model:
         )
 
     # Instantiate modele with our embedding, encoder and vocabulary
-    model = Trian(
+    model = models.Trian(
         word_embeddings=word_embeddings,
         rel_embeddings=rel_embeddings,
         pos_embeddings=pos_embeddings,
@@ -958,7 +947,7 @@ def build_trian(vocab: Vocabulary) -> Model:
 
 
 def test_load(build_model_fn: Callable[[Vocabulary], Model],
-              reader: BaseReader,
+              reader: readers.BaseReader,
               save_path: Path,
               original_prediction: torch.Tensor,
               cuda_device: int) -> None:
@@ -995,33 +984,43 @@ def test_load(build_model_fn: Callable[[Vocabulary], Model],
     print('Success.')
 
 
-def create_reader(reader_type: str) -> BaseReader:
+def create_reader(reader_type: str) -> readers.BaseReader:
     "Returns the appropriate Reder instance from the type and configuration."
     is_bert = ARGS.EMBEDDING_TYPE == 'bert'
     if reader_type == 'simple':
-        return SimpleMcScriptReader(embedding_type=ARGS.EMBEDDING_TYPE,
-                                    max_seq_length=ARGS.max_seq_length,
-                                    xlnet_vocab_file=ARGS.xlnet_vocab_path)
+        return readers.SimpleMcScriptReader(
+            embedding_type=ARGS.EMBEDDING_TYPE,
+            max_seq_length=ARGS.max_seq_length,
+            xlnet_vocab_file=ARGS.xlnet_vocab_path
+        )
     if reader_type == 'full-trian':
-        return FullTrianReader(is_bert=is_bert,
-                               conceptnet_path=ARGS.CONCEPTNET_PATH)
+        return readers.FullTrianReader(is_bert=is_bert,
+                                       conceptnet_path=ARGS.CONCEPTNET_PATH)
     if reader_type == 'simple-bert':
-        return SimpleBertReader()
+        return readers.SimpleBertReader()
     if reader_type == 'simple-trian':
-        return SimpleTrianReader(embedding_type=ARGS.EMBEDDING_TYPE,
-                                 max_seq_length=ARGS.max_seq_length,
-                                 xlnet_vocab_file=ARGS.xlnet_vocab_path,
-                                 conceptnet_path=ARGS.CONCEPTNET_PATH)
+        return readers.SimpleTrianReader(
+            embedding_type=ARGS.EMBEDDING_TYPE,
+            max_seq_length=ARGS.max_seq_length,
+            xlnet_vocab_file=ARGS.xlnet_vocab_path,
+            conceptnet_path=ARGS.CONCEPTNET_PATH
+        )
     if reader_type == 'relation-bert':
-        return RelationBertReader(is_bert=is_bert,
-                                  conceptnet_path=ARGS.CONCEPTNET_PATH)
+        return readers.RelationBertReader(is_bert=is_bert,
+                                          conceptnet_path=ARGS.CONCEPTNET_PATH)
     if reader_type == 'simple-xl':
-        return SimpleXLNetReader(
+        return readers.SimpleXLNetReader(
             vocab_file=ARGS.xlnet_vocab_path,
             max_seq_length=ARGS.max_seq_length
         )
     if reader_type == 'relation-xl':
-        return RelationXLNetReader(
+        return readers.RelationXLNetReader(
+            vocab_file=ARGS.xlnet_vocab_path,
+            max_seq_length=ARGS.max_seq_length,
+            conceptnet_path=ARGS.CONCEPTNET_PATH
+        )
+    if reader_type == 'extended-xl':
+        return readers.ExtendedXLNetReader(
             vocab_file=ARGS.xlnet_vocab_path,
             max_seq_length=ARGS.max_seq_length,
             conceptnet_path=ARGS.CONCEPTNET_PATH
@@ -1029,7 +1028,8 @@ def create_reader(reader_type: str) -> BaseReader:
     raise ValueError(f'Reader type {reader_type} is invalid')
 
 
-def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], BaseReader]:
+def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model],
+                                  readers.BaseReader]:
     "Gets the build function and reader for the model"
     # Model -> Build function, reader type
     models = {
@@ -1049,6 +1049,7 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], BaseReader]:
         'simple-xl': (build_simple_xlnet, 'simple-xl'),
         'advanced-xl': (build_advanced_xlnet, 'simple-xl'),
         'relation-xl': (build_relational_xl, 'relation-xl'),
+        'extended-xl': (build_advanced_xlnet, 'extended-xl'),
     }
 
     if ARGS.MODEL in models:
@@ -1058,7 +1059,7 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], BaseReader]:
 
 
 def make_prediction(model: Model,
-                    reader: BaseReader,
+                    reader: readers.BaseReader,
                     verbose: bool = False
                     ) -> torch.Tensor:
     "Create a predictor to run our model and get predictions."
@@ -1097,7 +1098,7 @@ def split_list(data: List[Instance]) -> Dict[str, List[Instance]]:
 
 
 def evaluate(model: Model,
-             reader: BaseReader,
+             reader: readers.BaseReader,
              test_data: List[Instance]
              ) -> None:
     vocab = Vocabulary.from_instances(test_data)

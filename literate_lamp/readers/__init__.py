@@ -6,6 +6,7 @@ Different models will generally need slightly different inputs, and this is
 where they're processed.
 """
 from readers.base_reader import BaseReader
+from readers.extended_xlnet_reader import ExtendedXLNetReader
 from readers.full_trian_reader import FullTrianReader
 from readers.simple_mc_script_reader import SimpleMcScriptReader
 from readers.simple_bert_reader import SimpleBertReader

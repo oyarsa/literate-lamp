@@ -25,6 +25,16 @@ def toks2strs(tokens: Sequence[Token]) -> List[str]:
     return [t.text for t in tokens]
 
 
+def pieces2strs(tokens: Sequence[Token]) -> List[str]:
+    """
+    Converts each Token in the list to a str (using the text attribute).
+    This is like toks2strs, but it also removes the first character, as it
+    assumes the token is coming from either XLNetTokenizer or BertTokenizer,
+    which add a '_' to each piece.
+    """
+    return [t.text[1:] for t in tokens]
+
+
 def compute_handcrafted_features(passage: Sequence[Token],
                                  question: Sequence[Token],
                                  answer0: Sequence[Token],
