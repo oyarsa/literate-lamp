@@ -69,8 +69,7 @@ ARGS:
         args.BATCH_SIZE = 24
         # Number of epochs to train model
         args.NUM_EPOCHS = 30
-        # Size of largest sequence (for XLNet)
-        args.max_seq_length = 1100
+        # Size of the input window for XLNet
         args.xlnet_window_size = 512
     elif config == 'small':
         # Path to our dataset
@@ -88,8 +87,7 @@ ARGS:
         args.BATCH_SIZE = 2
         # Number of epochs to train model
         args.NUM_EPOCHS = 1
-        # Size of largest sequence (for XLNet)
-        args.max_seq_length = 870
+        # Size of the input window for XLNet
         args.xlnet_window_size = 128
 
     args.BERT_PATH = external_folder / 'bert-base-uncased.tar.gz'

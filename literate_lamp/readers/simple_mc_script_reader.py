@@ -34,7 +34,6 @@ class SimpleMcScriptReader(BaseReader):
 
     def __init__(self,
                  embedding_type: str = 'glove',
-                 max_seq_length: int = 512,
                  xlnet_vocab_file: Optional[Path] = None,
                  word_indexer: Optional[TokenIndexer] = None) -> None:
         super().__init__(lazy=False)
@@ -44,7 +43,6 @@ class SimpleMcScriptReader(BaseReader):
 
         if word_indexer is None:
             word_indexer = get_indexer(embedding_type=embedding_type,
-                                       max_seq_length=max_seq_length,
                                        xlnet_vocab_file=xlnet_vocab_file)
         self.word_indexers = {'tokens': word_indexer}
 

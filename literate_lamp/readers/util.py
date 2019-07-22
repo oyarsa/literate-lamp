@@ -120,8 +120,8 @@ def get_tokenizer(embedding_type: str, xlnet_vocab_file: Path) -> WordSplitter:
 
 
 def get_indexer(embedding_type: str,
-                xlnet_vocab_file: Path,
-                max_seq_length: int) -> TokenIndexer:
+                xlnet_vocab_file: Path
+                ) -> TokenIndexer:
     if embedding_type == 'bert':
         return PretrainedBertIndexer(
             pretrained_model='bert-base-uncased',
@@ -129,7 +129,4 @@ def get_indexer(embedding_type: str,
     if embedding_type == 'glove':
         return SingleIdTokenIndexer(lowercase_tokens=True)
     if embedding_type == 'xlnet':
-        return XLNetIndexer(
-            max_seq_length=max_seq_length,
-            vocab_file=str(xlnet_vocab_file)
-        )
+        return XLNetIndexer(vocab_file=str(xlnet_vocab_file))

@@ -28,10 +28,6 @@ class XLNetIndexer(TokenIndexer[int]):
     namespace : str, optional (default: "wordpiece")
         The namespace in the AllenNLP ``Vocabulary`` into which the wordpieces
         will be loaded.
-    max_seq_length : int, optional (default: 512)
-        The XLNet embedder uses positional embeddings and so has a
-        corresponding maximum length for its input ids. Currently any inputs
-        longer than this will be truncated.
     end_tokens : ``str``, optional (default=``[CLS]``)
         These are appended to the tokens provided to ``tokens_to_indices``.
     sep_token : ``str``, optional (default=``[SEP]``)
@@ -42,7 +38,6 @@ class XLNetIndexer(TokenIndexer[int]):
 
     def __init__(self,
                  namespace: str = "tokens",
-                 max_seq_length: int = 512,
                  vocab_file: str = 'xlnet-base-cased',
                  sep_token: str = '<sep>',
                  cls_token: str = '<cls>',
@@ -52,7 +47,6 @@ class XLNetIndexer(TokenIndexer[int]):
 
         self.biggest = 0
         self.namespace = namespace
-        self.max_seq_length = max_seq_length
         self.tokeniser = PretrainedXLNetTokenizer.load(vocab_file)
         self.sep_token = sep_token
         self.cls_token = cls_token
@@ -77,11 +71,6 @@ class XLNetIndexer(TokenIndexer[int]):
             t.text for t in tokens)
         total_length = len(token_ids) + 2
         self.biggest = max(total_length, self.biggest)
-
-        if total_length > self.max_seq_length:
-            print(f'[XLNetIndexer] Truncating sequence ({total_length} '
-                  f'> {self.max_seq_length}).')
-            token_ids = token_ids[:self.max_seq_length - 2]
 
         input_ids = []
         segment_ids = []

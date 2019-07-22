@@ -40,19 +40,14 @@ class RelationXLNetReader(BaseReader):
     def __init__(self,
                  vocab_file: Path,
                  conceptnet_path: Path,
-                 max_seq_length: int = 512,
                  word_indexer: Optional[TokenIndexer] = None):
         super().__init__(lazy=False)
 
         splitter = XLNetWordSplitter(vocab_file=str(vocab_file))
         self.tokeniser = WordTokenizer(word_splitter=splitter)
-        self.max_seq_length = max_seq_length
 
         if word_indexer is None:
-            word_indexer = XLNetIndexer(
-                max_seq_length=max_seq_length,
-                vocab_file=str(vocab_file)
-            )
+            word_indexer = XLNetIndexer(vocab_file=str(vocab_file))
         self.word_indexers = {'tokens': word_indexer}
 
         self.conceptnet = ConceptNet(conceptnet_path=conceptnet_path)

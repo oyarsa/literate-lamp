@@ -39,7 +39,6 @@ class SimpleTrianReader(BaseReader):
     def __init__(self,
                  word_indexer: Optional[TokenIndexer] = None,
                  xlnet_vocab_file: Optional[Path] = None,
-                 max_seq_length: int = 512,
                  embedding_type: str = 'glove',
                  conceptnet_path: Optional[Path] = None):
         super().__init__(lazy=False)
@@ -48,7 +47,6 @@ class SimpleTrianReader(BaseReader):
 
         if word_indexer is None:
             word_indexer = get_indexer(embedding_type=embedding_type,
-                                       max_seq_length=max_seq_length,
                                        xlnet_vocab_file=xlnet_vocab_file)
         self.word_indexers = {'tokens': word_indexer}
 

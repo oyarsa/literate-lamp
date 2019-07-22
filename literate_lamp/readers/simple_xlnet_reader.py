@@ -44,7 +44,6 @@ class SimpleXLNetReader(BaseReader):
     # Initialise using a TokenIndexer, if provided. If not, create a new one.
     def __init__(self,
                  vocab_file: Path,
-                 max_seq_length: int = 512,
                  word_indexer: Optional[TokenIndexer] = None):
         super().__init__(lazy=False)
 
@@ -52,10 +51,7 @@ class SimpleXLNetReader(BaseReader):
         self.tokeniser = WordTokenizer(word_splitter=splitter)
 
         if word_indexer is None:
-            word_indexer = XLNetIndexer(
-                max_seq_length=max_seq_length,
-                vocab_file=str(vocab_file)
-            )
+            word_indexer = XLNetIndexer(vocab_file=str(vocab_file))
         self.word_indexers = {'tokens': word_indexer}
 
     # Converts the text from each field in the input to `Token`s, and then

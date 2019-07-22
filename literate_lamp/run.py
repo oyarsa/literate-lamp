@@ -991,7 +991,6 @@ def create_reader(reader_type: str) -> readers.BaseReader:
     if reader_type == 'simple':
         return readers.SimpleMcScriptReader(
             embedding_type=ARGS.EMBEDDING_TYPE,
-            max_seq_length=ARGS.max_seq_length,
             xlnet_vocab_file=ARGS.xlnet_vocab_path
         )
     if reader_type == 'full-trian':
@@ -1002,7 +1001,6 @@ def create_reader(reader_type: str) -> readers.BaseReader:
     if reader_type == 'simple-trian':
         return readers.SimpleTrianReader(
             embedding_type=ARGS.EMBEDDING_TYPE,
-            max_seq_length=ARGS.max_seq_length,
             xlnet_vocab_file=ARGS.xlnet_vocab_path,
             conceptnet_path=ARGS.CONCEPTNET_PATH
         )
@@ -1010,20 +1008,15 @@ def create_reader(reader_type: str) -> readers.BaseReader:
         return readers.RelationBertReader(is_bert=is_bert,
                                           conceptnet_path=ARGS.CONCEPTNET_PATH)
     if reader_type == 'simple-xl':
-        return readers.SimpleXLNetReader(
-            vocab_file=ARGS.xlnet_vocab_path,
-            max_seq_length=ARGS.max_seq_length
-        )
+        return readers.SimpleXLNetReader(vocab_file=ARGS.xlnet_vocab_path)
     if reader_type == 'relation-xl':
         return readers.RelationXLNetReader(
             vocab_file=ARGS.xlnet_vocab_path,
-            max_seq_length=ARGS.max_seq_length,
             conceptnet_path=ARGS.CONCEPTNET_PATH
         )
     if reader_type == 'extended-xl':
         return readers.ExtendedXLNetReader(
             vocab_file=ARGS.xlnet_vocab_path,
-            max_seq_length=ARGS.max_seq_length,
             conceptnet_path=ARGS.CONCEPTNET_PATH
         )
     raise ValueError(f'Reader type {reader_type} is invalid')
