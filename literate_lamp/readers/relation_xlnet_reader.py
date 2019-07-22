@@ -91,10 +91,10 @@ class RelationXLNetReader(BaseReader):
         answer0_tokens = self.tokeniser.tokenize(text=answer0)
         answer1_tokens = self.tokeniser.tokenize(text=answer1)
 
-        passage_words = toks2strs(passage_tokens)
-        question_words = toks2strs(question_tokens)
-        answer0_words = toks2strs(answer0_tokens)
-        answer1_words = toks2strs(answer1_tokens)
+        passage_words = pieces2strs(passage_tokens)
+        question_words = pieces2strs(question_tokens)
+        answer0_words = pieces2strs(answer0_tokens)
+        answer1_words = pieces2strs(answer1_tokens)
 
         p_q_relations = relation_sentences(
             self.conceptnet, passage_words, question_words)

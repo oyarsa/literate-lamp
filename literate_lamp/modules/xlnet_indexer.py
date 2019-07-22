@@ -77,7 +77,6 @@ class XLNetIndexer(TokenIndexer[int]):
             t.text for t in tokens)
         total_length = len(token_ids) + 2
         self.biggest = max(total_length, self.biggest)
-        print('Seq:', self.biggest)
 
         if total_length > self.max_seq_length:
             print(f'[XLNetIndexer] Truncating sequence ({total_length} '
