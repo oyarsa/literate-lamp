@@ -120,6 +120,7 @@ def build_advanced_xlnet(vocab: Vocabulary) -> Model:
     -------
     A `AdvancedXLNetClassifier` model ready to be trained.
     """
+    word_embeddings = get_word_embeddings(vocab)
     if ARGS.ENCODER_TYPE == 'lstm':
         encoder_fn = lstm_seq2seq
     elif ARGS.ENCODER_TYPE == 'gru':
@@ -140,8 +141,7 @@ def build_advanced_xlnet(vocab: Vocabulary) -> Model:
 
     # Instantiate modele with our embedding, encoder and vocabulary
     model = models.AdvancedXLNetClassifier(
-        config_path=ARGS.xlnet_config_path,
-        model_path=ARGS.xlnet_model_path,
+        word_embeddings=word_embeddings,
         encoder=encoder,
         vocab=vocab,
         encoder_dropout=0.5,

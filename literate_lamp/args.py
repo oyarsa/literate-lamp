@@ -53,6 +53,8 @@ ARGS:
     # always going to be.
     external_folder = Path('..', 'External')
 
+    xlnet_use_window = True
+
     if config == 'large':
         # Path to our dataset
         args.TRAIN_DATA_PATH = data_folder / 'mctrain-data.json'
@@ -70,7 +72,10 @@ ARGS:
         # Number of epochs to train model
         args.NUM_EPOCHS = 30
         # Size of the input window for XLNet
-        args.xlnet_window_size = 512
+        if xlnet_use_window:
+            args.xlnet_window_size = 512
+        else:
+            args.xlnet_window_size = None
     elif config == 'small':
         # Path to our dataset
         args.TRAIN_DATA_PATH = data_folder / 'small-train.json'
@@ -88,7 +93,10 @@ ARGS:
         # Number of epochs to train model
         args.NUM_EPOCHS = 1
         # Size of the input window for XLNet
-        args.xlnet_window_size = 128
+        if xlnet_use_window:
+            args.xlnet_window_size = 128
+        else:
+            args.xlnet_window_size = None
 
     args.BERT_PATH = external_folder / 'bert-base-uncased.tar.gz'
     args.CONCEPTNET_PATH = external_folder / 'conceptnet.csv'

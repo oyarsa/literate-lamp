@@ -5,10 +5,11 @@ from pathlib import Path
 import torch
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
+from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.nn.util import get_text_field_mask
 
 from models import BaseModel
-from layers import xlnet_embeddings, LinearAttention
+from layers import LinearAttention
 
 
 class AdvancedXLNetClassifier(BaseModel):
@@ -20,19 +21,14 @@ class AdvancedXLNetClassifier(BaseModel):
 
     def __init__(self,
                  vocab: Vocabulary,
+                 word_embeddings: TextFieldEmbedder,
                  encoder: Seq2SeqEncoder,
-                 config_path: Path,
-                 model_path: Path,
                  encoder_dropout: float = 0.5,
                  train_xlnet: bool = False
                  ) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
-        self.word_embeddings = xlnet_embeddings(
-            config_path=config_path,
-            model_path=model_path,
-            training=train_xlnet
-        )
+        self.word_embeddings = word_embeddings
 
         self.encoder = encoder
         self.attn = LinearAttention(self.encoder.get_output_dim())

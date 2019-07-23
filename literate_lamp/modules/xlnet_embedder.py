@@ -55,7 +55,10 @@ class XLNetEmbedder(TokenEmbedder):
         the scalar mix.
     """
 
-    def __init__(self, xlnet_model: XLNetModel, window_size: int) -> None:
+    def __init__(self,
+                 xlnet_model: XLNetModel,
+                 window_size: Optional[int] = None
+                 ) -> None:
         super().__init__()
         self.xlnet_model = xlnet_model
         self.output_dim = cast(int, xlnet_model.config.hidden_size)
@@ -86,9 +89,15 @@ class XLNetEmbedder(TokenEmbedder):
 
         input_mask = (input_ids != 0).long()
 
-        split_input_ids = input_ids.split(self.window_size, dim=-1)
-        split_token_type_ids = token_type_ids.split(self.window_size, dim=-1)
-        split_input_mask = input_mask.split(self.window_size, dim=-1)
+        if self.window_size is not None:
+            split_input_ids = input_ids.split(self.window_size, dim=-1)
+            split_token_type_ids = token_type_ids.split(
+                self.window_size, dim=-1)
+            split_input_mask = input_mask.split(self.window_size, dim=-1)
+        else:
+            split_input_ids = [input_ids]
+            split_token_type_ids = [token_type_ids]
+            split_input_mask = [input_mask]
 
         outputs = []
         memory = None
@@ -129,7 +138,7 @@ class PretrainedXLNetEmbedder(XLNetEmbedder):
     def __init__(self,
                  config_path: Path,
                  model_path: Path,
-                 window_size: int = 512,
+                 window_size: Optional[int] = None,
                  requires_grad: bool = False
                  ) -> None:
         model = PretrainedXLNetModel.load(config_path=config_path,
