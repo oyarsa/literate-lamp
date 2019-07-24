@@ -11,10 +11,12 @@ concatenated and fed into a feed-forward layer that output class probabilities.
 This script builds the model, trains it, generates predictions and saves it.
 Then it checks if the saving went correctly.
 """
+import pickle
+import random
 from typing import Dict, Callable, Tuple, List
 from pathlib import Path
 from collections import defaultdict
-import pickle
+from pprint import pprint
 
 import torch
 from torch.optim import Adamax
@@ -22,6 +24,7 @@ import numpy as np
 from allennlp.training.util import evaluate as allen_eval
 from allennlp.models import Model
 from allennlp.data.iterators import BucketIterator
+from allennlp.data.fields import TextField, ListField
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.data.instance import Instance
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
@@ -1022,8 +1025,7 @@ def create_reader(reader_type: str) -> readers.BaseReader:
     raise ValueError(f'Reader type {reader_type} is invalid')
 
 
-def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model],
-                                  readers.BaseReader]:
+def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], str]:
     "Gets the build function and reader for the model"
     # Model -> Build function, reader type
     models = {
@@ -1048,8 +1050,111 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model],
 
     if ARGS.MODEL in models:
         build_fn, reader_type = models[ARGS.MODEL]
-        return build_fn, create_reader(reader_type)
+        return build_fn, reader_type
     raise ValueError(f'Invalid model name: {ARGS.MODEL}')
+
+
+def tf2str(field: TextField) -> str:
+    text = (token.text for token in field.tokens)
+    text = filter(None, text)
+    string = " ".join(text)
+    return string
+
+
+def print_base_instance(instance: Instance, prediction: torch.Tensor) -> None:
+    passage = tf2str(instance['passage'])
+    question = tf2str(instance['question'])
+    answer1 = tf2str(instance['answer0'])
+    answer2 = tf2str(instance['answer1'])
+    label = instance['label'].label
+    print_instance(passage, question, answer1, answer2, prediction, label)
+
+
+def print_xlnet_instance(instance: Instance, prediction: torch.Tensor) -> None:
+    string0 = instance['string0']
+    passage, question_answer0 = tf2str(string0).split('<sep>')
+    string1 = instance['string1']
+    _, question_answer1 = tf2str(string1).split('<sep>')
+    label = instance['label']
+
+    print('PASSAGE:\n', '\t', passage, sep='')
+    print('QUESTION+ANSWER0:\n', '\t', question_answer0, sep='')
+    print('QUESTION+ANSWER1:\n', '\t', question_answer1, sep='')
+    print('PREDICTION:', prediction)
+    print('CORRECT:', label.label)
+
+
+def process_bert_list(fields: ListField) -> Tuple[str, str, str]:
+    windows = []
+
+    for field in fields:
+        text = tf2str(field)
+        split = text.split('[SEP]')
+        question, answer, window = split
+        windows.append(window)
+
+    passage = " ".join(windows)
+    return passage, question, answer
+
+
+def print_bert_instance(instance: Instance, prediction: torch.Tensor) -> None:
+    bert0 = instance['bert0']
+    passage, question, answer0 = process_bert_list(bert0)
+    bert1 = instance['bert1']
+    _, _, answer1 = process_bert_list(bert1)
+    label = instance['label'].label
+
+    print_instance(passage, question, answer0, answer1, prediction, label)
+
+
+def error_analysis(model: Model,
+                   test_data: List[Instance],
+                   sample_size: int = 10) -> None:
+    base_readers = ['simple', 'simple-trian', 'full-trian']
+    xlnet_readers = ['relation-xl', 'simple-xl', 'extended-xl']
+    bert_readers = ['simple-bert', 'relation-bert']
+    _, reader_type = get_modelfn_reader()
+
+    print('#'*5, 'ERROR ANALYSIS', '#'*5)
+
+    wrongs = []
+    for instance in test_data:
+        label = instance['label']
+
+        output = model.forward_on_instance(instance)
+        probability = output['prob']
+        prediction = probability.argmax() + 1
+
+        if prediction != label:
+            wrongs.append((instance, probability))
+
+    wrongs = random.sample(wrongs, sample_size)
+    for i, (wrong, predicted) in enumerate(wrongs):
+        print(f'{i})')
+        if reader_type in base_readers:
+            print_base_instance(wrong, predicted)
+        elif reader_type in xlnet_readers:
+            print_xlnet_instance(wrong, predicted)
+        elif reader_type in bert_readers:
+            print_bert_instance(wrong, predicted)
+        print('#'*10)
+        print()
+
+
+def print_instance(passage: str,
+                   question: str,
+                   answer1: str,
+                   answer2: str,
+                   prediction: torch.Tensor,
+                   label: int
+                   ) -> None:
+    print('PASSAGE:\n', '\t', passage, sep='')
+    print('QUESTION:\n', '\t', question, sep='')
+    print('ANSWERS:')
+    print('\t1:', answer1)
+    print('\t2:', answer2)
+    print('PREDICTION:', prediction)
+    print('CORRECT:', label)
 
 
 def make_prediction(model: Model,
@@ -1070,13 +1175,9 @@ def make_prediction(model: Model,
     prediction = np.argmax(result['prob'])
 
     if verbose:
-        print('Passage:\n', '\t', passage, sep='')
-        print('Question:\n', '\t', question, sep='')
-        print('Answers:')
-        print('\t1:', answer1)
-        print('\t2:', answer2)
-        print('Prediction:', prediction+1)
-        print('Correct:', 1 if label1 == 1 else 2)
+        label = 1 if label1 == 1 else 2
+        print_instance(passage, question, answer1,
+                       answer2, prediction+1, label)
 
     return result
 
@@ -1119,14 +1220,19 @@ def evaluate(model: Model,
 
 def run_model() -> None:
     "Execute model according to the configuration"
+    print('#'*5, 'PARAMETERS', '#'*5)
+    pprint(ARGS)
+    print('#'*10, '\n\n')
+
     # Which model to use?
-    build_fn, reader = get_modelfn_reader()
+    build_fn, reader_type = get_modelfn_reader()
+    reader = create_reader(reader_type)
 
     def optimiser(model: Model) -> torch.optim.Optimizer:
         return Adamax(model.parameters(), lr=2e-3)
 
     # Create SAVE_FOLDER if it doesn't exist
-    ARGS.SAVE_FOLDER.mkdir(exist_ok=True, parents=True)
+    ARGS.SAVE_PATH.mkdir(exist_ok=True, parents=True)
     train_dataset = load_data(data_path=ARGS.TRAIN_DATA_PATH,
                               reader=reader,
                               pre_processed_path=ARGS.TRAIN_PREPROCESSED_PATH)
@@ -1150,6 +1256,7 @@ def run_model() -> None:
 
     evaluate(model, reader, test_dataset)
     result = make_prediction(model, reader, verbose=False)
+    error_analysis(model, test_dataset)
 
     print('Save path', ARGS.SAVE_PATH)
 
@@ -1159,5 +1266,6 @@ def run_model() -> None:
 
 if __name__ == '__main__':
     torch.manual_seed(ARGS.RANDOM_SEED)
+    random.seed(ARGS.RANDOM_SEED)
 
     run_model()
