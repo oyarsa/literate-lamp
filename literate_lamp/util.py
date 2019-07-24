@@ -279,9 +279,9 @@ def get_experiment_name(model: str, config: str, embedding: str,
     """
     date = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     if name is None:
-        experiment_name = f'{model}.{config}.{embedding}.{date}'
+        experiment_name = f'{date}.{model}.{config}.{embedding}'
     else:
-        experiment_name = f'{name}.{model}.{config}.{embedding}.{date}'
+        experiment_name = f'{date}.{name}.{model}.{config}.{embedding}'
     return experiment_name
 
 
