@@ -4,7 +4,6 @@ import pickle
 import random
 import sys
 from pathlib import Path
-from pprint import pprint
 
 import torch
 
@@ -36,10 +35,8 @@ def main() -> None:
     ARGS = args.get_args([__name__] + second)
     common.ARGS = ARGS
 
-    print()
-    pprint(opts)
-    pprint(ARGS)
-    print()
+    util.print_args(vars(opts))
+    util.print_args(ARGS)
 
     model_path = Path(opts.path)
     build_fn, reader_type = common.get_modelfn_reader()

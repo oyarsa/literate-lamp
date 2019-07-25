@@ -14,7 +14,6 @@ Then it checks if the saving went correctly.
 import pickle
 import random
 from typing import Callable
-from pprint import pprint
 from pathlib import Path
 
 import torch
@@ -27,7 +26,7 @@ import args
 import readers
 import common
 from predictor import McScriptPredictor
-from util import example_input, is_cuda, train_model, load_data
+from util import example_input, is_cuda, train_model, load_data, print_args
 
 ARGS = args.get_args()
 
@@ -98,7 +97,7 @@ def test_load(build_model_fn: Callable[[Vocabulary], Model],
 def run_model() -> None:
     "Execute model according to the configuration"
     print('#'*5, 'PARAMETERS', '#'*5)
-    pprint(ARGS)
+    print_args(ARGS)
     print('#'*10, '\n\n')
 
     # Which model to use?

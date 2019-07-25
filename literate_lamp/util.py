@@ -358,3 +358,10 @@ def split_list(list: List[T], element: T) -> List[List[T]]:
         list = list[index+1:]
 
     return splits
+
+
+def print_args(args: Dict[str, Any]) -> None:
+    print()
+    for key, value in args.items():
+        print(key, ':', str(value))
+    print()
