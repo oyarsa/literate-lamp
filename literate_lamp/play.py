@@ -29,7 +29,7 @@ def main() -> None:
     if '--' in sys.argv:
         first, second = util.split_list(sys.argv[1:], '--')
     else:
-        first, second = sys.argv[1:], None
+        first, second = sys.argv[1:], []
     opts = parser.parse_args(first)
     ARGS = args.get_args([__name__] + second)
     common.ARGS = ARGS
