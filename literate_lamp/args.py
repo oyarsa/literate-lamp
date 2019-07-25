@@ -1,13 +1,13 @@
 "Processes command line arguments and configuration."
 import sys
-from typing import cast
+from typing import cast, List, Optional
 from pathlib import Path
 
 from util import (DotDict, parse_cuda, get_experiment_name,
                   get_preprocessed_name)
 
 
-def get_args() -> DotDict:
+def get_args(arguments: Optional[List[str]] = None) -> DotDict:
     "Processes command line arguments and configuration."
     usage = """
 USAGE:
@@ -22,30 +22,32 @@ ARGS:
     ENCODER: which encoder to use (lstm, gru, transformer)
     TYYPE: transformer type (allen or custom)
 """
-    if any('help' in arg or '-h' in arg for arg in sys.argv):
+    if arguments is None:
+        arguments = sys.argv
+    if any('help' in arg or '-h' in arg for arg in arguments):
         print(usage)
         exit(0)
 
     args = DotDict()
 
     default_config = 'small'  # Can be: _large_ or _small_
-    config = sys.argv[1] if len(sys.argv) >= 2 else default_config
+    config = arguments[1] if len(arguments) >= 2 else default_config
 
     # Which model to use: 'baseline', 'reader', 'simple-bert', 'advanced-bert',
     #  or 'attentive'.
     default_model = 'attentive'
-    args.MODEL = sys.argv[2] if len(sys.argv) >= 3 else default_model
+    args.MODEL = arguments[2] if len(arguments) >= 3 else default_model
 
     args.NER_EMBEDDING_DIM = 8
     args.REL_EMBEDDING_DIM = 10
     args.POS_EMBEDDING_DIM = 12
     args.HANDCRAFTED_DIM = 7
     default_embedding_type = 'glove'  # can also be 'bert'
-    args.EMBEDDING_TYPE = sys.argv[3] if len(
-        sys.argv) >= 4 else default_embedding_type
+    args.EMBEDDING_TYPE = arguments[3] if len(
+        arguments) >= 4 else default_embedding_type
 
-    args.CUDA_DEVICE = parse_cuda(sys.argv[4]) if len(sys.argv) >= 5 else 0
-    args.MODEL_NAME = sys.argv[5] if len(sys.argv) >= 6 else None
+    args.CUDA_DEVICE = parse_cuda(arguments[4]) if len(arguments) >= 5 else 0
+    args.MODEL_NAME = arguments[5] if len(arguments) >= 6 else None
 
     data_folder = Path('data')
     # Proper configuration path for the External folder. The data one is
@@ -134,8 +136,8 @@ ARGS:
 
     # Model Configuration
     # Use LSTM, GRU or Transformer
-    args.ENCODER_TYPE = sys.argv[6] if len(sys.argv) >= 7 else 'lstm'
-    args.WHICH_TRANSFORMER = sys.argv[7] if len(sys.argv) >= 8 else 'allen'
+    args.ENCODER_TYPE = arguments[6] if len(arguments) >= 7 else 'lstm'
+    args.WHICH_TRANSFORMER = arguments[7] if len(arguments) >= 8 else 'allen'
     args.BIDIRECTIONAL = True
     args.RNN_LAYERS = 1
     args.RNN_DROPOUT = 0.5 if args.ENCODER_TYPE != 'transformer' else 0

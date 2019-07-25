@@ -1,17 +1,27 @@
-from typing import Callable, Tuple
+import random
+from typing import Callable, Tuple, Dict, List
+from collections import defaultdict
 
+import torch
+from allennlp.data.instance import Instance
+from allennlp.training.util import evaluate as allen_eval
+from allennlp.data.iterators import BucketIterator
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models import Model
+from allennlp.data.fields import ListField
 
 import args
 import models
+import common
 import readers
+from util import tf2str
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
                     transformer_seq2seq, xlnet_embeddings,
                     RelationalTransformerEncoder)
-ARGS = args.get_args()
+
+ARGS = args.DotDict()
 
 
 def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
@@ -983,3 +993,142 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], str]:
         build_fn, reader_type = models[ARGS.MODEL]
         return build_fn, reader_type
     raise ValueError(f'Invalid model name: {ARGS.MODEL}')
+
+
+def split_list(data: List[Instance]) -> Dict[str, List[Instance]]:
+    output: Dict[str, List[Instance]] = defaultdict(list)
+
+    for sample in data:
+        qtype = sample['metadata']['question_type']
+        output[qtype].append(sample)
+
+    return output
+
+
+def evaluate(model: Model,
+             reader: readers.BaseReader,
+             test_data: List[Instance]
+             ) -> None:
+    vocab = Vocabulary.from_instances(test_data)
+    iterator = BucketIterator(batch_size=ARGS.BATCH_SIZE,
+                              sorting_keys=reader.keys)
+    # Our data should be indexed using the vocabulary we learned.
+    iterator.index_with(vocab)
+
+    data_types = split_list(test_data)
+    results: Dict[str, Tuple[int, float]] = {}
+
+    print()
+    print('#'*5, 'PER TYPE EVALUATION', '#'*5)
+    for qtype, data in data_types.items():
+        num_items = len(data)
+        print(f'Type: {qtype} ({num_items})')
+
+        metrics = allen_eval(model, data, iterator, ARGS.CUDA_DEVICE, "")
+        print()
+
+        accuracy = metrics['accuracy']
+        results[qtype] = (num_items, accuracy)
+
+
+def print_base_instance(instance: Instance, prediction: torch.Tensor) -> None:
+    passage = tf2str(instance['passage'])
+    question = tf2str(instance['question'])
+    answer1 = tf2str(instance['answer0'])
+    answer2 = tf2str(instance['answer1'])
+    label = instance['label'].label
+    print_instance(passage, question, answer1, answer2, prediction, label)
+
+
+def print_xlnet_instance(instance: Instance,
+                         probability: torch.Tensor
+                         ) -> None:
+    def clean(string: str) -> str:
+        return string.replace("▁", "")
+
+    string0 = instance['string0']
+    passage, question_answer0 = tf2str(string0).split('<sep>')
+    string1 = instance['string1']
+    _, question_answer1 = tf2str(string1).split('<sep>')
+    label = instance['label']
+    prediction = probability.argmax()
+
+    print('PASSAGE:\n', '\t', clean(passage), sep='')
+    print('QUESTION+ANSWER0:\n', '\t', clean(question_answer0), sep='')
+    print('QUESTION+ANSWER1:\n', '\t', clean(question_answer1), sep='')
+    print('PREDICTION:', prediction, probability)
+    print('CORRECT:', label.label)
+
+
+def process_bert_list(fields: ListField) -> Tuple[str, str, str]:
+    windows = []
+
+    for field in fields:
+        text = tf2str(field)
+        split = text.split('[SEP]')
+        question, answer, window = split
+        windows.append(window)
+
+    passage = " ".join(windows)
+    return passage, question, answer
+
+
+def print_bert_instance(instance: Instance, prediction: torch.Tensor) -> None:
+    bert0 = instance['bert0']
+    passage, question, answer0 = process_bert_list(bert0)
+    bert1 = instance['bert1']
+    _, _, answer1 = process_bert_list(bert1)
+    label = instance['label'].label
+
+    print_instance(passage, question, answer0, answer1, prediction, label)
+
+
+def error_analysis(model: Model,
+                   test_data: List[Instance],
+                   sample_size: int = 10) -> None:
+    base_readers = ['simple', 'simple-trian', 'full-trian']
+    xlnet_readers = ['relation-xl', 'simple-xl', 'extended-xl']
+    bert_readers = ['simple-bert', 'relation-bert']
+    _, reader_type = common.get_modelfn_reader()
+
+    print('#'*5, 'ERROR ANALYSIS', '#'*5)
+
+    wrongs = []
+    for instance in test_data:
+        label = instance['label'].label
+
+        output = model.forward_on_instance(instance)
+        probability = output['prob']
+        prediction = probability.argmax()
+
+        if prediction != label:
+            wrongs.append((instance, probability))
+
+    wrongs = random.sample(wrongs, sample_size)
+    for i, (wrong, predicted) in enumerate(wrongs):
+        print(f'{i})')
+        if reader_type in base_readers:
+            print_base_instance(wrong, predicted)
+        elif reader_type in xlnet_readers:
+            print_xlnet_instance(wrong, predicted)
+        elif reader_type in bert_readers:
+            print_bert_instance(wrong, predicted)
+        print('#'*10)
+        print()
+
+
+def print_instance(passage: str,
+                   question: str,
+                   answer1: str,
+                   answer2: str,
+                   probability: torch.Tensor,
+                   label: int
+                   ) -> None:
+    print('PASSAGE:\n', '\t', passage, sep='')
+    print('QUESTION:\n', '\t', question, sep='')
+    print('ANSWERS:')
+    print('\t0:', answer1)
+    print('\t1:', answer2)
+    prediction = probability.argmax()
+    print('PREDICTION:', prediction, probability)
+    print('CORRECT:', label)

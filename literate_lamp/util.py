@@ -1,6 +1,6 @@
 "Utility functions for the other modules"
 from typing import (Tuple, List, Callable, Optional, Union, Sequence, Dict,
-                    Any, Iterable)
+                    Any, Iterable, TypeVar)
 import copy
 import pickle
 import datetime
@@ -341,3 +341,20 @@ def tf2str(field: TextField) -> str:
     text = (token.text for token in field.tokens)
     string = " ".join(text)
     return string
+
+
+T = TypeVar('T')
+
+
+def split_list(list: List[T], element: T) -> List[List[T]]:
+    splits = []
+
+    while list:
+        if element not in list:
+            index = len(list)
+        else:
+            index = list.index(element)
+        splits.append(list[:index])
+        list = list[index+1:]
+
+    return splits
