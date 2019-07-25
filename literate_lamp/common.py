@@ -1034,12 +1034,16 @@ def evaluate(model: Model,
 
 
 def print_base_instance(instance: Instance, prediction: torch.Tensor) -> None:
+    passage_id = instance['metadata']['passage_id']
+    question_id = instance['metadata']['question_id']
+    question_type = instance['metadata']['question_type']
     passage = tf2str(instance['passage'])
     question = tf2str(instance['question'])
     answer1 = tf2str(instance['answer0'])
     answer2 = tf2str(instance['answer1'])
     label = instance['label'].label
-    print_instance(passage, question, answer1, answer2, prediction, label)
+    print_instance(passage_id, question_id, question_type, passage, question,
+                   answer1, answer2, prediction, label)
 
 
 def print_xlnet_instance(instance: Instance,
@@ -1047,6 +1051,10 @@ def print_xlnet_instance(instance: Instance,
                          ) -> None:
     def clean(string: str) -> str:
         return string.replace("▁", "")
+
+    passage_id = instance['metadata']['passage_id']
+    question_id = instance['metadata']['question_id']
+    question_type = instance['metadata']['question_type']
 
     string0 = instance['string0']
     passage, question_answer0 = tf2str(string0).split('<sep>')
@@ -1060,6 +1068,7 @@ def print_xlnet_instance(instance: Instance,
     print('QUESTION+ANSWER1:\n', '\t', clean(question_answer1), sep='')
     print('PREDICTION:', prediction, probability)
     print('CORRECT:', label.label)
+    print(f'PID {passage_id}; QID {question_id}; QTYPE {question_type}')
 
 
 def process_bert_list(fields: ListField) -> Tuple[str, str, str]:
@@ -1076,13 +1085,17 @@ def process_bert_list(fields: ListField) -> Tuple[str, str, str]:
 
 
 def print_bert_instance(instance: Instance, prediction: torch.Tensor) -> None:
+    passage_id = instance['metadata']['passage_id']
+    question_id = instance['metadata']['question_id']
+    question_type = instance['metadata']['question_type']
     bert0 = instance['bert0']
     passage, question, answer0 = process_bert_list(bert0)
     bert1 = instance['bert1']
     _, _, answer1 = process_bert_list(bert1)
     label = instance['label'].label
 
-    print_instance(passage, question, answer0, answer1, prediction, label)
+    print_instance(passage_id, question_id, question_type, passage, question,
+                   answer0, answer1, prediction, label)
 
 
 def error_analysis(model: Model,
@@ -1119,7 +1132,10 @@ def error_analysis(model: Model,
         print()
 
 
-def print_instance(passage: str,
+def print_instance(passage_id: str,
+                   question_id: str,
+                   question_type: str,
+                   passage: str,
                    question: str,
                    answer1: str,
                    answer2: str,
@@ -1134,3 +1150,4 @@ def print_instance(passage: str,
     prediction = probability.argmax()
     print('PREDICTION:', prediction, probability)
     print('CORRECT:', label)
+    print(f'PID {passage_id}; QID {question_id}; QTYPE {question_type}')
