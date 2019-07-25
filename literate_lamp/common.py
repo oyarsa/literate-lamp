@@ -1018,6 +1018,8 @@ def evaluate(model: Model,
     data_types = split_list(test_data)
     results: Dict[str, Tuple[int, float]] = {}
 
+    model.eval()
+
     print()
     print('#'*5, 'PER TYPE EVALUATION', '#'*5)
     for qtype, data in data_types.items():

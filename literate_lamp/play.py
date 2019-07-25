@@ -23,6 +23,8 @@ def main() -> None:
                              "perform error analysis.")
     parser.add_argument('--path', type=str, required=True,
                         help="Path to the model folder.")
+    parser.add_argument('--data', type=str,
+                        help="Path to the testing data file.")
     parser.add_argument('--sample_size', type=int, default=10,
                         help="Number of items to draw for error analysis.")
 
@@ -60,10 +62,17 @@ def main() -> None:
     if cuda_device > -1:
         model.cuda(cuda_device)
 
+    if opts.data:
+        data_path = Path(opts.data)
+        pre_processed_path = None
+    else:
+        data_path = ARGS.TEST_DATA_PATH
+        pre_processed_path = ARGS.TEST_PREPROCESSED_PATH
+
     test_data = util.load_data(
-        data_path=ARGS.TEST_DATA_PATH,
+        data_path=data_path,
         reader=reader,
-        pre_processed_path=ARGS.TEST_PREPROCESSED_PATH
+        pre_processed_path=pre_processed_path
     )
 
     if opts.command == 'evaluate':
