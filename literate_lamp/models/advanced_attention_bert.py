@@ -33,10 +33,11 @@ class AdvancedAttentionBertClassifier(BaseModel):
         self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
                                                training=train_bert)
 
+        self.encoder_dropout: torch.nn.Module
         if encoder_dropout > 0:
             self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
         else:
-            self.encoder_dropout = lambda x: x
+            self.encoder_dropout = torch.nn.Identity()
 
         self.pooler = BertPooler(pretrained_model=str(bert_path))
         self.dense1 = torch.nn.Linear(

@@ -1,6 +1,5 @@
 "Just the standard basic XLNet for classification."
 from typing import Dict, Optional
-from pathlib import Path
 
 import torch
 from allennlp.data.vocabulary import Vocabulary

@@ -5,7 +5,6 @@ from pathlib import Path
 import torch
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.modules.seq2vec_encoders import BertPooler, Seq2VecEncoder
-from allennlp.modules.text_field_embedders import TextFieldEmbedder
 
 from models.base_model import BaseModel
 from layers import bert_embeddings
@@ -22,7 +21,6 @@ class AdvancedBertClassifier(BaseModel):
     def __init__(self,
                  bert_path: Path,
                  encoder: Seq2VecEncoder,
-                 rel_embeddings: TextFieldEmbedder,
                  vocab: Vocabulary,
                  hidden_dim: int = 100,
                  encoder_dropout: float = 0.0,
@@ -33,12 +31,11 @@ class AdvancedBertClassifier(BaseModel):
         self.word_embeddings = bert_embeddings(pretrained_model=bert_path,
                                                training=train_bert)
 
-        # self.rel_embeddings = rel_embeddings
-
+        self.encoder_dropout: torch.nn.Module
         if encoder_dropout > 0:
             self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
         else:
-            self.encoder_dropout = lambda x: x
+            self.encoder_dropout = torch.nn.Identity()
 
         self.pooler = BertPooler(pretrained_model=str(bert_path))
         self.dense1 = torch.nn.Linear(

@@ -9,10 +9,10 @@ import math
 from pathlib import Path
 
 import torch
-from torch.optim import SGD, Optimizer
 
 from allennlp.models import Model
 from allennlp.data import Instance
+from allennlp.data.fields import TextField
 from allennlp.data.vocabulary import Vocabulary
 
 # Configurable trainer so we don't have to write our own training loop.
@@ -172,7 +172,8 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
                 save_path: Optional[Path] = None,
                 batch_size: int = 2,
                 num_epochs: int = 1,
-                optimiser_fn: Optional[Callable[[Model], Optimizer]] = None,
+                optimiser_fn: Optional[Callable[[Model],
+                                                torch.optim.Optimizer]] = None,
                 grad_norm_clip: float = 10.0,
                 sorting_keys: Optional[List[Tuple[str, str]]] = None,
                 cuda_device: Union[int, List[int]] = 0) -> Model:
@@ -202,7 +203,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     # We need an optimiser to train the model. This is simple SGD, to which he
     # pass our model's parameter list, and initialise the learning rate.
     if optimiser_fn is None:
-        optimiser = SGD(model.parameters(), lr=0.1)
+        optimiser = torch.optim.SGD(model.parameters(), lr=0.1)
     else:
         optimiser = optimiser_fn(model)
 
@@ -334,3 +335,9 @@ def parse_cuda(cuda_str: str) -> Union[int, List[int]]:
     if ',' in cuda_str:
         return [int(gpu) for gpu in cuda_str.split(',')]
     return int(cuda_str)
+
+
+def tf2str(field: TextField) -> str:
+    text = (token.text for token in field.tokens)
+    string = " ".join(text)
+    return string

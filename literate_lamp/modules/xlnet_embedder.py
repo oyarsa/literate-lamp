@@ -9,7 +9,6 @@ from pathlib import Path
 
 import torch
 from pytorch_transformers import XLNetModel, XLNetConfig
-from allennlp.modules.scalar_mix import ScalarMix
 from allennlp.modules.token_embedders.token_embedder import TokenEmbedder
 from allennlp.nn import util
 
@@ -70,7 +69,7 @@ class XLNetEmbedder(TokenEmbedder):
     def forward(self,
                 input_ids: torch.LongTensor,
                 cls_indexes: Optional[torch.Tensor] = None,
-                token_type_ids: Optional[torch.LongTensor] = None
+                token_type_ids: Optional[torch.Tensor] = None
                 ) -> torch.Tensor:
         """
         Parameters
