@@ -1,7 +1,8 @@
 "Utilities shared by the readers."
-from typing import List, Sequence, Optional
+from typing import List, Sequence, Optional, Iterator
 from pathlib import Path
 
+import spacy
 import numpy as np
 from allennlp.data.tokenizers import Token, WordTokenizer
 from allennlp.data.tokenizers.word_splitter import (SpacyWordSplitter,
@@ -130,3 +131,15 @@ def get_indexer(embedding_type: str,
         return SingleIdTokenIndexer(lowercase_tokens=True)
     if embedding_type == 'xlnet':
         return XLNetIndexer(vocab_file=str(xlnet_vocab_file))
+
+
+def split_sentences(nlp: spacy.Language, text: str) -> Iterator[str]:
+    document = nlp(text)
+    sentences = (sentence.string.strip() for sentence in document.sents)
+    return sentences
+
+
+def get_sentencizer() -> spacy.Language:
+    nlp = spacy.lang.en.English()
+    nlp.add_pipe(nlp.create_pipe('sentencizer'))
+    return nlp
