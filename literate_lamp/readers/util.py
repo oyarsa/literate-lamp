@@ -3,6 +3,7 @@ from typing import List, Sequence, Optional, Iterator
 from pathlib import Path
 
 import spacy
+from spacy.lang.en import English
 import numpy as np
 from allennlp.data.tokenizers import Token, WordTokenizer
 from allennlp.data.tokenizers.word_splitter import (SpacyWordSplitter,
@@ -133,13 +134,13 @@ def get_indexer(embedding_type: str,
         return XLNetIndexer(vocab_file=str(xlnet_vocab_file))
 
 
-def split_sentences(nlp: spacy.Language, text: str) -> Iterator[str]:
+def split_sentences(nlp: spacy.language.Language, text: str) -> Iterator[str]:
     document = nlp(text)
     sentences = (sentence.string.strip() for sentence in document.sents)
     return sentences
 
 
-def get_sentencizer() -> spacy.Language:
-    nlp = spacy.lang.en.English()
+def get_sentencizer() -> spacy.language.Language:
+    nlp = English()
     nlp.add_pipe(nlp.create_pipe('sentencizer'))
     return nlp

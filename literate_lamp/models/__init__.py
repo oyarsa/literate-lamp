@@ -6,6 +6,7 @@ from models.advanced_xlnet import AdvancedXLNetClassifier
 from models.attentive_reader import AttentiveReader
 from models.baseline import BaselineClassifier
 from models.dcmn import Dcmn
+from models.dmn import Dmn
 from models.hierarchical_attention_network import HierarchicalAttentionNetwork
 from models.hierarchical_bert import HierarchicalBert
 from models.relational_han import RelationalHan

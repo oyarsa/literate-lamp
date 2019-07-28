@@ -7,6 +7,8 @@ from allennlp.data.instance import Instance
 from allennlp.training.util import evaluate as allen_eval
 from allennlp.data.iterators import BucketIterator
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
+from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
+from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models import Model
 from allennlp.data.fields import ListField
@@ -15,6 +17,7 @@ import args
 import models
 import common
 import readers
+from modules import position_encoder
 from util import tf2str
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
@@ -22,6 +25,28 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     RelationalTransformerEncoder)
 
 ARGS = args.DotDict()
+
+
+def get_seq2seq() -> Callable[[int, int, int, bool, float], Seq2SeqEncoder]:
+    if ARGS.ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_seq2seq
+    elif ARGS.ENCODER_TYPE == 'gru':
+        encoder_fn = gru_seq2seq
+    else:
+        raise ValueError(f'Invalid encoder {ARGS.ENCODER_TYPE}')
+    return encoder_fn  # type: ignore
+
+
+def get_encoder() -> Callable[[int, int, int, bool, float], Seq2VecEncoder]:
+    if ARGS.ENCODER_TYPE == 'gru':
+        encoder_fn = gru_encoder
+    elif ARGS.ENCODER_TYPE == 'lstm':
+        encoder_fn = lstm_encoder
+    elif ARGS.ENCODER_TYPE == 'pos':
+        encoder_fn = position_encoder
+    else:
+        raise ValueError(f'Invalid encoder {ARGS.ENCODER_TYPE}')
+    return encoder_fn  # type: ignore
 
 
 def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
@@ -39,6 +64,37 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
                                 window_size=ARGS.xlnet_window_size)
     raise ValueError(
         f'Invalid word embedding type: {ARGS.EMBEDDING_TYPE}')
+
+
+def build_dmn(vocabulary: Vocabulary) -> Model:
+    word_embeddings = get_word_embeddings(vocabulary)
+
+    encoder_fn = get_encoder()
+    encoder_seq_fn = get_seq2seq()
+
+    embedding_dim = word_embeddings.get_output_dim()
+    dropout = ARGS.RNN_DROPOUT if ARGS.RNN_LAYERS > 1 else 0
+
+    sentence_encoder = encoder_fn(embedding_dim, ARGS.HIDDEN_DIM,
+                                  ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
+    document_encoder = encoder_seq_fn(sentence_encoder.get_output_dim(),
+                                      ARGS.HIDDEN_DIM, ARGS.RNN_LAYERS,
+                                      ARGS.BIDIRECTIONAL, dropout)
+    answer_encoder = encoder_fn(embedding_dim, ARGS.HIDDEN_DIM,
+                                ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
+    question_encoder = encoder_fn(embedding_dim, ARGS.HIDDEN_DIM,
+                                  ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
+
+    return models.Dmn(
+        word_embeddings=word_embeddings,
+        sentence_encoder=sentence_encoder,
+        document_encoder=document_encoder,
+        question_encoder=question_encoder,
+        answer_encoder=answer_encoder,
+        passes=ARGS.DMN_PASSES,
+        vocab=vocabulary,
+        dropout=ARGS.RNN_DROPOUT
+    )
 
 
 def build_relational_xl(vocabulary: Vocabulary) -> Model:
@@ -786,15 +842,10 @@ def build_baseline(vocab: Vocabulary) -> Model:
     """
     embeddings = get_word_embeddings(vocab)
 
-    if ARGS.ENCODER_TYPE == 'gru':
-        encoder_fn = gru_encoder
-    else:
-        encoder_fn = lstm_encoder
-
+    encoder_fn = get_encoder()
     embedding_dim = embeddings.get_output_dim()
-    encoder = encoder_fn(embedding_dim, ARGS.HIDDEN_DIM,
-                         num_layers=ARGS.RNN_LAYERS,
-                         bidirectional=ARGS.BIDIRECTIONAL)
+    encoder = encoder_fn(embedding_dim, ARGS.HIDDEN_DIM, ARGS.RNN_LAYERS,
+                         ARGS.BIDIRECTIONAL, ARGS.RNN_DROPOUT)
 
     model = models.BaselineClassifier(embeddings, encoder, vocab)
     return model
@@ -963,6 +1014,11 @@ def create_reader(reader_type: str) -> readers.BaseReader:
             vocab_file=ARGS.xlnet_vocab_path,
             conceptnet_path=ARGS.CONCEPTNET_PATH
         )
+    if reader_type == 'sentence':
+        return readers.SentenceReader(
+            embedding_type=ARGS.EMBEDDING_TYPE,
+            xlnet_vocab_file=ARGS.xlnet_vocab_path
+        )
     raise ValueError(f'Reader type {reader_type} is invalid')
 
 
@@ -987,6 +1043,7 @@ def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], str]:
         'advanced-xl': (build_advanced_xlnet, 'simple-xl'),
         'relation-xl': (build_relational_xl, 'relation-xl'),
         'extended-xl': (build_advanced_xlnet, 'extended-xl'),
+        'dmn': (build_dmn, 'sentence'),
     }
 
     if ARGS.MODEL in models:
@@ -1033,6 +1090,19 @@ def evaluate(model: Model,
         results[qtype] = (num_items, accuracy)
 
 
+def print_dmn_instance(instance: Instance, prediction: torch.Tensor) -> None:
+    passage_id = instance['metadata']['passage_id']
+    question_id = instance['metadata']['question_id']
+    question_type = instance['metadata']['question_type']
+    passage = process_dmn_list(instance['sentences'])
+    question = tf2str(instance['question'])
+    answer1 = tf2str(instance['answer0'])
+    answer2 = tf2str(instance['answer1'])
+    label = instance['label'].label
+    print_instance(passage_id, question_id, question_type, passage, question,
+                   answer1, answer2, prediction, label)
+
+
 def print_base_instance(instance: Instance, prediction: torch.Tensor) -> None:
     passage_id = instance['metadata']['passage_id']
     question_id = instance['metadata']['question_id']
@@ -1044,6 +1114,12 @@ def print_base_instance(instance: Instance, prediction: torch.Tensor) -> None:
     label = instance['label'].label
     print_instance(passage_id, question_id, question_type, passage, question,
                    answer1, answer2, prediction, label)
+
+
+def process_dmn_list(fields: ListField) -> str:
+    sentences = [tf2str(field) for field in fields]
+    passage = " ".join(sentences)
+    return passage
 
 
 def print_xlnet_instance(instance: Instance,
@@ -1128,6 +1204,8 @@ def error_analysis(model: Model,
             print_xlnet_instance(wrong, predicted)
         elif reader_type in bert_readers:
             print_bert_instance(wrong, predicted)
+        elif reader_type == 'sentence':
+            print_dmn_instance(wrong, predicted)
         print('#'*10)
         print()
 

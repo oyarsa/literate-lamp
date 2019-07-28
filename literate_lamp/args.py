@@ -19,7 +19,7 @@ ARGS:
     EMBEDDING_TYPE: word embeddings for the text. One of: glove, bert.
     CUDA_DEVICE: device to run the training. -1 for CPU, >=0 for GPU.
     NAME: name for model being trained (used in saving)
-    ENCODER: which encoder to use (lstm, gru, transformer)
+    ENCODER: which encoder to use (lstm, gru, transformer, positional)
     TYYPE: transformer type (allen or custom)
 """
     if arguments is None:
@@ -142,6 +142,9 @@ ARGS:
     args.RNN_LAYERS = 1
     args.RNN_DROPOUT = 0.5 if args.ENCODER_TYPE != 'transformer' else 0
     args.EMBEDDDING_DROPOUT = 0.5 if args.EMBEDDING_TYPE != 'bert' else 0
+
+    # Number of passes the DMN will make over the input
+    args.DMN_PASSES = 3
 
     # Whether to fine tune the embeddings (specifically BERT and XLNet)
     args.finetune_embeddings = False
