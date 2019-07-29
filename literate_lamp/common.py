@@ -86,7 +86,7 @@ def build_dmn(vocabulary: Vocabulary) -> Model:
     sentence_encoder = pos_fn(embedding_dim, ARGS.HIDDEN_DIM,
                               ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
     document_encoder = gru_seq_fn(sentence_encoder.get_output_dim(),
-                                  ARGS.HIDDEN_DIM//2, ARGS.RNN_LAYERS,
+                                  ARGS.HIDDEN_DIM, ARGS.RNN_LAYERS,
                                   ARGS.BIDIRECTIONAL, dropout)
     answer_encoder = gru_fn(embedding_dim, ARGS.HIDDEN_DIM,
                             ARGS.RNN_LAYERS, False, dropout)

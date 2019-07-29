@@ -144,7 +144,7 @@ ARGS:
     args.EMBEDDDING_DROPOUT = 0.5 if args.EMBEDDING_TYPE == 'glove' else 0
 
     # Number of passes the DMN will make over the input
-    args.DMN_PASSES = 3
+    args.DMN_PASSES = 2
 
     # Whether to fine tune the embeddings (specifically BERT and XLNet)
     args.finetune_embeddings = False

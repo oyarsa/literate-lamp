@@ -127,5 +127,5 @@ def _assert_equal(a: torch.nn.Module, b: torch.nn.Module) -> None:
     b_size = b.get_output_dim()
     name_b = type(b).__name__
     error_str = f'Output size of {name_a} and {name_b} shoud match, but '\
-        '{a_size} != {b_size}'
+        f'{a_size} != {b_size}'
     assert a_size == b_size, error_str

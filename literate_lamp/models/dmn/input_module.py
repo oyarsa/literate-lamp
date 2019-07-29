@@ -30,7 +30,7 @@ class InputModule(torch.nn.Module):
         initalise_weights(xavier_normal_, self.document_encoder)
 
     def get_output_dim(self) -> int:
-        return cast(int, self.document_encoder.get_output_dim())
+        return cast(int, self.document_encoder.get_output_dim()) // 2
 
     @overrides
     def forward(self, sentences: Dict[str, torch.Tensor]) -> torch.Tensor:
@@ -45,4 +45,7 @@ class InputModule(torch.nn.Module):
 
         document_enc = self.document_encoder(sentences_encs, mask=None)
         document_enc = self.encoder_dropout(document_enc)
+
+        mid = document_enc.size(2) // 2
+        document_enc = document_enc[:, :, :mid] + document_enc[:, :, mid:]
         return cast(torch.Tensor, document_enc)
