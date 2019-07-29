@@ -97,14 +97,17 @@ class Dmn(BaseModel):
         question_encoded = self.question_module(question)
         answer0_encoded = self.answer_module(answer0)
         answer1_encoded = self.answer_module(answer1)
-        memory = question_encoded
+        memory0 = question_encoded
+        memory1 = question_encoded
 
         for hop in range(self.passes):
-            memory = self.memory_module(facts_encoded, question_encoded,
-                                        memory, hop)
+            memory0 = self.memory_module(facts_encoded, question_encoded,
+                                         answer0_encoded, memory0, hop)
+            memory1 = self.memory_module(facts_encoded, question_encoded,
+                                         answer1_encoded, memory1, hop)
 
-        out_0 = self.output_module(memory, answer0_encoded)
-        out_1 = self.output_module(memory, answer1_encoded)
+        out_0 = self.output_module(memory0, answer0_encoded)
+        out_1 = self.output_module(memory1, answer1_encoded)
 
         logits = torch.stack((out_0, out_1), dim=1)
         # # We softmax to turn those logits into probabilities
