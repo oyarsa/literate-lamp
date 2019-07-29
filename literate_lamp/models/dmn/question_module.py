@@ -1,10 +1,13 @@
 from typing import Dict, cast
 
 import torch
+from torch.nn.init import xavier_normal_
 from overrides import overrides
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
 from allennlp.nn import util
+
+from models.util import initalise_weights
 
 
 class QuestionModule(torch.nn.Module):
@@ -19,6 +22,8 @@ class QuestionModule(torch.nn.Module):
         self.encoder = encoder
         self.embedding_dropout = torch.nn.Dropout(embedding_dropout)
         self.encoder_dropout = torch.nn.Dropout(encoder_dropout)
+
+        initalise_weights(xavier_normal_, self.encoder)
 
     def get_output_dim(self) -> int:
         return cast(int, self.encoder.get_output_dim())

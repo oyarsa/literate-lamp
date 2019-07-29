@@ -210,7 +210,7 @@ def train_model(build_model_fn: Callable[[Vocabulary], Model],
     params = Params(params={
         "type": "reduce_on_plateau",
         "factor": 0.5,
-        "patience": 10,
+        "patience": 5,
         "verbose": True,
     })
     lr_scheduler = LearningRateScheduler.from_params(optimiser, params)

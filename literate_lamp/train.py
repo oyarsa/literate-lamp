@@ -107,7 +107,7 @@ def run_model() -> None:
     reader = common.create_reader(reader_type)
 
     def optimiser(model: Model) -> torch.optim.Optimizer:
-        return AdamW(model.parameters(), lr=2e-3, weight_decay=1e-4)
+        return AdamW(model.parameters(), lr=1e-3, weight_decay=1e-3)
 
     # Create SAVE_FOLDER if it doesn't exist
     ARGS.SAVE_PATH.mkdir(exist_ok=True, parents=True)

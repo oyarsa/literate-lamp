@@ -1,9 +1,11 @@
 from typing import cast
 
 import torch
+from torch.nn.init import xavier_normal_
 from overrides import overrides
 
 from modules import AttentionGRU
+from models.util import initalise_weights
 
 
 class MemoryModule(torch.nn.Module):
@@ -25,6 +27,10 @@ class MemoryModule(torch.nn.Module):
         )
 
         self.dropout = torch.nn.Dropout(dropout)
+
+        initalise_weights(xavier_normal_, self.attention_gru)
+        initalise_weights(xavier_normal_, self.gate_nn)
+        initalise_weights(xavier_normal_, self.memory_output)
 
     def get_output_dim(self) -> int:
         return self.hidden_dim

@@ -1,5 +1,8 @@
 import torch
+from torch.nn.init import xavier_normal_
 from overrides import overrides
+
+from models.util import initalise_weights
 
 
 class OutputModule(torch.nn.Module):
@@ -14,6 +17,7 @@ class OutputModule(torch.nn.Module):
         self.answer_size = answer_size
 
         self.combination = torch.nn.Linear(answer_size, memory_size)
+        initalise_weights(xavier_normal_, self.combination)
 
     def get_input_dim(self) -> int:
         return self.memory_size

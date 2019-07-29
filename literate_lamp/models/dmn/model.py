@@ -9,7 +9,6 @@ from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
 from allennlp.data.vocabulary import Vocabulary
 
 from models.base_model import BaseModel
-
 from models.dmn.input_module import InputModule
 from models.dmn.answer_module import AnswerModule
 from models.dmn.question_module import QuestionModule

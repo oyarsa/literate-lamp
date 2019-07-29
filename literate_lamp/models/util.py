@@ -1,5 +1,5 @@
 "Utilities shared by the models."
-from typing import Optional
+from typing import Optional, Callable
 
 import torch
 from allennlp.modules.seq2vec_encoders import Seq2VecEncoder
@@ -17,6 +17,7 @@ def seq_over_seq(encoder: Seq2VecEncoder,
 
     for i in range(num_sent):
         sentence_emb = sentences[:, i, :, :]
+        sentence_mask: Optional[torch.Tensor]
         if masks is not None:
             sentence_mask = masks[:, i, :]
         else:
@@ -52,3 +53,11 @@ def attention_over_sequence(attention: Attention, sequence: torch.Tensor,
         scores[:, i, :] = attention(vector, sequence_item)
 
     return scores
+
+
+def initalise_weights(init: Callable[[torch.Tensor], None],
+                      module: torch.nn.Module
+                      ) -> None:
+    for p in module.parameters():
+        if p.dim() > 1:
+            init(p)
