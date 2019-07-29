@@ -1,5 +1,5 @@
 import random
-from typing import Callable, Tuple, Dict, List
+from typing import Callable, Tuple, Dict, List, Optional
 from collections import defaultdict
 
 import torch
@@ -27,22 +27,29 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
 ARGS = args.DotDict()
 
 
-def get_seq2seq() -> Callable[[int, int, int, bool, float], Seq2SeqEncoder]:
-    if ARGS.ENCODER_TYPE == 'lstm':
+def get_seq2seq(encoder_type: Optional[str] = None
+                ) -> Callable[[int, int, int, bool, float], Seq2SeqEncoder]:
+    if encoder_type is None:
+        encoder_type = ARGS.ENCODER_TYPE
+    if encoder_type == 'lstm':
         encoder_fn = lstm_seq2seq
-    elif ARGS.ENCODER_TYPE == 'gru':
+    elif encoder_type == 'gru':
         encoder_fn = gru_seq2seq
     else:
         raise ValueError(f'Invalid encoder {ARGS.ENCODER_TYPE}')
     return encoder_fn  # type: ignore
 
 
-def get_encoder() -> Callable[[int, int, int, bool, float], Seq2VecEncoder]:
-    if ARGS.ENCODER_TYPE == 'gru':
+def get_encoder(encoder_type: Optional[str] = None
+                ) -> Callable[[int, int, int, bool, float], Seq2VecEncoder]:
+    if encoder_type is None:
+        encoder_type = ARGS.ENCODER_TYPE
+
+    if encoder_type == 'gru':
         encoder_fn = gru_encoder
-    elif ARGS.ENCODER_TYPE == 'lstm':
+    elif encoder_type == 'lstm':
         encoder_fn = lstm_encoder
-    elif ARGS.ENCODER_TYPE == 'pos':
+    elif encoder_type == 'pos':
         encoder_fn = position_encoder
     else:
         raise ValueError(f'Invalid encoder {ARGS.ENCODER_TYPE}')
@@ -69,21 +76,22 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
 def build_dmn(vocabulary: Vocabulary) -> Model:
     word_embeddings = get_word_embeddings(vocabulary)
 
-    encoder_fn = get_encoder()
-    encoder_seq_fn = get_seq2seq()
+    pos_fn = get_encoder('pos')
+    gru_fn = get_encoder('gru')
+    gru_seq_fn = get_seq2seq('gru')
 
     embedding_dim = word_embeddings.get_output_dim()
     dropout = ARGS.RNN_DROPOUT if ARGS.RNN_LAYERS > 1 else 0
 
-    sentence_encoder = encoder_fn(embedding_dim, ARGS.HIDDEN_DIM,
-                                  ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
-    document_encoder = encoder_seq_fn(sentence_encoder.get_output_dim(),
-                                      ARGS.HIDDEN_DIM, ARGS.RNN_LAYERS,
-                                      ARGS.BIDIRECTIONAL, dropout)
-    answer_encoder = encoder_fn(embedding_dim, ARGS.HIDDEN_DIM,
-                                ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
-    question_encoder = encoder_fn(embedding_dim, ARGS.HIDDEN_DIM,
-                                  ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
+    sentence_encoder = pos_fn(embedding_dim, ARGS.HIDDEN_DIM,
+                              ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
+    document_encoder = gru_seq_fn(sentence_encoder.get_output_dim(),
+                                  ARGS.HIDDEN_DIM, ARGS.RNN_LAYERS,
+                                  ARGS.BIDIRECTIONAL, dropout)
+    answer_encoder = gru_fn(embedding_dim, ARGS.HIDDEN_DIM,
+                            ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
+    question_encoder = gru_fn(embedding_dim, ARGS.HIDDEN_DIM,
+                              ARGS.RNN_LAYERS, ARGS.BIDIRECTIONAL, dropout)
 
     return models.Dmn(
         word_embeddings=word_embeddings,
