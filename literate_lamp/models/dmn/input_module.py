@@ -25,6 +25,9 @@ class InputModule(torch.nn.Module):
         self.embedding_dropout = torch.nn.Dropout(embedding_dropout)
         self.encoder_dropout = torch.nn.Dropout(encoder_dropout)
 
+    def get_output_dim(self) -> int:
+        return cast(int, self.document_encoder.get_output_dim())
+
     @overrides
     def forward(self, sentences: Dict[str, torch.Tensor]) -> torch.Tensor:
         sentences_msks = util.get_text_field_mask(sentences,

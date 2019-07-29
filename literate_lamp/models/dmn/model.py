@@ -72,16 +72,18 @@ class Dmn(BaseModel):
             embedding_dropout=embedding_dropout,
             encoder_dropout=encoder_dropout
         )
-
         self.memory_module = MemoryModule(
-            hidden_dim=self.hidden_dim,
+            hidden_dim=self.input_module.get_output_dim(),
             dropout=encoder_dropout
         )
         self.output_module = OutputModule(
-            memory_size=self.hidden_dim,
-            answer_size=self.hidden_dim,
+            memory_size=self.memory_module.get_output_dim(),
+            answer_size=self.answer_module.get_output_dim(),
             num_labels=1
         )
+
+        _assert_equal(self.input_module, self.question_module)
+        _assert_equal(self.memory_module, self.question_module)
 
     def forward(self,
                 metadata: Dict[str, torch.Tensor],
@@ -118,3 +120,13 @@ class Dmn(BaseModel):
         # The output is the dict we've been building, with the logits, loss
         # and the prediction.
         return output
+
+
+def _assert_equal(a: torch.nn.Module, b: torch.nn.Module) -> None:
+    name_a = type(a).__name__
+    a_size = a.get_output_dim()
+    b_size = b.get_output_dim()
+    name_b = type(b).__name__
+    error_str = f'Output size of {name_a} and {name_b} shoud match, but '\
+        '{a_size} != {b_size}'
+    assert a_size == b_size, error_str

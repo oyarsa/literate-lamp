@@ -21,6 +21,9 @@ class AnswerModule(torch.nn.Module):
         self.embedding_dropout = torch.nn.Dropout(embedding_dropout)
         self.encoder_dropout = torch.nn.Dropout(encoder_dropout)
 
+    def get_output_dim(self) -> int:
+        return cast(int, self.encoder.get_output_dim())
+
     @overrides
     def forward(self, answer: Dict[str, torch.Tensor]) -> torch.Tensor:
         mask = util.get_text_field_mask(answer)
