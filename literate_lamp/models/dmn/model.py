@@ -73,6 +73,7 @@ class Dmn(BaseModel):
         )
         self.memory_module = MemoryModule(
             hidden_dim=self.input_module.get_output_dim(),
+            num_hops=passes,
             dropout=encoder_dropout
         )
         self.output_module = OutputModule(
@@ -98,9 +99,9 @@ class Dmn(BaseModel):
         answer1_encoded = self.answer_module(answer1)
         memory = question_encoded
 
-        for _ in range(self.passes):
+        for hop in range(self.passes):
             memory = self.memory_module(facts_encoded, question_encoded,
-                                        memory)
+                                        memory, hop)
 
         out_0 = self.output_module(memory, answer0_encoded)
         out_1 = self.output_module(memory, answer1_encoded)
