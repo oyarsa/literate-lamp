@@ -7,7 +7,7 @@ from modules import AttentionGRU
 
 
 class MemoryModule(torch.nn.Module):
-    def __init__(self, hidden_dim: int):
+    def __init__(self, hidden_dim: int, dropout: float = 0.5):
         super(MemoryModule, self).__init__()
 
         self.hidden_dim = hidden_dim
@@ -23,6 +23,8 @@ class MemoryModule(torch.nn.Module):
             torch.nn.Linear(3 * hidden_dim, hidden_dim),
             torch.nn.ReLU(inplace=True),
         )
+
+        self.dropout = torch.nn.Dropout(dropout)
 
     def get_output_dim(self) -> int:
         return self.hidden_dim
@@ -64,7 +66,9 @@ class MemoryModule(torch.nn.Module):
                 ) -> torch.Tensor:
         gate = self.get_gate(facts, question, prev_mem)
         context = self.attention_gru(facts, gate)
+        context = self.dropout(context)
 
         mem_input = torch.cat([prev_mem, context, question], dim=-1)
         next_mem = self.memory_output(mem_input)
+        next_mem = self.dropout(next_mem)
         return cast(torch.Tensor, next_mem)

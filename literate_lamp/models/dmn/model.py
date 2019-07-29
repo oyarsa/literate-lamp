@@ -45,7 +45,8 @@ class Dmn(BaseModel):
                  answer_encoder: Seq2VecEncoder,
                  passes: int,
                  vocab: Vocabulary,
-                 dropout: float = 0.0) -> None:
+                 embedding_dropout: float = 0.0,
+                 encoder_dropout: float = 0.5) -> None:
         # We have to pass the vocabulary to the constructor.
         super().__init__(vocab)
 
@@ -56,19 +57,31 @@ class Dmn(BaseModel):
             word_embeddings=word_embeddings,
             sentence_encoder=sentence_encoder,
             document_encoder=document_encoder,
-            dropout=dropout
+            embedding_dropout=embedding_dropout,
+            encoder_dropout=encoder_dropout
         )
         self.question_module = QuestionModule(
             word_embeddings=word_embeddings,
-            encoder=question_encoder
+            encoder=question_encoder,
+            embedding_dropout=embedding_dropout,
+            encoder_dropout=encoder_dropout
         )
         self.answer_module = AnswerModule(
             word_embeddings=word_embeddings,
-            encoder=answer_encoder
+            encoder=answer_encoder,
+            embedding_dropout=embedding_dropout,
+            encoder_dropout=encoder_dropout
         )
 
-        self.memory_module = MemoryModule(self.hidden_dim)
-        self.output_module = OutputModule(self.hidden_dim, self.hidden_dim, 1)
+        self.memory_module = MemoryModule(
+            hidden_dim=self.hidden_dim,
+            dropout=encoder_dropout
+        )
+        self.output_module = OutputModule(
+            memory_size=self.hidden_dim,
+            answer_size=self.hidden_dim,
+            num_labels=1
+        )
 
     def forward(self,
                 metadata: Dict[str, torch.Tensor],

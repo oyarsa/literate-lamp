@@ -67,7 +67,7 @@ ARGS:
         # Size of our embeddings
         args.GLOVE_EMBEDDING_DIM = 300
         # Size of our hidden layers (for each encoder)
-        args.HIDDEN_DIM = 50
+        args.HIDDEN_DIM = 100
         args.TRANSFORMER_DIM = 512
         # Size of minibatch
         args.BATCH_SIZE = 24
@@ -141,7 +141,7 @@ ARGS:
     args.BIDIRECTIONAL = True
     args.RNN_LAYERS = 1
     args.RNN_DROPOUT = 0.5 if args.ENCODER_TYPE != 'transformer' else 0
-    args.EMBEDDDING_DROPOUT = 0.5 if args.EMBEDDING_TYPE != 'bert' else 0
+    args.EMBEDDDING_DROPOUT = 0.5 if args.EMBEDDING_TYPE == 'glove' else 0
 
     # Number of passes the DMN will make over the input
     args.DMN_PASSES = 3

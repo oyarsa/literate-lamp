@@ -93,7 +93,8 @@ def build_dmn(vocabulary: Vocabulary) -> Model:
         answer_encoder=answer_encoder,
         passes=ARGS.DMN_PASSES,
         vocab=vocabulary,
-        dropout=ARGS.RNN_DROPOUT
+        embedding_dropout=ARGS.EMBEDDDING_DROPOUT,
+        encoder_dropout=ARGS.RNN_DROPOUT
     )
 
 

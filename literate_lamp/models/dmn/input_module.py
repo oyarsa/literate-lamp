@@ -14,24 +14,28 @@ class InputModule(torch.nn.Module):
                  word_embeddings: TextFieldEmbedder,
                  sentence_encoder: Seq2VecEncoder,
                  document_encoder: Seq2VecEncoder,
-                 dropout: float = 0.1):
+                 embedding_dropout: float = 0.5,
+                 encoder_dropout: float = 0.5):
         super(InputModule, self).__init__()
 
         self.word_embeddings = word_embeddings
         self.sentence_encoder = sentence_encoder
         self.document_encoder = document_encoder
 
-        self.dropout = torch.nn.Dropout(dropout)
+        self.embedding_dropout = torch.nn.Dropout(embedding_dropout)
+        self.encoder_dropout = torch.nn.Dropout(encoder_dropout)
 
     @overrides
     def forward(self, sentences: Dict[str, torch.Tensor]) -> torch.Tensor:
         sentences_msks = util.get_text_field_mask(sentences,
                                                   num_wrapping_dims=1)
         sentences_embs = self.word_embeddings(sentences)
+        sentences_embs = self.embedding_dropout(sentences_embs)
 
         sentences_encs = seq_over_seq(self.sentence_encoder, sentences_embs,
                                       sentences_msks)
-        sentences_encs = self.dropout(sentences_encs)
+        sentences_encs = self.encoder_dropout(sentences_encs)
 
         document_enc = self.document_encoder(sentences_encs, mask=None)
+        document_enc = self.encoder_dropout(document_enc)
         return cast(torch.Tensor, document_enc)
