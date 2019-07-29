@@ -21,6 +21,7 @@ import numpy as np
 from allennlp.models import Model
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.common import JsonDict
+from pytorch_transformers.optimization import AdamW
 
 import args
 import readers
@@ -106,7 +107,7 @@ def run_model() -> None:
     reader = common.create_reader(reader_type)
 
     def optimiser(model: Model) -> torch.optim.Optimizer:
-        return torch.optim.Adamax(model.parameters(), lr=2e-3)
+        return AdamW(model.parameters(), lr=2e-3, weight_decay=1e-4)
 
     # Create SAVE_FOLDER if it doesn't exist
     ARGS.SAVE_PATH.mkdir(exist_ok=True, parents=True)

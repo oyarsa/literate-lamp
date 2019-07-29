@@ -287,13 +287,14 @@ def xlnet_embeddings(config_path: Path,
 
 
 def glove_embeddings(vocab: Vocabulary, file_path: Path, dimension: int,
-                     training: bool = False, namespace: str = 'tokens'
+                     training: bool = True, namespace: str = 'tokens'
                      ) -> BasicTextFieldEmbedder:
     "Pre-trained embeddings using GloVe"
     token_embedding = Embedding.from_params(vocab, Params({
         "embedding_dim": dimension,
         "vocab_namespace": 'tokens',
-        "pretrained_file": str(file_path)
+        "pretrained_file": str(file_path),
+        "trainable": training,
     }))
     word_embeddings = BasicTextFieldEmbedder({namespace: token_embedding})
     return word_embeddings
