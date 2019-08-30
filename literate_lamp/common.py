@@ -74,7 +74,8 @@ def get_word_embeddings(vocabulary: Vocabulary) -> TextFieldEmbedder:
 
 
 def build_dmn(vocabulary: Vocabulary) -> Model:
-    word_embeddings = get_word_embeddings(vocabulary)
+    # word_embeddings = get_word_embeddings(vocabulary)
+    word_embeddings = learned_embeddings(vocabulary, ARGS.HIDDEN_DIM)
 
     pos_fn = get_encoder('pos')
     gru_fn = get_encoder('gru')

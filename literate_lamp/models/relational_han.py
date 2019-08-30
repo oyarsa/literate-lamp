@@ -2,7 +2,7 @@
 Uses the HAN architecture and then combines the output with a relation matrix
 obtained from ConceptNet.
 """
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
 import torch
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
@@ -38,10 +38,7 @@ class RelationalHan(BaseModel):
 
         self.word_embeddings = word_embeddings
 
-        if encoder_dropout > 0:
-            self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
-        else:
-            self.encoder_dropout = lambda x: x
+        self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
 
         self.sentence_encoder = sentence_encoder
 
@@ -97,7 +94,7 @@ class RelationalHan(BaseModel):
         logit = self.ffn(t_document_encoding)
         logit = self.norm(logit + t_document_encoding)
         logit = self.output(t_document_encoding).squeeze(-1)
-        return logit
+        return cast(torch.Tensor, logit)
 
     # This is the computation bit of the model. The arguments of this function
     # are the fields from the `Instance` we created, as that's what's going to

@@ -34,10 +34,7 @@ class RelationalTransformerModel(BaseModel):
         self.relation_sentence_encoder = relation_sentence_encoder
         # self.relation_encoder = relation_encoder
 
-        if encoder_dropout > 0:
-            self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
-        else:
-            self.encoder_dropout = lambda x: x
+        self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
 
         self.sentence_encoder = sentence_encoder
 

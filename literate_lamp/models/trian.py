@@ -52,15 +52,8 @@ class Trian(BaseModel):
         self.ner_embeddings = ner_embeddings
         self.rel_embeddings = rel_embeddings
 
-        if embedding_dropout > 0:
-            self.embedding_dropout = torch.nn.Dropout(p=embedding_dropout)
-        else:
-            self.embedding_dropout = lambda x: x
-
-        if encoder_dropout > 0:
-            self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
-        else:
-            self.encoder_dropout = lambda x: x
+        self.embedding_dropout = torch.nn.Dropout(p=embedding_dropout)
+        self.encoder_dropout = torch.nn.Dropout(p=encoder_dropout)
 
         embedding_dim = word_embeddings.get_output_dim()
         self.p_q_match = SequenceAttention(input_dim=embedding_dim)
@@ -110,7 +103,7 @@ class Trian(BaseModel):
                 p_q_rel: Dict[str, torch.Tensor],
                 p_a0_rel: Dict[str, torch.Tensor],
                 p_a1_rel: Dict[str, torch.Tensor],
-                hc_feat: Dict[str, torch.Tensor],
+                hc_feat: torch.Tensor,
                 label: Optional[torch.Tensor] = None
                 ) -> Dict[str, torch.Tensor]:
 
