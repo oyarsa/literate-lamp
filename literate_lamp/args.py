@@ -1,5 +1,6 @@
 "Processes command line arguments and configuration."
 import sys
+import argparse
 from typing import cast, List, Optional
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from util import (DotDict, parse_cuda, get_experiment_name,
 
 def get_args(arguments: Optional[List[str]] = None) -> DotDict:
     "Processes command line arguments and configuration."
+    parser = argparse.ArgumentParser(description="Train a model.")
+
     usage = """
 USAGE:
     run.py CONFIG MODEL [EMBEDDING_TYPE] [CUDA_DEVICE] [NAME] [ENCODER] [TTYPE]
@@ -23,31 +26,47 @@ ARGS:
     TYYPE: transformer type (allen or custom)
 """
     if arguments is None:
-        arguments = sys.argv
-    if any('help' in arg or '-h' in arg for arg in arguments):
-        print(usage)
-        exit(0)
+        arguments = sys.argv[1:]
 
+    parser.add_argument('--config', type=str, choices=['small', 'large'],
+                        default='small',
+                        help="Configuration to use, small or large.")
+    parser.add_argument('--model', type=str, default='zero-trian',
+                        help="Model to run.")
+    parser.add_argument('--embedding', type=str, default='glove',
+                        choices=['glove', 'bert', 'xlnet'],
+                        help="Embedding to use, GloVe, BERT or XLNet")
+    parser.add_argument('--cuda', type=str, default="0",
+                        help="GPU(s) to use. If multiple, separated by "
+                             "comma. If single, just use the gpu number. If "
+                             "CPU is desired, use -1.\n"
+                             "Examples:\n"
+                             "\t--gpu 0,1,2\n"
+                             "\t--gpu 0")
+    parser.add_argument('--name', type=str, default=None,
+                        help="Name for this model.")
+    parser.add_argument('--encoder', type=str, default='lstm',
+                        choices=['lstm', 'transformer'],
+                        help="Encoder type, one of lstm or transformer")
+    parser.add_argument('--transformer', type=str, default='custom',
+                        choices=['allen', 'custom'],
+                        help="If encoder is transformer, choose which one to "
+                             "use, allen or custom.")
+
+    res = parser.parse_args(arguments)
     args = DotDict()
 
-    default_config = 'small'  # Can be: _large_ or _small_
-    config = arguments[1] if len(arguments) >= 2 else default_config
-
-    # Which model to use: 'baseline', 'reader', 'simple-bert', 'advanced-bert',
-    #  or 'attentive'.
-    default_model = 'attentive'
-    args.MODEL = arguments[2] if len(arguments) >= 3 else default_model
+    config = res.config
+    args.MODEL = res.model
 
     args.NER_EMBEDDING_DIM = 8
     args.REL_EMBEDDING_DIM = 10
     args.POS_EMBEDDING_DIM = 12
     args.HANDCRAFTED_DIM = 7
-    default_embedding_type = 'glove'  # can also be 'bert'
-    args.EMBEDDING_TYPE = arguments[3] if len(
-        arguments) >= 4 else default_embedding_type
+    args.EMBEDDING_TYPE = res.embedding
 
-    args.CUDA_DEVICE = parse_cuda(arguments[4]) if len(arguments) >= 5 else 0
-    args.MODEL_NAME = arguments[5] if len(arguments) >= 6 else None
+    args.CUDA_DEVICE = parse_cuda(res.cuda)
+    args.MODEL_NAME = res.name
 
     data_folder = Path('data')
     # Proper configuration path for the External folder. The data one is
@@ -136,8 +155,8 @@ ARGS:
 
     # Model Configuration
     # Use LSTM, GRU or Transformer
-    args.ENCODER_TYPE = arguments[6] if len(arguments) >= 7 else 'lstm'
-    args.WHICH_TRANSFORMER = arguments[7] if len(arguments) >= 8 else 'allen'
+    args.ENCODER_TYPE = res.encoder
+    args.WHICH_TRANSFORMER = res.transformer
     args.BIDIRECTIONAL = True
     args.RNN_LAYERS = 1
     args.RNN_DROPOUT = 0.5 if args.ENCODER_TYPE != 'transformer' else 0
