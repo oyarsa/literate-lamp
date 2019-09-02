@@ -30,7 +30,7 @@ from predictor import McScriptPredictor
 from util import example_input, is_cuda, train_model, load_data, print_args
 
 ARGS = args.get_args()
-common.ARGS = ARGS
+common.set_args(ARGS)
 
 
 def make_prediction(model: Model,

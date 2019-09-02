@@ -10,24 +10,10 @@ from util import (DotDict, parse_cuda, get_experiment_name,
 
 def get_args(arguments: Optional[List[str]] = None) -> DotDict:
     "Processes command line arguments and configuration."
-    parser = argparse.ArgumentParser(description="Train a model.")
-
-    usage = """
-USAGE:
-    run.py CONFIG MODEL [EMBEDDING_TYPE] [CUDA_DEVICE] [NAME] [ENCODER] [TTYPE]
-
-ARGS:
-    CONFIG: configuration to use. One of: small, large
-    MODEL: model to run. One of: baseline, attentive, reader
-    EMBEDDING_TYPE: word embeddings for the text. One of: glove, bert.
-    CUDA_DEVICE: device to run the training. -1 for CPU, >=0 for GPU.
-    NAME: name for model being trained (used in saving)
-    ENCODER: which encoder to use (lstm, gru, transformer, positional)
-    TYYPE: transformer type (allen or custom)
-"""
     if arguments is None:
         arguments = sys.argv[1:]
 
+    parser = argparse.ArgumentParser(description="Train a model.")
     parser.add_argument('--config', type=str, choices=['small', 'large'],
                         default='small',
                         help="Configuration to use, small or large.")
@@ -39,10 +25,8 @@ ARGS:
     parser.add_argument('--cuda', type=str, default="0",
                         help="GPU(s) to use. If multiple, separated by "
                              "comma. If single, just use the gpu number. If "
-                             "CPU is desired, use -1.\n"
-                             "Examples:\n"
-                             "\t--gpu 0,1,2\n"
-                             "\t--gpu 0")
+                             "CPU is desired, use -1. Examples: "
+                             "--gpu 0,1,2 --gpu 0.")
     parser.add_argument('--name', type=str, default=None,
                         help="Name for this model.")
     parser.add_argument('--encoder', type=str, default='lstm',

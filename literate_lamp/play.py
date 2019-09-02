@@ -33,7 +33,7 @@ def main() -> None:
         first, second = sys.argv[1:], []
     opts = parser.parse_args(first)
     ARGS = args.get_args(second)
-    common.ARGS = ARGS
+    common.set_args(ARGS)
 
     util.print_args(vars(opts))
     util.print_args(ARGS)

@@ -27,6 +27,11 @@ from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
 ARGS = args.DotDict()
 
 
+def set_args(args: args.DotDict) -> None:
+    global ARGS
+    ARGS = args
+
+
 def get_seq2seq(encoder_type: Optional[str] = None
                 ) -> Callable[[int, int, int, bool, float], Seq2SeqEncoder]:
     if encoder_type is None:
