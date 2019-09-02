@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 Use `train.py` to train a new model.
 
-```bash
+```
 $ ./literate-lamp/train.py -h
 
 usage: train.py [-h] [--config {small,large}] [--model MODEL]
@@ -49,7 +49,7 @@ optional arguments:
 
 Use `play.py` to play with a trained model. You can use it to perform error
 analysis and evaluation.
-```bash
+```
 $ ./literate-lamp/play.py -h
 
 usage: play.py [-h] --path PATH [--data DATA] [--sample_size SAMPLE_SIZE]
