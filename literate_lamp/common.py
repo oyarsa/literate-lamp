@@ -18,7 +18,7 @@ import models
 import common
 import readers
 from modules import position_encoder
-from util import tf2str
+from util import tf2str, visualise_model
 from layers import (lstm_encoder, gru_encoder, lstm_seq2seq, gru_seq2seq,
                     glove_embeddings, learned_embeddings, bert_embeddings,
                     transformer_seq2seq, xlnet_embeddings,
@@ -1081,6 +1081,8 @@ def evaluate(model: Model,
              reader: readers.BaseReader,
              test_data: List[Instance]
              ) -> None:
+    visualise_model(model)
+
     vocab = Vocabulary.from_instances(test_data)
     iterator = BucketIterator(batch_size=ARGS.BATCH_SIZE,
                               sorting_keys=reader.keys)
