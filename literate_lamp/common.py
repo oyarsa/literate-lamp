@@ -1037,32 +1037,33 @@ def create_reader(reader_type: str) -> readers.BaseReader:
     raise ValueError(f'Reader type {reader_type} is invalid')
 
 
+# Model -> Build function, reader type
+MODELS = {
+    'baseline': (build_baseline, 'simple'),
+    'trian': (build_trian, 'full-trian'),
+    'reader': (build_attentive_reader, 'simple'),
+    'simple-bert': (build_simple_bert, 'simple-bert'),
+    'advanced-bert': (build_advanced_bert, 'simple-bert'),
+    'hierarchical-bert': (build_hierarchical_bert, 'simple-bert'),
+    'simple-trian': (build_simple_trian, 'simple-trian'),
+    'advanced-attn-bert': (build_advanced_attn_bert, 'simple-bert'),
+    'han': (build_hierarchical_attn_net, 'simple-bert'),
+    'rtm': (build_relational_transformer, 'relation-bert'),
+    'relhan': (build_rel_han, 'relation-bert'),
+    'dcmn': (build_dcmn, 'simple'),
+    'zero-trian': (build_zero_trian, 'simple'),
+    'simple-xl': (build_simple_xlnet, 'simple-xl'),
+    'advanced-xl': (build_advanced_xlnet, 'simple-xl'),
+    'relation-xl': (build_relational_xl, 'relation-xl'),
+    'extended-xl': (build_advanced_xlnet, 'extended-xl'),
+    'dmn': (build_dmn, 'sentence'),
+}
+
+
 def get_modelfn_reader() -> Tuple[Callable[[Vocabulary], Model], str]:
     "Gets the build function and reader for the model"
-    # Model -> Build function, reader type
-    models = {
-        'baseline': (build_baseline, 'simple'),
-        'trian': (build_trian, 'full-trian'),
-        'reader': (build_attentive_reader, 'simple'),
-        'simple-bert': (build_simple_bert, 'simple-bert'),
-        'advanced-bert': (build_advanced_bert, 'simple-bert'),
-        'hierarchical-bert': (build_hierarchical_bert, 'simple-bert'),
-        'simple-trian': (build_simple_trian, 'simple-trian'),
-        'advanced-attn-bert': (build_advanced_attn_bert, 'simple-bert'),
-        'han': (build_hierarchical_attn_net, 'simple-bert'),
-        'rtm': (build_relational_transformer, 'relation-bert'),
-        'relhan': (build_rel_han, 'relation-bert'),
-        'dcmn': (build_dcmn, 'simple'),
-        'zero-trian': (build_zero_trian, 'simple'),
-        'simple-xl': (build_simple_xlnet, 'simple-xl'),
-        'advanced-xl': (build_advanced_xlnet, 'simple-xl'),
-        'relation-xl': (build_relational_xl, 'relation-xl'),
-        'extended-xl': (build_advanced_xlnet, 'extended-xl'),
-        'dmn': (build_dmn, 'sentence'),
-    }
-
-    if ARGS.MODEL in models:
-        build_fn, reader_type = models[ARGS.MODEL]
+    if ARGS.MODEL in MODELS:
+        build_fn, reader_type = MODELS[ARGS.MODEL]
         return build_fn, reader_type
     raise ValueError(f'Invalid model name: {ARGS.MODEL}')
 

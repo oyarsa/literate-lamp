@@ -6,6 +6,14 @@ from pathlib import Path
 
 from util import (DotDict, parse_cuda, get_experiment_name,
                   get_preprocessed_name)
+from common import MODELS
+
+
+def list_models(models: List[str]) -> None:
+    print('Available models:')
+    for model in models:
+        print(f'    {model}')
+    print()
 
 
 def get_args(arguments: Optional[List[str]] = None) -> DotDict:
@@ -13,12 +21,18 @@ def get_args(arguments: Optional[List[str]] = None) -> DotDict:
     if arguments is None:
         arguments = sys.argv[1:]
 
+    possible_models = list(MODELS.keys())
+
     parser = argparse.ArgumentParser(description="Train a model.")
     parser.add_argument('--config', type=str, choices=['small', 'large'],
                         default='small',
                         help="Configuration to use, small or large.")
     parser.add_argument('--model', type=str, default='zero-trian',
-                        help="Model to run.")
+                        choices=possible_models,
+                        help="Model to run. Use --list-models to get a list of"
+                             " possiblities.")
+    parser.add_argument('--list-models', action='store_true',
+                        help="List the possible models to use.")
     parser.add_argument('--embedding', type=str, default='glove',
                         choices=['glove', 'bert', 'xlnet'],
                         help="Embedding to use, GloVe, BERT or XLNet")
@@ -39,6 +53,10 @@ def get_args(arguments: Optional[List[str]] = None) -> DotDict:
 
     res = parser.parse_args(arguments)
     args = DotDict()
+
+    if res.list_models:
+        list_models(possible_models)
+        exit()
 
     config = res.config
     args.MODEL = res.model
