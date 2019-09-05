@@ -4,3 +4,4 @@ mypy==0.700
 mypy-extensions==0.4.1
 pytorch-transformers==1.0.0
 torch==1.1.0
+graphviz==0.12
