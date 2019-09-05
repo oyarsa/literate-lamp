@@ -30,8 +30,8 @@ def get_args(arguments: Optional[List[str]] = None) -> DotDict:
     parser.add_argument('--name', type=str, default=None,
                         help="Name for this model.")
     parser.add_argument('--encoder', type=str, default='lstm',
-                        choices=['lstm', 'transformer'],
-                        help="Encoder type, one of lstm or transformer")
+                        choices=['lstm', 'transformer', 'gru'],
+                        help="Encoder type, one of lstm, gru or transformer")
     parser.add_argument('--transformer', type=str, default='custom',
                         choices=['allen', 'custom'],
                         help="If encoder is transformer, choose which one to "
