@@ -16,6 +16,15 @@ was tested with Python 3.7, but should work with Python 3.6 too.
 pip install -r requirements.txt
 ```
 
+Moreover, there are external components (BERT model, GloVe files and ConceptNet database)
+that need to be downloaded before the application can be used. They can be downloaded
+by the `download.sh` script, or be manually downloaded an placed in a folder called
+`External`, to be placed as a sibling to this repository.
+
+```bash
+./download.sh
+```
+
 ## Usage
 
 Use `train.py` to train a new model.
